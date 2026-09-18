@@ -1,9 +1,6 @@
 <?php
 
-/**
- * Master data giả (Module 2) — dùng validate department ↔ support_type.
- 
- */
+
 return [
     'departments' => [
         1 => 'Phòng Đào tạo',
@@ -11,6 +8,7 @@ return [
         3 => 'Phòng Tài chính – Kế toán',
         4 => 'Thư viện',
         5 => 'Trung tâm Hỗ trợ Sinh viên',
+        6 => 'Phòng Cơ sở vật chất',
     ],
 
    
@@ -22,5 +20,8 @@ return [
         5 => ['name' => 'Hỗ trợ học phí / vay vốn', 'department_id' => 3],
         6 => ['name' => 'Mượn tài liệu / phòng học', 'department_id' => 4],
         7 => ['name' => 'Khiếu nại / phản ánh', 'department_id' => 2],
+        8 => ['name' => 'Báo hỏng thiết bị / phòng học', 'department_id' => 6],
+        9 => ['name' => 'Sửa chữa cơ sở vật chất', 'department_id' => 6],
+        10 => ['name' => 'Vệ sinh / an toàn khuôn viên', 'department_id' => 6],
     ],
 ];

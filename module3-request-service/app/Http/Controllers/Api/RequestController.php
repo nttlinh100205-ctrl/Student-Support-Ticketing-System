@@ -15,10 +15,6 @@ use App\Services\RequestWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Controller CHỈ điều phối: nhận request, gọi Service, trả response.
- * Toàn bộ business logic nằm ở RequestWorkflowService (Mục 4 Coding Convention).
- */
 class RequestController extends Controller
 {
     public function __construct(
@@ -27,10 +23,7 @@ class RequestController extends Controller
     ) {
     }
 
-    /**
-     * GET /api/requests — student chỉ thấy yêu cầu của mình,
-     * staff/department_head/admin thấy theo phòng ban.
-     */
+    
     public function index(Request $request)
     {
         // Khẩn cấp lên đầu: urgent > high > normal > low (MySQL FIELD)
@@ -56,12 +49,10 @@ class RequestController extends Controller
             $query->where('priority', $request->query('priority'));
         }
 
-        // department_id: admin filter tự do; head đã bị khóa theo role
         if ($request->filled('department_id') && in_array($role, ['admin', 'department_head'], true)) {
             $query->where('department_id', (int) $request->query('department_id'));
         }
 
-        // assigned_to: chỉ head / admin
         if ($request->filled('assigned_to') && in_array($role, ['admin', 'department_head'], true)) {
             $query->where('assigned_to', (int) $request->query('assigned_to'));
         }
@@ -86,7 +77,7 @@ class RequestController extends Controller
         return ApiResponse::success(SupportRequestResource::collection($query->paginate(15)));
     }
 
-    /** GET /api/requests/{supportRequest} */
+   
     public function show(SupportRequest $supportRequest)
     {
         if (! $this->canView($supportRequest)) {
@@ -96,7 +87,6 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($supportRequest));
     }
 
-    /** POST /api/requests — chỉ role student được tạo yêu cầu. */
     public function store(StoreRequestRequest $request)
     {
         if ($this->auth->role() !== 'student') {
@@ -108,10 +98,7 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($created), status: 201);
     }
 
-    /**
-     * PUT /api/requests/{supportRequest} — sửa nội dung.
-     * Chỉ chủ sở hữu (student) hoặc admin, và chỉ khi status = new.
-     */
+   
     public function update(UpdateRequestRequest $request, SupportRequest $supportRequest)
     {
         $isOwner = $this->auth->role() === 'student' && $supportRequest->student_id === $this->auth->userId();
@@ -133,18 +120,34 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($updated));
     }
 
-    /** PUT /api/requests/{supportRequest}/status */
     public function updateStatus(UpdateStatusRequest $request, SupportRequest $supportRequest)
     {
-        if (! in_array($this->auth->role(), ['staff', 'department_head', 'admin'], true)) {
-            return ApiResponse::error('Bạn không có quyền đổi trạng thái yêu cầu.', 403);
-        }
-
+        $role = $this->auth->role();
         $toStatus = $request->validated('status');
+        $isOwner = $role === 'student' && $supportRequest->student_id === $this->auth->userId();
 
-        // Chỉ trưởng phòng / admin được đóng yêu cầu (closed)
-        if ($toStatus === 'closed' && $this->auth->role() === 'staff') {
-            return ApiResponse::error('Chỉ trưởng phòng hoặc admin được đóng yêu cầu.', 403);
+        if ($role === 'student') {
+            if (! $isOwner) {
+                return ApiResponse::error('Bạn không có quyền đổi trạng thái yêu cầu này.', 403);
+            }
+            // SV chỉ phản hồi khi đang chờ (resolved)
+            if ($supportRequest->status->value !== 'resolved'
+                || ! in_array($toStatus, ['closed', 'in_progress'], true)) {
+                return ApiResponse::error(
+                    'Sinh viên chỉ được xác nhận đóng hoặc yêu cầu xử lý lại khi yêu cầu đang chờ phản hồi.',
+                    403
+                );
+            }
+        } elseif (! in_array($role, ['staff', 'department_head', 'admin'], true)) {
+            return ApiResponse::error('Bạn không có quyền đổi trạng thái yêu cầu.', 403);
+        } else {
+            // Staff không tự đóng — chờ SV phản hồi (head/admin vẫn được đóng)
+            if ($toStatus === 'closed' && $role === 'staff') {
+                return ApiResponse::error(
+                    'Cán bộ không tự đóng yêu cầu. Hãy đánh dấu "Chờ phản hồi SV"; sinh viên hoặc trưởng phòng sẽ xác nhận đóng.',
+                    403
+                );
+            }
         }
 
         try {
@@ -181,7 +184,7 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($updated));
     }
 
-    /** PUT /api/requests/{supportRequest}/cancel */
+    
     public function cancel(Request $request, SupportRequest $supportRequest)
     {
         $isOwner = $this->auth->role() === 'student' && $supportRequest->student_id === $this->auth->userId();
@@ -204,7 +207,7 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($updated));
     }
 
-    /** DELETE /api/requests/{supportRequest} — chỉ khi status = new */
+   
     public function destroy(SupportRequest $supportRequest)
     {
         $isOwner = $this->auth->role() === 'student' && $supportRequest->student_id === $this->auth->userId();
@@ -222,7 +225,6 @@ class RequestController extends Controller
         return ApiResponse::success(null, 'Đã xóa yêu cầu thành công.');
     }
 
-    /** GET /api/requests/{supportRequest}/history — phục vụ Module 5 (Report). */
     public function history(SupportRequest $supportRequest)
     {
         if (! $this->canView($supportRequest)) {
@@ -232,13 +234,7 @@ class RequestController extends Controller
         return ApiResponse::success($supportRequest->statusHistories()->latest('id')->get());
     }
 
-    /**
-     * Quyền xem chi tiết / lịch sử — đồng bộ với filter danh sách index:
-     * - student: chỉ yêu cầu của mình
-     * - staff: chỉ yêu cầu được gán cho mình
-     * - department_head: yêu cầu thuộc phòng ban mình
-     * - admin: tất cả
-     */
+   
     protected function canView(SupportRequest $supportRequest): bool
     {
         return match ($this->auth->role()) {

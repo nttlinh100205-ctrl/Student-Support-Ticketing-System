@@ -6,7 +6,7 @@
 @php
     $statusLabels = [
         'new' => 'Mới tạo', 'received' => 'Đã tiếp nhận', 'in_progress' => 'Đang xử lý',
-        'resolved' => 'Đã xử lý xong', 'closed' => 'Đã đóng', 'cancelled' => 'Đã hủy',
+        'resolved' => 'Chờ phản hồi SV', 'closed' => 'Đã đóng', 'cancelled' => 'Đã hủy',
     ];
     $statusColors = [
         'new' => 'bg-blue-100 text-blue-800 border-blue-200',
@@ -25,13 +25,25 @@
     $statusVal = $request->status instanceof \App\Enums\RequestStatus ? $request->status->value : $request->status;
     $priorityVal = $request->priority instanceof \App\Enums\RequestPriority ? $request->priority->value : $request->priority;
     $allowedNext = $transitions[$statusVal] ?? [];
-    // Cán bộ không được thấy nút "Đã đóng" — chỉ trưởng phòng / admin
+    // Staff không tự đóng — chờ SV; cũng không tự gửi lại in_progress từ resolved (chỉ SV)
     if ($user['role'] === 'staff') {
-        $allowedNext = array_values(array_filter($allowedNext, fn ($s) => $s !== 'closed'));
+        $allowedNext = array_values(array_filter($allowedNext, fn ($s) => ! in_array($s, ['closed', 'in_progress'], true) || $statusVal !== 'resolved'));
+        if ($statusVal === 'resolved') {
+            $allowedNext = []; // chỉ chờ SV
+        }
+    }
+    // Head/admin khi resolved: có thể đóng giúp SV, không tự "xử lý lại"
+    if (in_array($user['role'], ['department_head', 'admin'], true) && $statusVal === 'resolved') {
+        $allowedNext = array_values(array_filter($allowedNext, fn ($s) => $s === 'closed'));
     }
     $isTerminal = in_array($statusVal, ['closed', 'cancelled'], true);
     $canChangeStatus = in_array($user['role'], ['staff', 'department_head', 'admin'], true);
     $canAssign = in_array($user['role'], ['department_head', 'admin'], true);
+    $needsAssign = $canChangeStatus && $request->assigned_to === null && ! $isTerminal;
+    // SV phản hồi khi resolved
+    $canStudentFeedback = $user['role'] === 'student'
+        && $request->student_id === $user['id']
+        && $statusVal === 'resolved';
     // Student chỉ hủy khi new/received; admin theo TRANSITIONS
     $canCancel = $user['role'] === 'admin'
         || ($user['role'] === 'student'
@@ -110,8 +122,45 @@
         <div class="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
             <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide">Thao tác</h3>
 
-            {{-- Change status --}}
-            @if($canChangeStatus && count($allowedNext) > 0)
+            {{-- Bắt buộc gán trước khi đổi trạng thái --}}
+            @if($needsAssign)
+                <div class="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                    <strong>Chưa gán cán bộ.</strong> Trưởng phòng / admin phải gán cán bộ trước khi đổi trạng thái.
+                </div>
+            @endif
+
+            @if($statusVal === 'resolved' && $user['role'] === 'staff')
+                <div class="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+                    Đã gửi cho sinh viên phản hồi. Chờ sinh viên xác nhận đóng hoặc yêu cầu xử lý lại.
+                </div>
+            @endif
+
+            {{-- Student feedback khi resolved --}}
+            @if($canStudentFeedback)
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-3">
+                    <p class="text-sm font-semibold text-emerald-900">Phản hồi kết quả xử lý</p>
+                    <p class="text-sm text-emerald-800">Cán bộ đã đánh dấu xử lý xong. Bạn xác nhận đã được giải quyết chưa?</p>
+                    <form method="POST" action="{{ route('requests.update-status', $request) }}" class="space-y-3">
+                        @csrf
+                        @method('PUT')
+                        <textarea name="note" rows="2" placeholder="Góp ý (tùy chọn)..."
+                                  class="w-full border border-emerald-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none bg-white"></textarea>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="submit" name="status" value="closed"
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition">
+                                Đã xử lý xong — Đóng yêu cầu
+                            </button>
+                            <button type="submit" name="status" value="in_progress"
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 transition">
+                                Chưa xong — Yêu cầu xử lý lại
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
+            {{-- Change status (staff/head/admin) — chỉ khi đã gán --}}
+            @if($canChangeStatus && count($allowedNext) > 0 && ! $needsAssign)
                 <div>
                     <p class="text-sm font-medium text-slate-700 mb-2">Đổi trạng thái</p>
                     <form method="POST" action="{{ route('requests.update-status', $request) }}" class="space-y-3">
@@ -125,7 +174,9 @@
                                         class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition border
                                                {{ $next === 'cancelled'
                                                    ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200'
-                                                   : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' }}">
+                                                   : ($next === 'resolved'
+                                                       ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200'
+                                                       : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200') }}">
                                     {{ $statusLabels[$next] ?? $next }}
                                 </button>
                             @endforeach
@@ -134,10 +185,10 @@
                 </div>
             @endif
 
-            {{-- Assign — mock staff (Module 1 chưa có) --}}
+            {{-- Assign — mock staff --}}
             @if($canAssign)
-                <div class="pt-4 border-t border-slate-100">
-                    <p class="text-sm font-medium text-slate-700 mb-2">Gán cán bộ xử lý</p>
+                <div class="{{ $canChangeStatus || $canStudentFeedback ? 'pt-4 border-t border-slate-100' : '' }}">
+                    <p class="text-sm font-medium text-slate-700 mb-2">Gán cán bộ xử lý @if($needsAssign)<span class="text-amber-600 font-normal">(bắt buộc trước)</span>@endif</p>
                     <p class="text-xs text-slate-400 mb-2">Module 1 chưa sẵn sàng — dùng danh sách cán bộ giả để test</p>
                     <form method="POST" action="{{ route('requests.assign', $request) }}" class="flex gap-2">
                         @csrf
@@ -148,6 +199,8 @@
                             <option value="21">#21 — Nguyễn Văn A (Cán bộ, Phòng Tài chính)</option>
                             <option value="22">#22 — Phạm Minh D (Cán bộ, Phòng Tài chính)</option>
                             <option value="23">#23 — Hoàng Thị E (Cán bộ, Phòng Đào tạo)</option>
+                            <option value="24">#24 — Trần Văn G (Cán bộ, Phòng CSVC)</option>
+                            <option value="25">#25 — Lê Thị H (Cán bộ, Phòng CSVC)</option>
                         </select>
                         <button type="submit"
                                 class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">

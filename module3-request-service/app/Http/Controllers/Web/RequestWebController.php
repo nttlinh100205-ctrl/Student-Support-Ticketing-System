@@ -10,10 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
 
-/**
- * UI Controller (Blade) — dùng chung RequestWorkflowService với API.
- * Auth giả lập qua Session để test không cần header (tiện cho trình duyệt).
- */
+
 class RequestWebController extends Controller
 {
     public function __construct(
@@ -21,7 +18,6 @@ class RequestWebController extends Controller
     ) {
     }
 
-    /** Lấy user giả từ session (mặc định student). */
     protected function currentUser(): array
     {
         return Session::get('fake_user', [
@@ -53,11 +49,7 @@ class RequestWebController extends Controller
             ->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")
             ->latest();
 
-        // Phân quyền xem danh sách:
-        // - student: chỉ yêu cầu của mình
-        // - staff: chỉ yêu cầu được gán cho mình (assigned_to)
-        // - department_head: tất cả yêu cầu của phòng ban
-        // - admin: tất cả yêu cầu
+        
         if ($user['role'] === 'student') {
             $query->where('student_id', $user['id']);
         } elseif ($user['role'] === 'staff') {
@@ -65,8 +57,7 @@ class RequestWebController extends Controller
         } elseif ($user['role'] === 'department_head') {
             $query->where('department_id', $user['department_id']);
         }
-        // admin: không filter
-
+       
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
         }
@@ -222,7 +213,7 @@ class RequestWebController extends Controller
             return back()->with('error', 'Bạn không có quyền sửa yêu cầu này.');
         }
 
-        // Chỉ title + content — không cho đổi phòng ban / loại hỗ trợ / priority
+      
         $data = $request->validate([
             'title' => 'required|string|min:10|max:255',
             'content' => 'required|string|min:20',
@@ -246,24 +237,34 @@ class RequestWebController extends Controller
     public function updateStatus(Request $request, SupportRequest $supportRequest)
     {
         $user = $this->currentUser();
-        if (! in_array($user['role'], ['staff', 'department_head', 'admin'], true)) {
-            return back()->with('error', 'Bạn không có quyền đổi trạng thái yêu cầu.');
-        }
-
         $data = $request->validate([
             'status' => 'required|in:new,received,in_progress,resolved,closed,cancelled',
             'note' => 'nullable|string|max:1000',
         ]);
 
-        // Chỉ trưởng phòng / admin được đóng yêu cầu (closed)
-        if ($data['status'] === 'closed' && $user['role'] === 'staff') {
-            return back()->with('error', 'Chỉ trưởng phòng hoặc admin được đóng yêu cầu.');
+        $toStatus = $data['status'];
+        $isOwner = $user['role'] === 'student' && $supportRequest->student_id === $user['id'];
+        $statusVal = $supportRequest->status instanceof RequestStatus
+            ? $supportRequest->status->value
+            : $supportRequest->status;
+
+        if ($user['role'] === 'student') {
+            if (! $isOwner) {
+                return back()->with('error', 'Bạn không có quyền đổi trạng thái yêu cầu này.');
+            }
+            if ($statusVal !== 'resolved' || ! in_array($toStatus, ['closed', 'in_progress'], true)) {
+                return back()->with('error', 'Sinh viên chỉ được xác nhận đóng hoặc yêu cầu xử lý lại khi đang chờ phản hồi.');
+            }
+        } elseif (! in_array($user['role'], ['staff', 'department_head', 'admin'], true)) {
+            return back()->with('error', 'Bạn không có quyền đổi trạng thái yêu cầu.');
+        } elseif ($toStatus === 'closed' && $user['role'] === 'staff') {
+            return back()->with('error', 'Cán bộ không tự đóng. Đánh dấu chờ phản hồi SV; sinh viên hoặc trưởng phòng sẽ xác nhận.');
         }
 
         try {
             $this->workflow->changeStatus(
                 $supportRequest,
-                $data['status'],
+                $toStatus,
                 $user['id'],
                 $data['note'] ?? null,
             );

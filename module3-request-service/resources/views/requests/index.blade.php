@@ -6,7 +6,7 @@
 @php
     $statusLabels = [
         'new' => 'Mới tạo', 'received' => 'Đã tiếp nhận', 'in_progress' => 'Đang xử lý',
-        'resolved' => 'Đã xử lý xong', 'closed' => 'Đã đóng', 'cancelled' => 'Đã hủy',
+        'resolved' => 'Chờ phản hồi SV', 'closed' => 'Đã đóng', 'cancelled' => 'Đã hủy',
     ];
     $statusColors = [
         'new' => 'bg-sky-50 text-sky-700 ring-sky-200',
@@ -23,10 +23,7 @@
         'high' => 'bg-orange-50 text-orange-700',
         'urgent' => 'bg-red-100 text-red-700 ring-1 ring-red-200',
     ];
-    $deptNames = [
-        1 => 'Phòng Đào tạo', 2 => 'Phòng Công tác Sinh viên', 3 => 'Phòng Tài chính – Kế toán',
-        4 => 'Thư viện', 5 => 'Trung tâm Hỗ trợ Sinh viên',
-    ];
+    $deptNames = config('master_data.departments', []);
 
     $allItems = $requests->getCollection();
     $urgentItems = $allItems->filter(function ($r) {

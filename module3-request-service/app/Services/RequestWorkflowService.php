@@ -8,22 +8,15 @@ use App\Models\SupportRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-/**
- * Toàn bộ business logic của Module 3 nằm ở đây (Controller mỏng).
- * State machine + ghi mốc thời gian (assigned_at / resolved_at / closed_at)
- * để Report và filter sau này không phải quét history.
- */
+
 class RequestWorkflowService
 {
-    /**
-     * NƠI DUY NHẤT định nghĩa luồng chuyển trạng thái.
-     * Thêm status mới: sửa const này + Enum — không đụng schema DB.
-     */
+    
     public const TRANSITIONS = [
         'new' => ['received', 'cancelled'],
         'received' => ['in_progress', 'cancelled'],
         'in_progress' => ['resolved', 'cancelled'],
-        'resolved' => ['closed'],
+        'resolved' => ['closed', 'in_progress'], // SV xác nhận đóng | SV yêu cầu xử lý lại
         'closed' => [],
         'cancelled' => [],
     ];
@@ -45,10 +38,7 @@ class RequestWorkflowService
         });
     }
 
-    /**
-     * Đổi trạng thái theo state machine.
-     * Đồng thời ghi mốc resolved_at / closed_at khi chuyển tới các status đó.
-     */
+    
     public function changeStatus(SupportRequest $request, string $toStatus, int $changedBy, ?string $note = null): SupportRequest
     {
         $from = $request->status->value;
@@ -60,15 +50,25 @@ class RequestWorkflowService
             ]);
         }
 
+        // Bắt buộc gán cán bộ trước khi đổi trạng thái (trừ khi hủy)
+        if ($toStatus !== RequestStatus::Cancelled->value && $request->assigned_to === null) {
+            throw ValidationException::withMessages([
+                'status' => 'Phải gán cán bộ xử lý trước khi đổi trạng thái.',
+            ]);
+        }
+
         return DB::transaction(function () use ($request, $from, $toStatus, $changedBy, $note) {
             $request->status = $toStatus;
 
-            // Ghi mốc thời gian — hỗ trợ Report không cần scan history
-            if ($toStatus === RequestStatus::Resolved->value && $request->resolved_at === null) {
+            if ($toStatus === RequestStatus::Resolved->value) {
                 $request->resolved_at = now();
             }
             if ($toStatus === RequestStatus::Closed->value && $request->closed_at === null) {
                 $request->closed_at = now();
+            }
+            // SV yêu cầu xử lý lại → reset mốc resolved để xử lý vòng mới
+            if ($from === RequestStatus::Resolved->value && $toStatus === RequestStatus::InProgress->value) {
+                $request->resolved_at = null;
             }
 
             $request->save();
@@ -79,12 +79,7 @@ class RequestWorkflowService
         });
     }
 
-    /**
-     * Gán cán bộ + ghi assigned_at.
-     * Không đổi status: gán ≠ tiếp nhận (rule B).
-     * Status chỉ đổi khi staff/head bấm chuyển trạng thái (new → received → …).
-     * → Sinh viên vẫn sửa được khi còn "Mới tạo", kể cả đã được gán cán bộ.
-     */
+   
     public function assign(SupportRequest $request, int $staffId, int $changedBy): SupportRequest
     {
         if (in_array($request->status->value, ['closed', 'cancelled'], true)) {
@@ -100,11 +95,7 @@ class RequestWorkflowService
         return $request;
     }
 
-    /**
-     * Hủy yêu cầu theo state machine.
-     * $asStudent = true → chỉ cho hủy khi status ∈ {new, received} (chưa vào in_progress).
-     * Admin / staff vẫn theo TRANSITIONS (có thể hủy cả in_progress).
-     */
+ 
     public function cancel(SupportRequest $request, int $changedBy, ?string $reason = null, bool $asStudent = false): SupportRequest
     {
         if ($asStudent && ! in_array($request->status->value, [
@@ -123,10 +114,7 @@ class RequestWorkflowService
         return $updated;
     }
 
-    /**
-     * Sửa nội dung yêu cầu — CHỈ khi trạng thái còn "new".
-     * Ghi history audit (from = to = new) kèm note.
-     */
+   
     public function update(SupportRequest $request, array $data, int $changedBy): SupportRequest
     {
         if ($request->status->value !== RequestStatus::New->value) {
@@ -138,8 +126,7 @@ class RequestWorkflowService
         return DB::transaction(function () use ($request, $data, $changedBy) {
             $status = RequestStatus::New->value;
 
-            // Chỉ cho sửa tiêu đề + nội dung.
-            // Không đổi department / support_type / priority → tránh lệch phòng ban đã gán cán bộ.
+         
             $request->fill([
                 'title' => $data['title'],
                 'content' => $data['content'],
@@ -158,10 +145,6 @@ class RequestWorkflowService
         });
     }
 
-    /**
-     * Xóa yêu cầu (soft delete) — CHỈ khi trạng thái còn "new".
-     * Đã tiếp nhận trở đi không được xóa (dùng hủy / đóng thay thế).
-     */
     public function delete(SupportRequest $request): void
     {
         if ($request->status->value !== RequestStatus::New->value) {
