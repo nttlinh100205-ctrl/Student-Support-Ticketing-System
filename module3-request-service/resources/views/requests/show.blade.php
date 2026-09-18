@@ -116,6 +116,21 @@
                     <strong>Lý do hủy:</strong> {{ $request->cancelled_reason }}
                 </div>
             @endif
+            @if($request->attachments && $request->attachments->isNotEmpty())
+                <div class="mt-5 pt-4 border-t border-slate-100">
+                    <h4 class="text-sm font-semibold text-slate-500 mb-3">Ảnh đính kèm ({{ $request->attachments->count() }})</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        @foreach($request->attachments as $att)
+                            <a href="{{ $att->url() }}" target="_blank" rel="noopener"
+                               class="group block rounded-lg overflow-hidden border border-slate-200 bg-slate-50 hover:border-indigo-300 transition">
+                                <img src="{{ $att->url() }}" alt="{{ $att->original_name }}"
+                                     class="w-full h-32 object-cover group-hover:opacity-90">
+                                <p class="px-2 py-1.5 text-xs text-slate-500 truncate">{{ $att->original_name }}</p>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
 
         @if(!$isTerminal)

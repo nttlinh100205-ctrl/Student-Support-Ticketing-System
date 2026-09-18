@@ -21,7 +21,8 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('requests.store') }}" class="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
+    <form method="POST" action="{{ route('requests.store') }}" enctype="multipart/form-data"
+          class="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
         @csrf
 
         <div>
@@ -84,6 +85,16 @@
             </div>
         </div>
 
+        {{-- Ảnh đính kèm — hiện khi chọn Phòng Cơ sở vật chất (id=6) --}}
+        <div id="attachments_block" class="hidden">
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                Ảnh đính kèm <span class="text-rose-500">*</span>
+            </label>
+            <p class="text-xs text-slate-500 mb-2">Phản ánh CSVC cần ảnh minh họa (tối đa 5 ảnh, mỗi ảnh ≤ 5MB: jpg, png, webp).</p>
+            <input type="file" name="attachments[]" id="attachments" accept="image/jpeg,image/png,image/webp,image/gif" multiple
+                   class="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 file:font-medium hover:file:bg-indigo-100">
+        </div>
+
         <div class="pt-2 flex gap-3">
             <button type="submit"
                     class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm">
@@ -107,6 +118,17 @@ function filterSupportTypes() {
         opt.hidden = !show;
         if (!show && opt.selected) opt.selected = false;
     });
+    // Phòng CSVC (id=6) → hiện upload ảnh
+    const block = document.getElementById('attachments_block');
+    const input = document.getElementById('attachments');
+    if (deptId === '6') {
+        block.classList.remove('hidden');
+        input.required = true;
+    } else {
+        block.classList.add('hidden');
+        input.required = false;
+        input.value = '';
+    }
 }
 document.addEventListener('DOMContentLoaded', filterSupportTypes);
 </script>

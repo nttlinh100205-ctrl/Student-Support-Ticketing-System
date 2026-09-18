@@ -15,6 +15,7 @@ use App\Services\RequestWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
+
 class RequestController extends Controller
 {
     public function __construct(
@@ -23,15 +24,14 @@ class RequestController extends Controller
     ) {
     }
 
-    
+  
     public function index(Request $request)
     {
-        // Khẩn cấp lên đầu: urgent > high > normal > low (MySQL FIELD)
+        
         $query = SupportRequest::query()
             ->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")
             ->latest();
 
-        // Phân quyền xem danh sách
         $role = $this->auth->role();
         if ($role === 'student') {
             $query->where('student_id', $this->auth->userId());
@@ -57,7 +57,6 @@ class RequestController extends Controller
             $query->where('assigned_to', (int) $request->query('assigned_to'));
         }
 
-        // Khoảng ngày tạo: from / to (Y-m-d)
         if ($request->filled('from')) {
             $query->whereDate('created_at', '>=', $request->query('from'));
         }
@@ -77,28 +76,37 @@ class RequestController extends Controller
         return ApiResponse::success(SupportRequestResource::collection($query->paginate(15)));
     }
 
-   
+    /** GET /api/requests/{supportRequest} */
     public function show(SupportRequest $supportRequest)
     {
         if (! $this->canView($supportRequest)) {
             return ApiResponse::error('Bạn không có quyền xem yêu cầu này.', 403);
         }
 
+        $supportRequest->load('attachments');
+
         return ApiResponse::success(new SupportRequestResource($supportRequest));
     }
 
+   
     public function store(StoreRequestRequest $request)
     {
         if ($this->auth->role() !== 'student') {
             return ApiResponse::error('Chỉ sinh viên được tạo yêu cầu hỗ trợ.', 403);
         }
 
-        $created = $this->workflow->create($request->validated(), $this->auth->userId());
+        $data = $request->safe()->except(['attachments']);
+        $files = $request->file('attachments', []) ?: [];
+        if (! is_array($files)) {
+            $files = [$files];
+        }
+
+        $created = $this->workflow->create($data, $this->auth->userId(), $files);
 
         return ApiResponse::success(new SupportRequestResource($created), status: 201);
     }
 
-   
+    
     public function update(UpdateRequestRequest $request, SupportRequest $supportRequest)
     {
         $isOwner = $this->auth->role() === 'student' && $supportRequest->student_id === $this->auth->userId();
@@ -120,6 +128,7 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($updated));
     }
 
+  
     public function updateStatus(UpdateStatusRequest $request, SupportRequest $supportRequest)
     {
         $role = $this->auth->role();
@@ -184,7 +193,7 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($updated));
     }
 
-    
+    /** PUT /api/requests/{supportRequest}/cancel */
     public function cancel(Request $request, SupportRequest $supportRequest)
     {
         $isOwner = $this->auth->role() === 'student' && $supportRequest->student_id === $this->auth->userId();
@@ -207,7 +216,6 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($updated));
     }
 
-   
     public function destroy(SupportRequest $supportRequest)
     {
         $isOwner = $this->auth->role() === 'student' && $supportRequest->student_id === $this->auth->userId();
@@ -234,7 +242,13 @@ class RequestController extends Controller
         return ApiResponse::success($supportRequest->statusHistories()->latest('id')->get());
     }
 
-   
+    /**
+     * Quyền xem chi tiết / lịch sử — đồng bộ với filter danh sách index:
+     * - student: chỉ yêu cầu của mình
+     * - staff: chỉ yêu cầu được gán cho mình
+     * - department_head: yêu cầu thuộc phòng ban mình
+     * - admin: tất cả
+     */
     protected function canView(SupportRequest $supportRequest): bool
     {
         return match ($this->auth->role()) {

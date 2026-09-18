@@ -26,6 +26,15 @@ class SupportRequestResource extends JsonResource
             'closed_at' => $this->closed_at?->toJSON(),
             'created_at' => $this->created_at?->toJSON(),
             'updated_at' => $this->updated_at?->toJSON(),
+            'attachments' => $this->whenLoaded('attachments', function () {
+                return $this->attachments->map(fn ($a) => [
+                    'id' => $a->id,
+                    'original_name' => $a->original_name,
+                    'url' => $a->url(),
+                    'mime_type' => $a->mime_type,
+                    'size' => $a->size,
+                ]);
+            }),
         ];
     }
 }

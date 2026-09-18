@@ -3,15 +3,17 @@
 namespace App\Services;
 
 use App\Enums\RequestStatus;
+use App\Models\RequestAttachment;
 use App\Models\RequestStatusHistory;
 use App\Models\SupportRequest;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 
 class RequestWorkflowService
 {
-    
+   
     public const TRANSITIONS = [
         'new' => ['received', 'cancelled'],
         'received' => ['in_progress', 'cancelled'],
@@ -21,24 +23,67 @@ class RequestWorkflowService
         'cancelled' => [],
     ];
 
-    public function create(array $data, int $studentId): SupportRequest
+    /**
+     * @param  array<int, UploadedFile>  $files
+     */
+    public function create(array $data, int $studentId, array $files = []): SupportRequest
     {
-        return DB::transaction(function () use ($data, $studentId) {
+        return DB::transaction(function () use ($data, $studentId, $files) {
+            $payload = collect($data)->only([
+                'department_id',
+                'support_type_id',
+                'title',
+                'content',
+                'priority',
+            ])->all();
+
             $request = SupportRequest::create([
-                ...$data,
+                ...$payload,
                 'student_id' => $studentId,
                 'status' => RequestStatus::New->value,
-                'priority' => $data['priority'] ?? 'normal',
+                'priority' => $payload['priority'] ?? 'normal',
                 'code' => $this->generateCode(),
             ]);
 
             $this->logHistory($request, null, RequestStatus::New->value, $studentId, null);
 
-            return $request;
+            $this->storeAttachments($request, $files);
+
+            return $request->load('attachments');
         });
     }
 
-    
+    /**
+     * Lưu file vào disk public: request-attachments/{request_id}/...
+     *
+     * @param  array<int, UploadedFile>  $files
+     */
+    public function storeAttachments(SupportRequest $request, array $files): void
+    {
+        foreach ($files as $file) {
+            if (! $file instanceof UploadedFile || ! $file->isValid()) {
+                continue;
+            }
+
+            $path = $file->store('request-attachments/'.$request->id, 'public');
+
+            RequestAttachment::create([
+                'request_id' => $request->id,
+                'original_name' => $file->getClientOriginalName(),
+                'path' => $path,
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize() ?: 0,
+            ]);
+        }
+    }
+
+    /**
+     * Đổi trạng thái theo state machine.
+     * - Phải đã gán cán bộ trước khi chuyển (trừ cancelled).
+     * - resolved = cán bộ xử lý xong, chờ SV phản hồi.
+     * - resolved → closed: SV xác nhận đã xong.
+     * - resolved → in_progress: SV báo chưa xong, cán bộ xử lý tiếp.
+     */
     public function changeStatus(SupportRequest $request, string $toStatus, int $changedBy, ?string $note = null): SupportRequest
     {
         $from = $request->status->value;
@@ -95,7 +140,7 @@ class RequestWorkflowService
         return $request;
     }
 
- 
+   
     public function cancel(SupportRequest $request, int $changedBy, ?string $reason = null, bool $asStudent = false): SupportRequest
     {
         if ($asStudent && ! in_array($request->status->value, [
@@ -114,7 +159,7 @@ class RequestWorkflowService
         return $updated;
     }
 
-   
+    
     public function update(SupportRequest $request, array $data, int $changedBy): SupportRequest
     {
         if ($request->status->value !== RequestStatus::New->value) {
@@ -126,7 +171,6 @@ class RequestWorkflowService
         return DB::transaction(function () use ($request, $data, $changedBy) {
             $status = RequestStatus::New->value;
 
-         
             $request->fill([
                 'title' => $data['title'],
                 'content' => $data['content'],
@@ -145,6 +189,10 @@ class RequestWorkflowService
         });
     }
 
+    /**
+     * Xóa yêu cầu (soft delete) — CHỈ khi trạng thái còn "new".
+     * Đã tiếp nhận trở đi không được xóa (dùng hủy / đóng thay thế).
+     */
     public function delete(SupportRequest $request): void
     {
         if ($request->status->value !== RequestStatus::New->value) {
@@ -171,7 +219,7 @@ class RequestWorkflowService
     protected function generateCode(): string
     {
         $year = now()->format('Y');
-        // withTrashed: không tái sử dụng số thứ tự của bản ghi đã soft-delete
+     
         $sequence = SupportRequest::withTrashed()->whereYear('created_at', $year)->count() + 1;
 
         return sprintf('YC-%s-%06d', $year, $sequence);

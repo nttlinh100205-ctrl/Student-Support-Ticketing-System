@@ -18,6 +18,7 @@ class RequestWebController extends Controller
     ) {
     }
 
+    /** Lấy user giả từ session (mặc định student). */
     protected function currentUser(): array
     {
         return Session::get('fake_user', [
@@ -49,7 +50,7 @@ class RequestWebController extends Controller
             ->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")
             ->latest();
 
-        
+      
         if ($user['role'] === 'student') {
             $query->where('student_id', $user['id']);
         } elseif ($user['role'] === 'staff') {
@@ -57,7 +58,8 @@ class RequestWebController extends Controller
         } elseif ($user['role'] === 'department_head') {
             $query->where('department_id', $user['department_id']);
         }
-       
+        // admin: không filter
+
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
         }
@@ -130,12 +132,16 @@ class RequestWebController extends Controller
             return back()->with('error', 'Chỉ sinh viên được tạo yêu cầu hỗ trợ.');
         }
 
+        $isFacilities = (int) $request->input('department_id') === 6;
+
         $data = $request->validate([
             'department_id' => 'required|integer',
             'support_type_id' => 'required|integer',
             'title' => 'required|string|min:10|max:255',
             'content' => 'required|string|min:20',
             'priority' => 'nullable|in:low,normal,high,urgent',
+            'attachments' => ($isFacilities ? 'required' : 'nullable').'|array|max:5',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,webp,gif|max:5120',
         ], [
             'title.required' => 'Vui lòng nhập tiêu đề yêu cầu.',
             'title.min' => 'Tiêu đề phải có ít nhất 10 ký tự.',
@@ -143,13 +149,23 @@ class RequestWebController extends Controller
             'content.min' => 'Nội dung phải có ít nhất 20 ký tự.',
             'department_id.required' => 'Vui lòng chọn phòng ban.',
             'support_type_id.required' => 'Vui lòng chọn loại hỗ trợ.',
+            'attachments.required' => 'Phản ánh Cơ sở vật chất cần đính kèm ít nhất 1 ảnh.',
+            'attachments.max' => 'Tối đa 5 ảnh đính kèm.',
+            'attachments.*.mimes' => 'Chỉ chấp nhận ảnh: jpg, jpeg, png, webp, gif.',
+            'attachments.*.max' => 'Mỗi ảnh tối đa 5MB.',
         ]);
 
         if (! $this->supportTypeBelongsToDepartment((int) $data['support_type_id'], (int) $data['department_id'])) {
             return back()->withInput()->with('error', 'Loại hỗ trợ không thuộc phòng ban đã chọn.');
         }
 
-        $created = $this->workflow->create($data, $user['id']);
+        $files = $request->file('attachments', []) ?: [];
+        if (! is_array($files)) {
+            $files = [$files];
+        }
+
+        unset($data['attachments']);
+        $created = $this->workflow->create($data, $user['id'], $files);
 
         return redirect()->route('requests.show', $created)
             ->with('success', 'Đã tạo yêu cầu thành công: '.$created->code);
@@ -165,6 +181,7 @@ class RequestWebController extends Controller
         }
 
         $histories = $supportRequest->statusHistories()->latest('id')->get();
+        $supportRequest->load('attachments');
 
         return view('requests.show', [
             'request' => $supportRequest,
@@ -213,7 +230,7 @@ class RequestWebController extends Controller
             return back()->with('error', 'Bạn không có quyền sửa yêu cầu này.');
         }
 
-      
+        // Chỉ title + content — không cho đổi phòng ban / loại hỗ trợ / priority
         $data = $request->validate([
             'title' => 'required|string|min:10|max:255',
             'content' => 'required|string|min:20',
