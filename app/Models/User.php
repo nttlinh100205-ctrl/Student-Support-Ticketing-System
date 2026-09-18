@@ -25,6 +25,7 @@ class User extends Authenticatable
         'phone',
         'role',
         'status',
+        'department_id',
     ];
 
     /**
@@ -48,5 +49,16 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Phòng ban mà tài khoản thuộc về.
+     */
+    public function department()
+    {
+        return $this->belongsTo(
+            SupportDepartment::class,
+            'department_id'
+        );
     }
 }
