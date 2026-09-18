@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Route;
  *
  */
 
+
 /**
  * ============================================================
  * ĐĂNG KÝ + ĐĂNG NHẬP
@@ -78,19 +79,16 @@ Route::middleware('auth:sanctum')
     ->prefix('v1/profile')
     ->group(function () {
 
-        // Xem hồ sơ cá nhân
         Route::get('/', [
             ProfileController::class,
             'show'
         ]);
 
-        // Cập nhật họ tên, email, số điện thoại
         Route::put('/', [
             ProfileController::class,
             'update'
         ]);
 
-        // Đổi mật khẩu
         Route::put('/password', [
             ProfileController::class,
             'updatePassword'
@@ -106,13 +104,6 @@ Route::middleware('auth:sanctum')
  * Bắt buộc:
  * 1. Có Sanctum token
  * 2. Role = ADMIN
- *
- * Các chức năng:
- * - Kiểm tra quyền ADMIN
- * - Xem danh sách tài khoản
- * - Xem chi tiết tài khoản
- * - Thay đổi quyền
- * - Khóa / mở khóa tài khoản
  *
  */
 Route::middleware(['auth:sanctum', 'role:ADMIN'])
@@ -130,7 +121,6 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
 
         /**
          * Danh sách tất cả tài khoản
-         * GET /api/v1/admin/users
          */
         Route::get('/users', [
             AdminUserController::class,
@@ -139,7 +129,6 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
 
         /**
          * Xem chi tiết một tài khoản
-         * GET /api/v1/admin/users/{user}
          */
         Route::get('/users/{user}', [
             AdminUserController::class,
@@ -147,8 +136,7 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
         ]);
 
         /**
-         * Thay đổi quyền
-         * PUT /api/v1/admin/users/{user}/role
+         * Thay đổi quyền và phòng ban
          */
         Route::put('/users/{user}/role', [
             AdminUserController::class,
@@ -157,7 +145,6 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
 
         /**
          * Khóa / mở khóa tài khoản
-         * PUT /api/v1/admin/users/{user}/status
          */
         Route::put('/users/{user}/status', [
             AdminUserController::class,
@@ -168,52 +155,115 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
 
 /**
  * ============================================================
- * MODULE REQUEST / HỖ TRỢ SINH VIÊN - CODE CŨ
+ * MODULE REQUEST / HỖ TRỢ SINH VIÊN
  * ============================================================
  *
- * Middleware 'auth.fake' hiện tại vẫn được giữ nguyên.
- * Sau khi hoàn thành phần xác thực thật, chúng ta sẽ thay
- * auth.fake bằng middleware xác thực thật.
+ * Sử dụng Sanctum để xác thực tài khoản thật.
  *
- * Header hiện tại:
- * X-User-Id
- * X-User-Role
+ * User thật được lấy từ:
+ * Authorization: Bearer <token>
+ *
+ * AuthContext sẽ lấy:
+ * - user_id
+ * - role
+ * - department_id
+ * - email
+ * - full_name
+ *
+ * Role:
+ * - student
+ * - staff
+ * - department_head
+ * - admin
  *
  */
-Route::middleware('auth.fake')
+Route::middleware('auth:sanctum')
     ->prefix('requests')
     ->group(function () {
 
+        /**
+         * GET /api/requests
+         *
+         * Student:
+         *   chỉ thấy request của mình
+         *
+         * Staff:
+         *   chỉ thấy request được giao cho mình
+         *
+         * Department Head:
+         *   thấy request thuộc phòng mình
+         *
+         * Admin:
+         *   thấy tất cả
+         */
         Route::get('/', [
             RequestController::class,
             'index'
         ]);
 
+        /**
+         * POST /api/requests
+         *
+         * Chỉ STUDENT được tạo request.
+         */
         Route::post('/', [
             RequestController::class,
             'store'
         ]);
 
+        /**
+         * GET /api/requests/{supportRequest}
+         *
+         * Xem chi tiết request.
+         *
+         * Quyền truy cập chi tiết sẽ được kiểm tra
+         * trong RequestController.
+         */
         Route::get('/{supportRequest}', [
             RequestController::class,
             'show'
         ]);
 
+        /**
+         * PUT /api/requests/{supportRequest}/status
+         *
+         * Staff / Department Head / Admin được xử lý
+         * trạng thái theo quyền nghiệp vụ.
+         */
         Route::put('/{supportRequest}/status', [
             RequestController::class,
             'updateStatus'
         ]);
 
+        /**
+         * PUT /api/requests/{supportRequest}/assign
+         *
+         * Department Head / Admin được phân công STAFF.
+         */
         Route::put('/{supportRequest}/assign', [
             RequestController::class,
             'assign'
         ]);
 
+        /**
+         * PUT /api/requests/{supportRequest}/cancel
+         *
+         * Student:
+         *   chỉ được hủy request của chính mình
+         *
+         * Admin:
+         *   được hủy request.
+         */
         Route::put('/{supportRequest}/cancel', [
             RequestController::class,
             'cancel'
         ]);
 
+        /**
+         * GET /api/requests/{supportRequest}/history
+         *
+         * Xem lịch sử thay đổi trạng thái.
+         */
         Route::get('/{supportRequest}/history', [
             RequestController::class,
             'history'
