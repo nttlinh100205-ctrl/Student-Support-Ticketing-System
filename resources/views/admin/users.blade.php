@@ -54,6 +54,11 @@
                 Quản lý tài khoản
             </h2>
 
+            <p>
+                Quản lý vai trò, phòng ban và trạng thái tài khoản
+                trong hệ thống Student Support.
+            </p>
+
             <div id="message"></div>
 
             <div class="table-container">
@@ -73,6 +78,8 @@
                             <th>Điện thoại</th>
 
                             <th>Role</th>
+
+                            <th>Phòng ban</th>
 
                             <th>Status</th>
 
@@ -101,21 +108,285 @@
 <script>
 
 const token =
-    localStorage.getItem(
-        'access_token'
-    );
+    localStorage.getItem('access_token');
+
+let currentAdminId = null;
 
 
+/*
+ * Danh sách phòng ban hiện tại.
+ *
+ * Hiện hệ thống của bạn đang có:
+ * ID 1 - SUPPORT - Phòng Hỗ trợ Sinh viên
+ *
+ * Khi sau này có API quản lý phòng ban,
+ * danh sách này có thể chuyển sang tải
+ * động từ backend.
+ */
+const departments = [
+    {
+        id: 1,
+        name: 'Phòng Hỗ trợ Sinh viên',
+        code: 'SUPPORT'
+    }
+];
+
+
+/*
+ * Nếu không có token
+ */
 if (!token) {
 
-    window.location.href =
-        '/login';
+    window.location.href = '/login';
 
 }
 
 
 /*
- * Kiểm tra Admin
+ * Hiển thị thông báo
+ */
+function showMessage(message, type = '') {
+
+    const element =
+        document.getElementById('message');
+
+    element.className =
+        type ? `message ${type}` : 'message';
+
+    element.textContent =
+        message;
+
+}
+
+
+/*
+ * Tạo danh sách Role
+ */
+function getRoleOptions(selectedRole, disabled) {
+
+    const roles = [
+        'ADMIN',
+        'DEPARTMENT_HEAD',
+        'STAFF',
+        'STUDENT'
+    ];
+
+    return roles.map(function(role) {
+
+        return `
+            <option
+                value="${role}"
+                ${selectedRole === role ? 'selected' : ''}
+                ${disabled ? 'disabled' : ''}>
+
+                ${role}
+
+            </option>
+        `;
+
+    }).join('');
+
+}
+
+
+/*
+ * Tạo danh sách phòng ban
+ */
+function getDepartmentOptions(
+    selectedDepartmentId,
+    selectedRole,
+    disabled
+) {
+
+    const departmentDisabled =
+        disabled ||
+        selectedRole === 'ADMIN' ||
+        selectedRole === 'STUDENT';
+
+
+    let html = `
+
+        <option value="">
+            Không thuộc phòng ban
+        </option>
+
+    `;
+
+
+    departments.forEach(function(department) {
+
+        html += `
+
+            <option
+                value="${department.id}"
+                ${
+                    Number(selectedDepartmentId) ===
+                    Number(department.id)
+                        ? 'selected'
+                        : ''
+                }>
+
+                ${department.name}
+                (${department.code})
+
+            </option>
+
+        `;
+
+    });
+
+
+    /*
+     * Khi ADMIN hoặc STUDENT,
+     * bắt buộc không thuộc phòng ban.
+     */
+    if (
+        selectedRole === 'ADMIN' ||
+        selectedRole === 'STUDENT'
+    ) {
+
+        html = `
+
+            <option value="" selected>
+                Không thuộc phòng ban
+            </option>
+
+        `;
+
+    }
+
+
+    return `
+        <select
+            id="department-${arguments[0]}"
+            ${departmentDisabled ? 'disabled' : ''}
+            onchange="
+                handleRoleChange(
+                    ${arguments[0]},
+                    this
+                )
+            ">
+
+            ${html}
+
+        </select>
+    `;
+}
+
+
+/*
+ * Bản an toàn hơn để tạo select phòng ban.
+ */
+function createDepartmentSelect(
+    userId,
+    selectedDepartmentId,
+    selectedRole,
+    disabled
+) {
+
+    const departmentDisabled =
+        disabled ||
+        selectedRole === 'ADMIN' ||
+        selectedRole === 'STUDENT';
+
+
+    let options = `
+        <option value="">
+            Không thuộc phòng ban
+        </option>
+    `;
+
+
+    if (
+        selectedRole !== 'ADMIN' &&
+        selectedRole !== 'STUDENT'
+    ) {
+
+        departments.forEach(function(department) {
+
+            const selected =
+                Number(selectedDepartmentId) ===
+                Number(department.id)
+                    ? 'selected'
+                    : '';
+
+            options += `
+                <option
+                    value="${department.id}"
+                    ${selected}>
+
+                    ${department.name}
+                    (${department.code})
+
+                </option>
+            `;
+
+        });
+
+    }
+
+
+    return `
+        <select
+            id="department-${userId}"
+            ${departmentDisabled ? 'disabled' : ''}>
+
+            ${options}
+
+        </select>
+    `;
+
+}
+
+
+/*
+ * Khi đổi Role trong giao diện
+ *
+ * ADMIN và STUDENT:
+ *    không có phòng ban
+ *
+ * DEPARTMENT_HEAD và STAFF:
+ *    có thể chọn phòng ban
+ */
+function handleRoleChange(
+    userId,
+    selectElement
+) {
+
+    const role =
+        selectElement.value;
+
+    const departmentSelect =
+        document.getElementById(
+            `department-${userId}`
+        );
+
+
+    if (!departmentSelect) {
+        return;
+    }
+
+
+    if (
+        role === 'ADMIN' ||
+        role === 'STUDENT'
+    ) {
+
+        departmentSelect.value = '';
+
+        departmentSelect.disabled = true;
+
+    } else {
+
+        departmentSelect.disabled = false;
+
+    }
+
+}
+
+
+/*
+ * Kiểm tra tài khoản hiện tại có phải ADMIN không
  */
 async function checkAdmin() {
 
@@ -154,7 +425,10 @@ async function checkAdmin() {
             await response.json();
 
 
-        if (data.user.role !== 'ADMIN') {
+        if (
+            !data.user ||
+            data.user.role !== 'ADMIN'
+        ) {
 
             alert(
                 'Bạn không có quyền truy cập trang ADMIN.'
@@ -166,6 +440,10 @@ async function checkAdmin() {
             return false;
 
         }
+
+
+        currentAdminId =
+            Number(data.user.id);
 
 
         return true;
@@ -186,7 +464,7 @@ async function checkAdmin() {
 
 
 /*
- * Tải danh sách User
+ * Tải danh sách tài khoản
  */
 async function loadUsers() {
 
@@ -239,6 +517,19 @@ async function loadUsers() {
             await response.json();
 
 
+        if (!response.ok) {
+
+            showMessage(
+                data.message ||
+                'Không thể tải danh sách tài khoản.',
+                'error'
+            );
+
+            return;
+
+        }
+
+
         const tbody =
             document.getElementById(
                 'userTable'
@@ -248,119 +539,141 @@ async function loadUsers() {
         tbody.innerHTML = '';
 
 
-        data.data.data.forEach(
-            function(user) {
-
-                const row =
-                    document.createElement(
-                        'tr'
-                    );
+        const users =
+            data.data?.data || [];
 
 
-                const statusButton =
-                    user.status === 'ACTIVE'
-                        ? 'Khóa'
-                        : 'Mở khóa';
+        users.forEach(function(user) {
+
+            const row =
+                document.createElement('tr');
 
 
-                const nextStatus =
-                    user.status === 'ACTIVE'
-                        ? 'LOCKED'
-                        : 'ACTIVE';
+            const isCurrentAdmin =
+                Number(user.id) ===
+                Number(currentAdminId);
 
 
-                row.innerHTML = `
-
-                    <td>
-                        ${user.id}
-                    </td>
-
-                    <td>
-                        ${user.name}
-                    </td>
-
-                    <td>
-                        ${user.email}
-                    </td>
-
-                    <td>
-                        ${user.phone || ''}
-                    </td>
-
-                    <td>
-
-                        <select
-                            onchange="
-                                changeRole(
-                                    ${user.id},
-                                    this.value
-                                )
-                            ">
-
-                            <option
-                                value="STUDENT"
-                                ${user.role === 'STUDENT'
-                                    ? 'selected'
-                                    : ''}>
-                                STUDENT
-                            </option>
-
-                            <option
-                                value="STAFF"
-                                ${user.role === 'STAFF'
-                                    ? 'selected'
-                                    : ''}>
-                                STAFF
-                            </option>
-
-                            <option
-                                value="ADMIN"
-                                ${user.role === 'ADMIN'
-                                    ? 'selected'
-                                    : ''}>
-                                ADMIN
-                            </option>
-
-                        </select>
-
-                    </td>
-
-                    <td>
-                        ${user.status}
-                    </td>
-
-                    <td>
-
-                        <button
-                            class="btn-small"
-                            onclick="
-                                changeStatus(
-                                    ${user.id},
-                                    '${nextStatus}'
-                                )
-                            ">
-
-                            ${statusButton}
-
-                        </button>
-
-                    </td>
-
-                `;
+            const statusButtonText =
+                user.status === 'ACTIVE'
+                    ? 'Khóa'
+                    : 'Mở khóa';
 
 
-                tbody.appendChild(row);
+            const nextStatus =
+                user.status === 'ACTIVE'
+                    ? 'LOCKED'
+                    : 'ACTIVE';
 
-            }
-        );
+
+            const roleDisabled =
+                isCurrentAdmin;
+
+
+            const statusDisabled =
+                isCurrentAdmin;
+
+
+            row.innerHTML = `
+
+                <td>
+                    ${user.id}
+                </td>
+
+                <td>
+                    ${user.name || ''}
+                </td>
+
+                <td>
+                    ${user.email || ''}
+                </td>
+
+                <td>
+                    ${user.phone || ''}
+                </td>
+
+                <td>
+
+                    <select
+                        id="role-${user.id}"
+                        onchange="
+                            handleRoleChange(
+                                ${user.id},
+                                this
+                            )
+                        "
+                        ${roleDisabled ? 'disabled' : ''}>
+
+                        ${getRoleOptions(
+                            user.role,
+                            false
+                        )}
+
+                    </select>
+
+                </td>
+
+                <td>
+
+                    ${createDepartmentSelect(
+                        user.id,
+                        user.department_id,
+                        user.role,
+                        isCurrentAdmin
+                    )}
+
+                </td>
+
+                <td>
+                    ${user.status}
+                </td>
+
+                <td>
+
+                    <button
+                        class="btn-small"
+                        onclick="
+                            changeRole(
+                                ${user.id}
+                            )
+                        "
+                        ${roleDisabled ? 'disabled' : ''}>
+
+                        Lưu quyền
+
+                    </button>
+
+
+                    <button
+                        class="btn-small"
+                        onclick="
+                            changeStatus(
+                                ${user.id},
+                                '${nextStatus}'
+                            )
+                        "
+                        ${statusDisabled ? 'disabled' : ''}>
+
+                        ${statusButtonText}
+
+                    </button>
+
+                </td>
+
+            `;
+
+
+            tbody.appendChild(row);
+
+        });
 
 
     } catch (error) {
 
-        document.getElementById(
-            'message'
-        ).textContent =
-            'Không thể tải danh sách tài khoản.';
+        showMessage(
+            'Không thể tải danh sách tài khoản.',
+            'error'
+        );
 
     }
 
@@ -368,12 +681,78 @@ async function loadUsers() {
 
 
 /*
- * Đổi Role
+ * Thay đổi Role + Phòng ban
  */
-async function changeRole(
-    userId,
-    role
-) {
+async function changeRole(userId) {
+
+    const roleSelect =
+        document.getElementById(
+            `role-${userId}`
+        );
+
+
+    const departmentSelect =
+        document.getElementById(
+            `department-${userId}`
+        );
+
+
+    if (!roleSelect) {
+
+        showMessage(
+            'Không tìm thấy Role.',
+            'error'
+        );
+
+        return;
+
+    }
+
+
+    const role =
+        roleSelect.value;
+
+
+    let departmentId =
+        departmentSelect
+            ? departmentSelect.value
+            : '';
+
+
+    /*
+     * ADMIN và STUDENT không thuộc phòng ban
+     */
+    if (
+        role === 'ADMIN' ||
+        role === 'STUDENT'
+    ) {
+
+        departmentId = '';
+
+    }
+
+
+    /*
+     * DEPARTMENT_HEAD và STAFF
+     * bắt buộc phải có phòng ban
+     */
+    if (
+        (
+            role === 'DEPARTMENT_HEAD' ||
+            role === 'STAFF'
+        ) &&
+        !departmentId
+    ) {
+
+        showMessage(
+            'DEPARTMENT_HEAD và STAFF phải được gán phòng ban.',
+            'error'
+        );
+
+        return;
+
+    }
+
 
     try {
 
@@ -395,7 +774,14 @@ async function changeRole(
                     },
 
                     body: JSON.stringify({
-                        role: role
+
+                        role: role,
+
+                        department_id:
+                            departmentId
+                                ? Number(departmentId)
+                                : null
+
                     })
                 }
             );
@@ -405,42 +791,36 @@ async function changeRole(
             await response.json();
 
 
-        const message =
-            document.getElementById(
-                'message'
-            );
-
-
         if (!response.ok) {
 
-            message.className =
-                'message error';
-
-            message.textContent =
+            showMessage(
                 data.message ||
-                'Không thể thay đổi role.';
+                'Không thể thay đổi quyền tài khoản.',
+                'error'
+            );
 
-            loadUsers();
+            await loadUsers();
 
             return;
 
         }
 
 
-        message.className =
-            'message success';
+        showMessage(
+            data.message ||
+            'Thay đổi quyền tài khoản thành công.',
+            'success'
+        );
 
-        message.textContent =
-            data.message;
 
-
-        loadUsers();
+        await loadUsers();
 
 
     } catch (error) {
 
-        alert(
-            'Không thể kết nối đến máy chủ.'
+        showMessage(
+            'Không thể kết nối đến máy chủ.',
+            'error'
         );
 
     }
@@ -486,40 +866,34 @@ async function changeStatus(
             await response.json();
 
 
-        const message =
-            document.getElementById(
-                'message'
-            );
-
-
         if (!response.ok) {
 
-            message.className =
-                'message error';
-
-            message.textContent =
+            showMessage(
                 data.message ||
-                'Không thể cập nhật trạng thái.';
+                'Không thể cập nhật trạng thái tài khoản.',
+                'error'
+            );
 
             return;
 
         }
 
 
-        message.className =
-            'message success';
+        showMessage(
+            data.message ||
+            'Cập nhật trạng thái tài khoản thành công.',
+            'success'
+        );
 
-        message.textContent =
-            data.message;
 
-
-        loadUsers();
+        await loadUsers();
 
 
     } catch (error) {
 
-        alert(
-            'Không thể kết nối đến máy chủ.'
+        showMessage(
+            'Không thể kết nối đến máy chủ.',
+            'error'
         );
 
     }
@@ -586,4 +960,5 @@ document
 </script>
 
 </body>
+
 </html>
