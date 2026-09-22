@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SupportTypeResource;
+use App\Models\SupportRequest;
 use App\Models\SupportType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -328,6 +329,39 @@ class SupportTypeController extends Controller
                         $supportType
                     )
                 )->resolve($request),
+        ]);
+    }
+
+    /**
+     * Xóa loại hỗ trợ.
+     *
+     * Không cho xóa nếu loại hỗ trợ
+     * đã được sử dụng bởi yêu cầu hỗ trợ.
+     */
+    public function destroy(
+        SupportType $supportType
+    ): JsonResponse {
+        /*
+         * Nếu bảng requests đang sử dụng support_type_id
+         * thì không cho xóa để tránh mất liên kết lịch sử.
+         */
+        if (
+            SupportRequest::query()
+                ->where(
+                    'support_type_id',
+                    $supportType->id
+                )
+                ->exists()
+        ) {
+            return response()->json([
+                'message' => 'Không thể xóa loại hỗ trợ vì đã có yêu cầu sử dụng loại hỗ trợ này.',
+            ], 422);
+        }
+
+        $supportType->delete();
+
+        return response()->json([
+            'message' => 'Xóa loại hỗ trợ thành công.',
         ]);
     }
 }

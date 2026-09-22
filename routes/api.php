@@ -8,13 +8,11 @@ use App\Http\Controllers\Api\SupportDepartmentController;
 use App\Http\Controllers\Api\SupportTypeController;
 use Illuminate\Support\Facades\Route;
 
-
 /*
 |--------------------------------------------------------------------------
 | MODULE 1 - TÀI KHOẢN VÀ QUYỀN TRUY CẬP
 |--------------------------------------------------------------------------
 */
-
 
 // ============================================================
 // ĐĂNG KÝ + ĐĂNG NHẬP
@@ -25,16 +23,15 @@ Route::prefix('v1/auth')->group(function () {
 
     Route::post('/register', [
         AuthController::class,
-        'register'
+        'register',
     ]);
 
     Route::post('/login', [
         AuthController::class,
-        'login'
+        'login',
     ]);
 
 });
-
 
 // ============================================================
 // LOGOUT + THÔNG TIN TÀI KHOẢN HIỆN TẠI
@@ -47,16 +44,15 @@ Route::middleware('auth:sanctum')
 
         Route::post('/logout', [
             AuthController::class,
-            'logout'
+            'logout',
         ]);
 
         Route::get('/me', [
             AuthController::class,
-            'me'
+            'me',
         ]);
 
     });
-
 
 // ============================================================
 // HỒ SƠ CÁ NHÂN
@@ -68,21 +64,20 @@ Route::middleware('auth:sanctum')
 
         Route::get('/', [
             ProfileController::class,
-            'show'
+            'show',
         ]);
 
         Route::put('/', [
             ProfileController::class,
-            'update'
+            'update',
         ]);
 
         Route::put('/password', [
             ProfileController::class,
-            'updatePassword'
+            'updatePassword',
         ]);
 
     });
-
 
 // ============================================================
 // QUẢN LÝ TÀI KHOẢN - CHỈ ADMIN
@@ -90,7 +85,7 @@ Route::middleware('auth:sanctum')
 
 Route::middleware([
     'auth:sanctum',
-    'role:ADMIN'
+    'role:ADMIN',
 ])
     ->prefix('v1/admin')
     ->group(function () {
@@ -99,42 +94,36 @@ Route::middleware([
         Route::get('/test', function () {
 
             return response()->json([
-                'message' =>
-                    'Ban la ADMIN va co quyen truy cap.'
+                'message' => 'Ban la ADMIN va co quyen truy cap.',
             ]);
 
         });
 
-
         // Danh sách tài khoản
         Route::get('/users', [
             AdminUserController::class,
-            'index'
+            'index',
         ]);
-
 
         // Chi tiết tài khoản
         Route::get('/users/{user}', [
             AdminUserController::class,
-            'show'
+            'show',
         ]);
-
 
         // Thay đổi role + phòng ban
         Route::put('/users/{user}/role', [
             AdminUserController::class,
-            'updateRole'
+            'updateRole',
         ]);
-
 
         // Khóa / mở khóa
         Route::put('/users/{user}/status', [
             AdminUserController::class,
-            'updateStatus'
+            'updateStatus',
         ]);
 
     });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -149,53 +138,46 @@ Route::middleware('auth:sanctum')
         // Danh sách yêu cầu
         Route::get('/', [
             RequestController::class,
-            'index'
+            'index',
         ]);
-
 
         // Tạo yêu cầu
         Route::post('/', [
             RequestController::class,
-            'store'
+            'store',
         ]);
-
 
         // Chi tiết yêu cầu
         Route::get('/{supportRequest}', [
             RequestController::class,
-            'show'
+            'show',
         ]);
-
 
         // Cập nhật trạng thái
         Route::put('/{supportRequest}/status', [
             RequestController::class,
-            'updateStatus'
+            'updateStatus',
         ]);
-
 
         // Phân công cán bộ
         Route::put('/{supportRequest}/assign', [
             RequestController::class,
-            'assign'
+            'assign',
         ]);
-
 
         // Hủy yêu cầu
         Route::put('/{supportRequest}/cancel', [
             RequestController::class,
-            'cancel'
+            'cancel',
         ]);
-
 
         // Lịch sử yêu cầu
         Route::get('/{supportRequest}/history', [
             RequestController::class,
-            'history'
+            'history',
         ]);
 
     });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -213,7 +195,7 @@ Route::middleware('auth:sanctum')
 
 Route::middleware([
     'auth:sanctum',
-    'role:ADMIN'
+    'role:ADMIN',
 ])
     ->prefix('v1/admin')
     ->group(function () {
@@ -227,37 +209,38 @@ Route::middleware([
         // Danh sách phòng ban
         Route::get('/departments', [
             SupportDepartmentController::class,
-            'index'
+            'index',
         ]);
-
 
         // Thêm phòng ban
         Route::post('/departments', [
             SupportDepartmentController::class,
-            'store'
+            'store',
         ]);
-
 
         // Chi tiết phòng ban
         Route::get('/departments/{department}', [
             SupportDepartmentController::class,
-            'show'
+            'show',
         ]);
-
 
         // Cập nhật phòng ban
         Route::put('/departments/{department}', [
             SupportDepartmentController::class,
-            'update'
+            'update',
         ]);
-
 
         // Danh sách cán bộ thuộc phòng ban
         Route::get('/departments/{department}/staff', [
             SupportDepartmentController::class,
-            'staff'
+            'staff',
         ]);
 
+        // Xóa phòng ban
+        Route::delete('/departments/{department}', [
+            SupportDepartmentController::class,
+            'destroy',
+        ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -268,33 +251,30 @@ Route::middleware([
         // Danh sách loại hỗ trợ
         Route::get('/support-types', [
             SupportTypeController::class,
-            'index'
+            'index',
         ]);
-
 
         // Thêm loại hỗ trợ
         Route::post('/support-types', [
             SupportTypeController::class,
-            'store'
+            'store',
         ]);
-
 
         // Chi tiết loại hỗ trợ
         Route::get('/support-types/{supportType}', [
             SupportTypeController::class,
-            'show'
+            'show',
         ]);
-
 
         // Cập nhật loại hỗ trợ
         Route::put('/support-types/{supportType}', [
             SupportTypeController::class,
-            'update'
+            'update',
         ]);
 
-        Route::delete('/departments/{department}', [
-    SupportDepartmentController::class,
-    'destroy'
-]);
-
+        // Xóa loại hỗ trợ
+        Route::delete('/support-types/{supportType}', [
+            SupportTypeController::class,
+            'destroy',
+        ]);
     });
