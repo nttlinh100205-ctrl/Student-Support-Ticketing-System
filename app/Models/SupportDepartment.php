@@ -45,4 +45,9 @@ class SupportDepartment extends Model
         return $this->hasMany(User::class, 'department_id')
             ->where('role', 'DEPARTMENT_HEAD');
     }
+
+    public function supportTypes()
+    {
+        return $this->hasMany(SupportType::class, 'department_id');
+    }
 }

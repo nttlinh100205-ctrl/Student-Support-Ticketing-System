@@ -52,3 +52,18 @@ Route::get('/profile', function () {
 Route::get('/admin/users', function () {
     return view('admin.users');
 })->name('admin.users');
+
+
+// Giao diện quản lý phòng ban.
+// Dữ liệu được lấy qua API có xác thực và kiểm tra quyền ADMIN.
+Route::view('/admin/departments', 'admin.departments')
+    ->name('admin.departments');
+
+
+    Route::get('/admin/support-types', function () {
+    return view('admin.support-types');
+})->name('admin.support-types');
+
+Route::get('/admin/department-staff', function () {
+    return view('admin.department-staff');
+})->name('admin.department-staff');
