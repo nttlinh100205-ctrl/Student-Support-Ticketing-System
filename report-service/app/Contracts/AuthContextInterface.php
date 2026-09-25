@@ -2,7 +2,7 @@
 
 namespace App\Contracts;
 
-interface AuthContext
+interface AuthContextInterface
 {
     public function userId(): ?int;
 

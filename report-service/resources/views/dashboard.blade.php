@@ -3,24 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Báo Cáo & Đánh Giá - Module 5</title>
+    <title>Báo cáo &amp; Đánh giá — Hệ thống Hỗ trợ Sinh viên</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg: #0b0f19;
-            --card-bg: rgba(23, 32, 54, 0.7);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --primary: #3b82f6;
-            --primary-glow: rgba(59, 130, 246, 0.3);
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --sidebar-bg: #0f172a;
+            --paper: #f6f3ec;
+            --panel: #fbf9f4;
+            --ink: #1c2436;
+            --ink-soft: #5a6274;
+            --rule: #ddd6c4;
+            --rule-soft: #e8e2d2;
+            --brass: #8a6a34;
+            --brass-dark: #6d5228;
+            --sage: #4c6e52;
+            --sage-bg: rgba(76, 110, 82, 0.1);
+            --clay: #a15a22;
+            --clay-bg: rgba(161, 90, 34, 0.1);
+            --indigo: #37517a;
+            --indigo-bg: rgba(55, 81, 122, 0.1);
+            --rose: #99493f;
+            --rose-bg: rgba(153, 73, 63, 0.1);
+            --gold: #a9781f;
         }
 
         * {
@@ -30,19 +36,25 @@
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
+            font-family: 'IBM Plex Sans', sans-serif;
+            background-color: var(--paper);
+            color: var(--ink);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
+        h1, h2, h3, .headline {
+            font-family: 'Source Serif 4', serif;
+        }
+
+        a { color: inherit; }
+
+        /* ---------- Masthead ---------- */
         header {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--card-border);
-            padding: 1rem 2rem;
+            background: var(--panel);
+            border-bottom: 2px solid var(--ink);
+            padding: 0.95rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -51,66 +63,153 @@
             z-index: 50;
         }
 
-        .logo-group {
+        .brand {
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
-        .badge-module {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            padding: 4px 10px;
-            border-radius: 9999px;
-            font-size: 0.75rem;
+        .brand-mark {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: var(--ink);
+            color: var(--paper);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Source Serif 4', serif;
             font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            font-size: 1rem;
+            flex-shrink: 0;
         }
 
-        .user-switcher {
+        .brand-text .system-name {
+            font-size: 0.72rem;
+            color: var(--ink-soft);
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .brand-text h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--ink);
+            line-height: 1.3;
+        }
+
+        /* Account switcher, styled as a real "signed in as" chip */
+        .account-switcher {
+            position: relative;
             display: flex;
             align-items: center;
-            gap: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 6px 14px;
-            border-radius: 12px;
-            border: 1px solid var(--card-border);
+            gap: 10px;
+            border: 1px solid var(--rule);
+            border-radius: 999px;
+            padding: 5px 14px 5px 6px;
+            background: var(--paper);
         }
 
-        .user-switcher select {
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--brass);
+            color: var(--panel);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .account-switcher select {
+            appearance: none;
+            -webkit-appearance: none;
             background: transparent;
-            color: #60a5fa;
             border: none;
+            color: var(--ink);
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.84rem;
+            font-family: inherit;
             outline: none;
             cursor: pointer;
+            padding-right: 18px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235a6274' stroke-width='1.4' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right center;
         }
 
-        .user-switcher select option {
-            background: #1e293b;
-            color: #fff;
+        .account-switcher select option {
+            font-weight: 500;
         }
 
+        /* ---------- Secondary nav ---------- */
+        .tab-bar {
+            background: var(--panel);
+            border-bottom: 1px solid var(--rule);
+            padding: 0 2rem;
+            display: flex;
+            gap: 1.75rem;
+        }
+
+        .tab-bar span {
+            display: inline-block;
+            padding: 0.85rem 0.1rem;
+            font-size: 0.86rem;
+            font-weight: 500;
+            color: var(--ink-soft);
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-bar span.active {
+            color: var(--ink);
+            font-weight: 600;
+            border-bottom-color: var(--brass);
+        }
+
+        .tab-bar span.disabled {
+            color: #bdb6a2;
+            cursor: default;
+        }
+
+        /* ---------- Layout ---------- */
         .container {
-            max-width: 1400px;
+            max-width: 1320px;
             margin: 0 auto;
             padding: 2rem;
             width: 100%;
             flex: 1;
         }
 
+        .page-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-heading h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .page-heading .last-sync {
+            font-size: 0.8rem;
+            color: var(--ink-soft);
+        }
+
+        /* ---------- Filter strip ---------- */
         .filter-bar {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 1.25rem 1.5rem;
+            border-top: 1px solid var(--rule);
+            border-bottom: 1px solid var(--rule);
+            padding: 1.1rem 0;
             margin-bottom: 2rem;
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 1.5rem;
             align-items: flex-end;
-            backdrop-filter: blur(8px);
         }
 
         .filter-item {
@@ -118,31 +217,29 @@
             flex-direction: column;
             gap: 6px;
             flex: 1;
-            min-width: 180px;
+            min-width: 170px;
         }
 
         .filter-item label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--ink-soft);
         }
 
         .filter-item input, .filter-item select {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--card-border);
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 10px;
-            font-size: 0.9rem;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--rule);
+            color: var(--ink);
+            padding: 6px 2px;
+            font-size: 0.92rem;
+            font-family: inherit;
             outline: none;
-            transition: all 0.2s;
+            transition: border-color 0.2s;
         }
 
         .filter-item input:focus, .filter-item select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-glow);
+            border-bottom-color: var(--brass);
         }
 
         .btn {
@@ -150,91 +247,83 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 10px 20px;
-            border-radius: 10px;
+            padding: 9px 18px;
+            border-radius: 4px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
-            border: none;
-            transition: all 0.2s;
+            border: 1px solid transparent;
+            transition: background 0.15s, border-color 0.15s;
             text-decoration: none;
-            height: 42px;
+            height: 40px;
+            font-family: inherit;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #2563eb, #3b82f6);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            background: var(--ink);
+            color: var(--paper);
         }
 
         .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+            background: var(--indigo);
         }
 
-        .btn-success {
-            background: linear-gradient(135deg, #059669, #10b981);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        .btn-secondary {
+            background: transparent;
+            color: var(--ink);
+            border-color: var(--rule);
         }
 
-        .btn-success:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        .btn-secondary:hover {
+            border-color: var(--ink);
         }
 
+        /* ---------- KPI summary strip ---------- */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            margin-bottom: 2.25rem;
+            border-top: 1px solid var(--rule);
         }
 
         .stat-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(8px);
+            padding: 1.1rem 1.4rem 0.4rem;
+            border-right: 1px solid var(--rule-soft);
+            border-bottom: 1px solid var(--rule);
         }
 
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+        .stat-card:last-child {
+            border-right: none;
         }
 
         .stat-title {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            font-weight: 600;
+            font-size: 0.78rem;
+            color: var(--ink-soft);
+            font-weight: 500;
         }
 
         .stat-value {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #fff;
-            line-height: 1.1;
+            font-family: 'Source Serif 4', serif;
+            font-size: 2.1rem;
+            font-weight: 600;
+            color: var(--ink);
+            line-height: 1.25;
+            display: block;
+            margin: 2px 0;
         }
 
         .stat-sub {
-            font-size: 0.8rem;
-            color: #60a5fa;
+            font-size: 0.78rem;
+            color: var(--brass-dark);
+            display: block;
+            padding-bottom: 0.9rem;
         }
 
+        /* ---------- Panels ---------- */
         .grid-2col {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
+            gap: 1.75rem;
             margin-bottom: 2rem;
         }
 
@@ -245,26 +334,34 @@
         }
 
         .card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            backdrop-filter: blur(8px);
+            background: var(--panel);
+            border: 1px solid var(--rule);
+            border-radius: 6px;
+            padding: 1.4rem 1.5rem;
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.25rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid var(--card-border);
+            margin-bottom: 1.1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--rule);
         }
 
         .card-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #fff;
+            font-family: 'Source Serif 4', serif;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .card-title-sub {
+            font-size: 0.78rem;
+            color: var(--ink-soft);
+            font-weight: 400;
+            display: block;
+            margin-top: 2px;
         }
 
         .table-responsive {
@@ -279,131 +376,105 @@
 
         th {
             text-align: left;
-            padding: 12px 14px;
-            color: var(--text-muted);
+            padding: 10px 12px;
+            color: var(--ink-soft);
             font-weight: 600;
-            border-bottom: 1px solid var(--card-border);
-            font-size: 0.8rem;
-            text-transform: uppercase;
+            border-bottom: 1px solid var(--ink);
+            font-size: 0.78rem;
         }
 
         td {
-            padding: 12px 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--rule-soft);
         }
 
         tr:hover td {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(138, 106, 52, 0.05);
         }
 
         .status-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 10px;
-            border-radius: 9999px;
+            padding: 3px 9px;
+            border-radius: 3px;
             font-size: 0.75rem;
             font-weight: 600;
         }
 
-        .status-resolved { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-        .status-in_progress { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-        .status-new { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-        .status-received { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
-        .status-cancelled { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .status-resolved { background: var(--sage-bg); color: var(--sage); }
+        .status-in_progress { background: var(--indigo-bg); color: var(--indigo); }
+        .status-new { background: var(--clay-bg); color: var(--clay); }
+        .status-received { background: rgba(138, 106, 52, 0.12); color: var(--brass-dark); }
+        .status-cancelled { background: var(--rose-bg); color: var(--rose); }
 
         .star-rating {
-            color: #fbbf24;
-            font-size: 1.1rem;
-            letter-spacing: 2px;
+            color: var(--gold);
+            font-size: 1rem;
+            letter-spacing: 1px;
         }
 
-        .tab-btn-group {
+        .empty-state {
+            text-align: center;
+            color: var(--ink-soft);
+            padding: 1.4rem 0;
+        }
+
+        /* ---------- Footer ---------- */
+        footer {
+            border-top: 1px solid var(--rule);
+            padding: 1.25rem 2rem;
+            font-size: 0.78rem;
+            color: var(--ink-soft);
             display: flex;
-            gap: 8px;
-            margin-bottom: 1.5rem;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
 
-        .tab-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--card-border);
-            color: var(--text-muted);
-            padding: 8px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-
-        .tab-btn.active {
-            background: var(--primary);
-            color: #fff;
-            border-color: var(--primary);
-        }
-
-        .raw-json {
-            background: #060911;
-            border: 1px solid var(--card-border);
-            padding: 1rem;
-            border-radius: 10px;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.8rem;
-            color: #38bdf8;
-            max-height: 320px;
-            overflow-y: auto;
-        }
-
-        .rating-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 1rem;
-        }
-
-        .rating-form-group input, .rating-form-group select, .rating-form-group textarea {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--card-border);
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 10px;
-            outline: none;
-            font-size: 0.9rem;
-        }
-
-        .rating-form-group textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo-group">
-            <span class="badge-module">Module 5</span>
-            <h1 style="font-size: 1.25rem; font-weight: 800; color: #fff;">Đánh Giá & Báo Cáo Service (:8005)</h1>
+        <div class="brand">
+            <div class="brand-mark">HT</div>
+            <div class="brand-text">
+                <div class="system-name">Hệ thống Hỗ trợ Sinh viên</div>
+                <h1>Báo cáo &amp; Đánh giá</h1>
+            </div>
         </div>
 
-        <div class="user-switcher">
-            <span style="font-size: 0.8rem; color: var(--text-muted);">Đang giả lập vai trò:</span>
+        <div class="account-switcher">
+            <span class="avatar" id="accountAvatar">—</span>
             <select id="roleSelector" onchange="switchRole()">
-                <option value="admin" data-id="1" data-dept="">👑 Quản trị viên (Admin)</option>
-                <option value="department_head" data-id="5" data-dept="3">👔 Trưởng phòng CTSV (Department Head)</option>
-                <option value="staff" data-id="12" data-dept="1">👨‍💼 Cán bộ Phòng Đào tạo (Staff)</option>
-                <option value="student" data-id="12" data-dept="">🎓 Sinh viên: Trần Thị B (Student #12)</option>
+                <option value="admin" data-id="1" data-dept="" data-name="Nguyễn Văn Quản"> Quản trị viên</option>
+                <option value="department_head" data-id="5" data-dept="3" data-name="Lê Thị Hương">Trưởng phòng CTSV</option>
+                <option value="staff" data-id="12" data-dept="1" data-name="Phạm Văn Đức">Cán bộ Phòng Đào tạo</option>
             </select>
         </div>
     </header>
 
+    <nav class="tab-bar">
+        <span class="active">Tổng quan</span>
+        <span class="disabled" title="Sắp ra mắt">Yêu cầu hỗ trợ</span>
+        <span class="disabled" title="Sắp ra mắt">Đánh giá</span>
+        <span class="disabled" title="Sắp ra mắt">Cấu hình</span>
+    </nav>
+
     <div class="container">
-        
+
+        <div class="page-heading">
+            <h2>Tổng quan báo cáo</h2>
+            <span class="last-sync" id="lastSync">Đang tải dữ liệu...</span>
+        </div>
+
         <!-- Filter Controls -->
         <div class="filter-bar">
             <div class="filter-item">
                 <label>Phòng ban</label>
                 <select id="deptFilter">
-                    <option value="">-- Tất cả phòng ban --</option>
+                    <option value="">Tất cả phòng ban</option>
                     <option value="1">Phòng Đào tạo</option>
                     <option value="2">Phòng Kế hoạch - Tài chính</option>
                     <option value="3">Phòng Công tác Sinh viên</option>
@@ -415,7 +486,7 @@
             <div class="filter-item">
                 <label>Loại yêu cầu</label>
                 <select id="typeFilter">
-                    <option value="">-- Tất cả loại yêu cầu --</option>
+                    <option value="">Tất cả loại yêu cầu</option>
                     <option value="1">Cấp lại thẻ sinh viên</option>
                     <option value="2">Xin xác nhận sinh viên</option>
                     <option value="3">Đăng ký học phần bổ sung</option>
@@ -435,44 +506,39 @@
                 <input type="date" id="toDate" value="2026-09-30">
             </div>
 
-            <button class="btn btn-primary" onclick="loadDashboardData()">
-                🔍 Lọc dữ liệu
-            </button>
-
-            <button class="btn btn-success" onclick="exportCsv()">
-                📥 Xuất CSV (Excel)
-            </button>
+            <button class="btn btn-primary" onclick="loadDashboardData()">Lọc dữ liệu</button>
+            <button class="btn btn-secondary" onclick="exportCsv()">Xuất CSV</button>
         </div>
 
-        <!-- KPI Cards -->
+        <!-- KPI Summary Strip -->
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-title">TỔNG SỐ YÊU CẦU</span>
-                <span class="stat-value" id="kpiTotal">--</span>
-                <span class="stat-sub" id="kpiResolvedRate">Tỷ lệ hoàn thành: --%</span>
+                <span class="stat-title">Tổng số yêu cầu</span>
+                <span class="stat-value" id="kpiTotal">—</span>
+                <span class="stat-sub" id="kpiResolvedRate">Tỷ lệ hoàn thành: —%</span>
             </div>
             <div class="stat-card">
-                <span class="stat-title">THỜI GIAN XỬ LÝ TB</span>
-                <span class="stat-value" id="kpiAvgHours">--</span>
-                <span class="stat-sub">Tính theo giờ từ lúc tạo đến giải quyết</span>
+                <span class="stat-title">Thời gian xử lý trung bình</span>
+                <span class="stat-value" id="kpiAvgHours">—</span>
+                <span class="stat-sub">Tính từ lúc tạo đến khi giải quyết</span>
             </div>
             <div class="stat-card">
-                <span class="stat-title">ĐIỂM ĐÁNH GIÁ TRUNG BÌNH</span>
-                <span class="stat-value" id="kpiAvgRating" style="color: #fbbf24;">⭐ --</span>
-                <span class="stat-sub" id="kpiTotalRatings">Tổng số lượt đánh giá: --</span>
+                <span class="stat-title">Điểm đánh giá trung bình</span>
+                <span class="stat-value" id="kpiAvgRating" style="color: var(--gold);">— ⭐</span>
+                <span class="stat-sub" id="kpiTotalRatings">Tổng số lượt đánh giá: —</span>
             </div>
             <div class="stat-card">
-                <span class="stat-title">TRẠNG THÁI NỔI BẬT</span>
-                <span class="stat-value" id="kpiTopStatus" style="font-size: 1.5rem; color: #60a5fa;">--</span>
-                <span class="stat-sub" id="kpiPendingCount">Đang xử lý / chờ tiếp nhận: --</span>
+                <span class="stat-title">Trạng thái nổi bật</span>
+                <span class="stat-value" id="kpiTopStatus" style="font-size: 1.4rem;">—</span>
+                <span class="stat-sub" id="kpiPendingCount">Đang xử lý / chờ tiếp nhận: —</span>
             </div>
         </div>
 
-        <!-- Charts Grid -->
+        <!-- Charts -->
         <div class="grid-2col">
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">📊 Phân bổ theo Trạng thái</span>
+                    <span class="card-title">Phân bổ theo trạng thái</span>
                 </div>
                 <div style="height: 260px; position: relative;">
                     <canvas id="statusChart"></canvas>
@@ -481,7 +547,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">📈 Xu hướng Yêu cầu theo Ngày</span>
+                    <span class="card-title">Xu hướng yêu cầu theo ngày</span>
                 </div>
                 <div style="height: 260px; position: relative;">
                     <canvas id="timeChart"></canvas>
@@ -493,7 +559,7 @@
         <div class="grid-2col">
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">🏢 Thống kê theo Phòng ban</span>
+                    <span class="card-title">Thống kê theo phòng ban</span>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -505,7 +571,7 @@
                             </tr>
                         </thead>
                         <tbody id="deptTableBody">
-                            <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Đang tải...</td></tr>
+                            <tr><td colspan="3" class="empty-state">Đang tải...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -513,7 +579,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">📑 Thống kê theo Loại yêu cầu</span>
+                    <span class="card-title">Thống kê theo loại yêu cầu</span>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -524,56 +590,22 @@
                             </tr>
                         </thead>
                         <tbody id="typeTableBody">
-                            <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">Đang tải...</td></tr>
+                            <tr><td colspan="2" class="empty-state">Đang tải...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- Interactive Student Rating Simulator & Live Ratings List -->
+        <!-- Ratings (read-only feed) -->
         <div class="card" style="margin-bottom: 2rem;">
             <div class="card-header">
-                <span class="card-title">⭐ Đánh giá & Phản hồi từ Sinh viên</span>
-                <button class="btn btn-primary" style="height: 34px; font-size: 0.8rem;" onclick="toggleRatingModal()">
-                    + Gửi đánh giá thử nghiệm
-                </button>
-            </div>
-
-            <!-- Form gửi đánh giá test -->
-            <div id="ratingModal" style="display: none; background: rgba(15, 23, 42, 0.9); padding: 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--primary-glow);">
-                <h4 style="color: #60a5fa; margin-bottom: 0.75rem; font-size: 0.95rem;">Sinh viên gửi đánh giá cho yêu cầu đã xong (Test API: POST /api/ratings)</h4>
-                <div class="grid-2col">
-                    <div class="rating-form-group">
-                        <label style="font-size: 0.8rem; color: var(--text-muted);">Chọn yêu cầu hỗ trợ:</label>
-                        <select id="formRequestId">
-                            <option value="101">YC-2026-000101 (Xin xác nhận vay vốn - Resolved - SV #12)</option>
-                            <option value="103">YC-2026-000103 (Xin bảng điểm tạm thời - Resolved - SV #14)</option>
-                            <option value="109">YC-2026-000109 (Tạm hoãn nghĩa vụ QS - Resolved - SV #20)</option>
-                        </select>
-                    </div>
-                    <div class="rating-form-group">
-                        <label style="font-size: 0.8rem; color: var(--text-muted);">Số sao đánh giá (1-5 ⭐):</label>
-                        <select id="formRatingStar">
-                            <option value="5">⭐⭐⭐⭐⭐ (5 sao - Rất hài lòng)</option>
-                            <option value="4">⭐⭐⭐⭐ (4 sao - Hài lòng)</option>
-                            <option value="3">⭐⭐⭐ (3 sao - Bình thường)</option>
-                            <option value="2">⭐⭐ (2 sao - Chưa hài lòng)</option>
-                            <option value="1">⭐ (1 sao - Rất không hài lòng)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="rating-form-group">
-                    <label style="font-size: 0.8rem; color: var(--text-muted);">Ý kiến nhận xét:</label>
-                    <textarea id="formRatingComment" placeholder="Nhập cảm nhận về thái độ phục vụ và tốc độ hỗ trợ..."></textarea>
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 1rem;">
-                    <button class="btn btn-primary" onclick="submitRating()">Gửi đánh giá</button>
-                    <button class="btn" style="background: rgba(255,255,255,0.1); color: #fff;" onclick="toggleRatingModal()">Hủy</button>
+                <div>
+                    <span class="card-title">Phản hồi từ sinh viên</span>
+                    <span class="card-title-sub">Đánh giá sinh viên gửi sau khi yêu cầu được xử lý xong</span>
                 </div>
             </div>
 
-            <!-- Bảng danh sách đánh giá -->
             <div class="table-responsive">
                 <table>
                     <thead>
@@ -587,26 +619,28 @@
                         </tr>
                     </thead>
                     <tbody id="ratingsTableBody">
-                        <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Đang tải danh sách đánh giá...</td></tr>
+                        <tr><td colspan="6" class="empty-state">Đang tải danh sách đánh giá...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Raw API Response Viewer -->
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title">🔍 Live API Response (API Contract Inspector)</span>
-                <span id="apiEndpointLabel" style="font-size: 0.8rem; color: #38bdf8; font-family: monospace;">GET /api/reports/statistics</span>
-            </div>
-            <pre class="raw-json" id="rawJson">Đang chờ tải dữ liệu API...</pre>
-        </div>
-
     </div>
+
+    <footer>
+        <span>Hệ thống Hỗ trợ Sinh viên · Dịch vụ Báo cáo &amp; Đánh giá</span>
+        <span>Phiên bản nội bộ 1.0</span>
+    </footer>
 
     <script>
         let statusChartInstance = null;
         let timeChartInstance = null;
+
+        function initials(name) {
+            const parts = name.trim().split(/\s+/);
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
 
         function getAuthHeaders() {
             const selector = document.getElementById('roleSelector');
@@ -626,7 +660,15 @@
             return headers;
         }
 
+        function updateAccountChip() {
+            const selector = document.getElementById('roleSelector');
+            const opt = selector.options[selector.selectedIndex];
+            const name = opt.getAttribute('data-name') || opt.textContent;
+            document.getElementById('accountAvatar').textContent = initials(name);
+        }
+
         function switchRole() {
+            updateAccountChip();
             loadDashboardData();
             loadRatingsList();
         }
@@ -643,42 +685,43 @@
             if (from) params.append('from_date', from);
             if (to) params.append('to_date', to);
 
-            const url = `/api/reports/statistics?${params.toString()}`;
-            document.getElementById('apiEndpointLabel').innerText = `GET ${url}`;
-
             try {
-                const response = await fetch(url, { headers: getAuthHeaders() });
+                const response = await fetch(`/api/reports/statistics?${params.toString()}`, { headers: getAuthHeaders() });
                 const result = await response.json();
-                document.getElementById('rawJson').innerText = JSON.stringify(result, null, 2);
 
                 if (result.success && result.data) {
                     renderDashboard(result.data);
+                    const now = new Date();
+                    document.getElementById('lastSync').innerText = `Cập nhật lúc ${now.toLocaleTimeString('vi-VN')}`;
                 } else {
+                    document.getElementById('lastSync').innerText = 'Không lấy được dữ liệu';
                     alert(result.message || 'Lỗi lấy dữ liệu báo cáo');
                 }
             } catch (err) {
                 console.error(err);
-                document.getElementById('rawJson').innerText = 'Lỗi kết nối API: ' + err.message;
+                document.getElementById('lastSync').innerText = 'Lỗi kết nối máy chủ';
             }
         }
 
         function renderDashboard(data) {
             // KPI
-            document.getElementById('kpiTotal').innerText = data.total_requests;
+            document.getElementById('kpiTotal').innerText = Number(data.total_requests || 0).toLocaleString('vi-VN');
             const resolvedCount = (data.by_status?.resolved || 0) + (data.by_status?.closed || 0);
             const resolvedRate = data.total_requests > 0 ? Math.round((resolvedCount / data.total_requests) * 100) : 0;
             document.getElementById('kpiResolvedRate').innerText = `Tỷ lệ hoàn thành: ${resolvedRate}% (${resolvedCount}/${data.total_requests})`;
 
-            document.getElementById('kpiAvgHours').innerText = data.avg_processing_hours !== null ? `${data.avg_processing_hours}h` : 'N/A';
+            document.getElementById('kpiAvgHours').innerText = data.avg_processing_hours !== null && data.avg_processing_hours !== undefined
+                ? `${Number(data.avg_processing_hours).toLocaleString('vi-VN')}h`
+                : 'N/A';
 
             if (data.ratings_summary) {
-                document.getElementById('kpiAvgRating').innerText = `⭐ ${data.ratings_summary.average_rating || 0}`;
+                document.getElementById('kpiAvgRating').innerText = `${data.ratings_summary.average_rating || 0} ⭐`;
                 document.getElementById('kpiTotalRatings').innerText = `Tổng số lượt đánh giá: ${data.ratings_summary.total_ratings || 0}`;
             }
 
             const pending = (data.by_status?.new || 0) + (data.by_status?.received || 0) + (data.by_status?.in_progress || 0);
             document.getElementById('kpiPendingCount').innerText = `Đang xử lý / chờ tiếp nhận: ${pending}`;
-            document.getElementById('kpiTopStatus').innerText = resolvedCount >= pending ? 'Xử lý tốt (Đã giải quyết nhiều)' : 'Cần tăng tốc xử lý';
+            document.getElementById('kpiTopStatus').innerText = resolvedCount >= pending ? 'Xử lý tốt' : 'Cần tăng tốc';
 
             // Charts
             renderStatusChart(data.by_status || {});
@@ -691,7 +734,7 @@
 
         function renderStatusChart(statusData) {
             const ctx = document.getElementById('statusChart').getContext('2d');
-            const labels = ['Mới (New)', 'Đã tiếp nhận', 'Đang xử lý', 'Đã giải quyết', 'Đã hủy'];
+            const labels = ['Mới', 'Đã tiếp nhận', 'Đang xử lý', 'Đã giải quyết', 'Đã hủy'];
             const values = [
                 statusData.new || 0,
                 statusData.received || 0,
@@ -708,15 +751,16 @@
                     labels: labels,
                     datasets: [{
                         data: values,
-                        backgroundColor: ['#f59e0b', '#8b5cf6', '#3b82f6', '#10b981', '#ef4444'],
-                        borderWidth: 0
+                        backgroundColor: ['#a15a22', '#8a6a34', '#37517a', '#4c6e52', '#99493f'],
+                        borderColor: '#fbf9f4',
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'right', labels: { color: '#9ca3af', font: { family: 'Plus Jakarta Sans' } } }
+                        legend: { position: 'right', labels: { color: '#5a6274', font: { family: 'IBM Plex Sans' } } }
                     }
                 }
             });
@@ -736,20 +780,20 @@
                     datasets: [{
                         label: 'Số yêu cầu',
                         data: values,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: '#8a6a34',
+                        backgroundColor: 'rgba(138, 106, 52, 0.12)',
                         fill: true,
-                        tension: 0.3,
-                        pointBackgroundColor: '#60a5fa',
-                        pointRadius: 4
+                        tension: 0.25,
+                        pointBackgroundColor: '#8a6a34',
+                        pointRadius: 3
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
-                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } }
+                        y: { beginAtZero: true, grid: { color: '#e8e2d2' }, ticks: { color: '#5a6274' } },
+                        x: { grid: { color: '#e8e2d2' }, ticks: { color: '#5a6274' } }
                     },
                     plugins: {
                         legend: { display: false }
@@ -761,15 +805,15 @@
         function renderDeptTable(departments, total) {
             const tbody = document.getElementById('deptTableBody');
             if (!departments.length) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Không có dữ liệu</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Không có dữ liệu</td></tr>';
                 return;
             }
             tbody.innerHTML = departments.map(d => {
                 const pct = total > 0 ? Math.round((d.total / total) * 100) : 0;
                 return `
                     <tr>
-                        <td style="font-weight: 600; color: #fff;">${d.department_name}</td>
-                        <td><span style="font-weight: 700; color: #60a5fa;">${d.total}</span> yêu cầu</td>
+                        <td style="font-weight: 600;">${d.department_name}</td>
+                        <td><span style="font-weight: 700; color: var(--indigo);">${Number(d.total).toLocaleString('vi-VN')}</span> yêu cầu</td>
                         <td>${pct}%</td>
                     </tr>
                 `;
@@ -779,13 +823,13 @@
         function renderTypeTable(types) {
             const tbody = document.getElementById('typeTableBody');
             if (!types.length) {
-                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color: var(--text-muted);">Không có dữ liệu</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="2" class="empty-state">Không có dữ liệu</td></tr>';
                 return;
             }
             tbody.innerHTML = types.map(t => `
                 <tr>
-                    <td style="font-weight: 600; color: #fff;">${t.name}</td>
-                    <td><span style="font-weight: 700; color: #34d399;">${t.total}</span> yêu cầu</td>
+                    <td style="font-weight: 600;">${t.name}</td>
+                    <td><span style="font-weight: 700; color: var(--sage);">${Number(t.total).toLocaleString('vi-VN')}</span> yêu cầu</td>
                 </tr>
             `).join('');
         }
@@ -799,64 +843,22 @@
                 if (json.success && json.data && json.data.data) {
                     const ratings = json.data.data;
                     if (!ratings.length) {
-                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Chưa có đánh giá nào</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Chưa có đánh giá nào</td></tr>';
                         return;
                     }
                     tbody.innerHTML = ratings.map(r => `
                         <tr>
-                            <td><strong style="color: #60a5fa;">#${r.request_id}</strong></td>
+                            <td><strong style="color: var(--indigo);">#${r.request_id}</strong></td>
                             <td>Sinh viên #${r.student_id}</td>
                             <td>Phòng ban #${r.department_id || 'N/A'}</td>
                             <td><span class="star-rating">${'⭐'.repeat(r.rating)}</span></td>
-                            <td style="color: #e2e8f0;">${r.comment || '<em>Không có nhận xét</em>'}</td>
-                            <td style="color: var(--text-muted); font-size: 0.8rem;">${new Date(r.created_at).toLocaleString('vi-VN')}</td>
+                            <td>${r.comment || '<em>Không có nhận xét</em>'}</td>
+                            <td style="color: var(--ink-soft); font-size: 0.8rem;">${new Date(r.created_at).toLocaleString('vi-VN')}</td>
                         </tr>
                     `).join('');
                 }
             } catch (err) {
                 console.error(err);
-            }
-        }
-
-        function toggleRatingModal() {
-            const modal = document.getElementById('ratingModal');
-            modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
-        }
-
-        async function submitRating() {
-            const reqId = document.getElementById('formRequestId').value;
-            const rating = document.getElementById('formRatingStar').value;
-            const comment = document.getElementById('formRatingComment').value;
-
-            // Student headers
-            const headers = {
-                'X-User-Id': 12,
-                'X-User-Role': 'student',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            };
-
-            try {
-                const res = await fetch('/api/ratings', {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        request_id: parseInt(reqId),
-                        rating: parseInt(rating),
-                        comment: comment
-                    })
-                });
-                const json = await res.json();
-                if (json.success) {
-                    alert('✅ ' + (json.message || 'Gửi đánh giá thành công!'));
-                    toggleRatingModal();
-                    loadDashboardData();
-                    loadRatingsList();
-                } else {
-                    alert('❌ Lỗi: ' + (json.message || 'Không thể gửi đánh giá'));
-                }
-            } catch (err) {
-                alert('Lỗi kết nối: ' + err.message);
             }
         }
 
@@ -877,6 +879,7 @@
 
         // Init
         window.addEventListener('DOMContentLoaded', () => {
+            updateAccountChip();
             loadDashboardData();
             loadRatingsList();
         });

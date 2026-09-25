@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Contracts\AuthContext;
+use App\Contracts\AuthContextInterface;
 use App\Contracts\OrgServiceClientInterface;
 use App\Contracts\RequestServiceClientInterface;
 use App\Services\Auth\FakeHeaderAuthContext;
@@ -17,7 +17,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(AuthContext::class, FakeHeaderAuthContext::class);
+        $this->app->bind(AuthContextInterface::class, FakeHeaderAuthContext::class);
         $this->app->bind(RequestServiceClientInterface::class, RequestServiceClient::class);
         $this->app->bind(OrgServiceClientInterface::class, OrgServiceClient::class);
     }

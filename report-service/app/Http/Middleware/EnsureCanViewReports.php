@@ -2,14 +2,14 @@
 
 namespace App\Http\Middleware;
 
-use App\Contracts\AuthContext;
+use App\Contracts\AuthContextInterface;
 use App\Http\Responses\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
 
 class EnsureCanViewReports
 {
-    public function __construct(private AuthContext $auth) {}
+    public function __construct(private AuthContextInterface $auth) {}
 
     public function handle(Request $request, Closure $next)
     {

@@ -2,10 +2,10 @@
 
 namespace App\Services\Auth;
 
-use App\Contracts\AuthContext;
+use App\Contracts\AuthContextInterface;
 use Illuminate\Http\Request;
 
-class FakeHeaderAuthContext implements AuthContext
+class FakeHeaderAuthContext implements AuthContextInterface
 {
     public function __construct(private Request $request) {}
 

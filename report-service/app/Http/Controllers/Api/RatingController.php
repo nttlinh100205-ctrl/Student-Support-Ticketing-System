@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Contracts\AuthContext;
+use App\Contracts\AuthContextInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QueryRatingRequest;
 use App\Http\Requests\StoreRatingRequest;
@@ -15,7 +15,7 @@ class RatingController extends Controller
 {
     public function __construct(
         private RatingService $ratingService,
-        private AuthContext $auth
+        private AuthContextInterface $auth
     ) {}
 
     /**
