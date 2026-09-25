@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\RequestStatus;
+use App\Enums\SlaFlag;
 use App\Models\RequestAttachment;
 use App\Models\RequestStatusHistory;
 use App\Models\SupportRequest;
@@ -13,7 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class RequestWorkflowService
 {
-   
+    public function __construct(
+        protected SlaService $slaService,
+    ) {}
+
     public const TRANSITIONS = [
         'new' => ['received', 'cancelled'],
         'received' => ['in_progress', 'cancelled'],
@@ -37,12 +41,17 @@ class RequestWorkflowService
                 'priority',
             ])->all();
 
+            $priority = $payload['priority'] ?? 'normal';
+            $createdAt = now();
+
             $request = SupportRequest::create([
                 ...$payload,
-                'student_id' => $studentId,
-                'status' => RequestStatus::New->value,
-                'priority' => $payload['priority'] ?? 'normal',
-                'code' => $this->generateCode(),
+                'student_id'      => $studentId,
+                'status'          => RequestStatus::New->value,
+                'priority'        => $priority,
+                'code'            => $this->generateCode(),
+                'sla_deadline_at' => $this->slaService->calculateDeadline($priority, $createdAt),
+                'sla_flag'        => SlaFlag::OnTime->value,
             ]);
 
             $this->logHistory($request, null, RequestStatus::New->value, $studentId, null);

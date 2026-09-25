@@ -306,11 +306,188 @@
     </div>
 </div>
 
-{{-- Alpine for cancel toggle (lightweight, no build needed if CDN, but we use Vite so add Alpine or pure JS) --}}
+{{-- ═══════════════════════════════════════════════════════════════════ --}}
+{{-- Comment Thread (Trao đổi)                                         --}}
+{{-- ═══════════════════════════════════════════════════════════════════ --}}
+<div class="mt-5 bg-white rounded-xl border border-slate-200 p-6">
+    <div class="flex items-center justify-between mb-5">
+        <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            Trao đổi
+            <span class="inline-flex items-center justify-center bg-slate-100 text-slate-600 text-xs font-medium rounded-full px-2 py-0.5">
+                {{ $comments->total() }}
+            </span>
+        </h3>
+    </div>
+
+    {{-- Form nhập comment --}}
+    @if(!$isTerminal)
+    <form method="POST" action="{{ route('requests.comments.store', $request) }}" enctype="multipart/form-data" class="mb-6">
+        @csrf
+        <div class="flex gap-3">
+            {{-- Avatar --}}
+            <div class="shrink-0">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold
+                    {{ $user['role'] === 'student'
+                        ? 'bg-blue-100 text-blue-700'
+                        : ($user['role'] === 'admin'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-emerald-100 text-emerald-700') }}">
+                    {{ mb_substr($user['full_name'], 0, 1) }}
+                </div>
+            </div>
+
+            <div class="flex-1 space-y-2">
+                <textarea name="body" rows="3" required
+                          placeholder="Nhập nội dung trao đổi..."
+                          class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition"
+                >{{ old('body') }}</textarea>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    {{-- Upload file --}}
+                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 cursor-pointer transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                        Đính kèm file
+                        <input type="file" name="attachments[]" multiple class="hidden" id="comment-files" onchange="updateFileLabel(this)">
+                    </label>
+                    <span id="file-count" class="text-xs text-slate-400"></span>
+
+                    {{-- Checkbox nội bộ — chỉ staff/head/admin --}}
+                    @if(in_array($user['role'], ['staff', 'department_head', 'admin']))
+                    <label class="inline-flex items-center gap-1.5 text-xs text-amber-700 cursor-pointer ml-auto">
+                        <input type="checkbox" name="is_internal" value="1"
+                               class="rounded border-amber-300 text-amber-600 focus:ring-amber-500 w-3.5 h-3.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        Nội bộ (SV không thấy)
+                    </label>
+                    @endif
+
+                    <button type="submit"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm ml-auto">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                        Gửi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+    @else
+    <div class="mb-6 rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-500">
+        Yêu cầu đã {{ $statusVal === 'closed' ? 'đóng' : 'hủy' }} — không thể thêm bình luận mới.
+    </div>
+    @endif
+
+    {{-- Danh sách comment --}}
+    @if($comments->isEmpty())
+        <div class="text-center py-8">
+            <svg class="w-12 h-12 mx-auto text-slate-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <p class="text-sm text-slate-400">Chưa có trao đổi nào</p>
+            <p class="text-xs text-slate-300 mt-1">Hãy bắt đầu cuộc trao đổi đầu tiên</p>
+        </div>
+    @else
+        <div class="space-y-4">
+            @foreach($comments as $comment)
+                @php
+                    $isOwn = $comment->user_id === $user['id'];
+                    $roleColors = [
+                        'student' => 'bg-blue-100 text-blue-700',
+                        'staff' => 'bg-emerald-100 text-emerald-700',
+                        'department_head' => 'bg-indigo-100 text-indigo-700',
+                        'admin' => 'bg-purple-100 text-purple-700',
+                    ];
+                    $roleBadge = [
+                        'student' => 'Sinh viên',
+                        'staff' => 'Cán bộ',
+                        'department_head' => 'Trưởng phòng',
+                        'admin' => 'Admin',
+                    ];
+                @endphp
+                <div class="flex gap-3 group {{ $comment->is_internal ? 'relative' : '' }}">
+                    {{-- Avatar --}}
+                    <div class="shrink-0">
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold {{ $roleColors[$comment->user_role] ?? 'bg-slate-100 text-slate-600' }}">
+                            {{ mb_substr($comment->user_name ?? '?', 0, 1) }}
+                        </div>
+                    </div>
+
+                    {{-- Nội dung --}}
+                    <div class="flex-1 min-w-0">
+                        <div class="rounded-xl px-4 py-3 {{ $comment->is_internal
+                            ? 'bg-amber-50/80 border border-amber-200/60'
+                            : ($isOwn ? 'bg-blue-50/60 border border-blue-100' : 'bg-slate-50 border border-slate-100') }}">
+
+                            {{-- Header --}}
+                            <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                                <span class="text-sm font-semibold text-slate-900">{{ $comment->user_name ?? 'User #'.$comment->user_id }}</span>
+                                <span class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium {{ $roleColors[$comment->user_role] ?? 'bg-slate-100 text-slate-600' }}">
+                                    {{ $roleBadge[$comment->user_role] ?? $comment->user_role }}
+                                </span>
+                                @if($comment->is_internal)
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 px-1.5 py-0.5 text-[10px] font-medium">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                        Nội bộ
+                                    </span>
+                                @endif
+                                <span class="text-[11px] text-slate-400 ml-auto">{{ $comment->created_at->format('d/m/Y H:i') }}</span>
+                            </div>
+
+                            {{-- Body --}}
+                            <p class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{{ $comment->body }}</p>
+
+                            {{-- File đính kèm --}}
+                            @if($comment->attachments && $comment->attachments->isNotEmpty())
+                                <div class="mt-3 pt-2 border-t {{ $comment->is_internal ? 'border-amber-200/50' : 'border-slate-100' }}">
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($comment->attachments as $att)
+                                            <a href="{{ $att->url() }}" target="_blank" rel="noopener"
+                                               class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 transition shadow-sm">
+                                                @if($att->isImage())
+                                                    <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                @else
+                                                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                @endif
+                                                <span class="max-w-[150px] truncate">{{ $att->original_name }}</span>
+                                                <span class="text-[10px] text-slate-400">{{ number_format($att->size / 1024, 0) }}KB</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Nút xóa (chủ comment hoặc admin) --}}
+                        @if($isOwn || $user['role'] === 'admin')
+                            <div class="mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <form method="POST" action="{{ route('requests.comments.destroy', [$request, $comment]) }}"
+                                      onsubmit="return confirm('Bạn chắc chắn muốn xóa bình luận này?');" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-[11px] text-rose-400 hover:text-rose-600 transition">
+                                        Xóa bình luận
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        {{-- Phân trang --}}
+        @if($comments->hasPages())
+            <div class="mt-4 pt-4 border-t border-slate-100">
+                {{ $comments->links() }}
+            </div>
+        @endif
+    @endif
+</div>
+
 <script>
-document.querySelectorAll('[x-data]').forEach(el => {
-    // Minimal Alpine-like for cancel toggle if Alpine not loaded
-});
+function updateFileLabel(input) {
+    const count = input.files.length;
+    document.getElementById('file-count').textContent =
+        count > 0 ? count + ' file đã chọn' : '';
+}
 </script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 @endsection

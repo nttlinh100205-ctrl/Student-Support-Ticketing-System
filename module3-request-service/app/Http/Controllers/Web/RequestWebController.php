@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Web;
 use App\Enums\RequestStatus;
 use App\Http\Controllers\Controller;
 use App\Models\SupportRequest;
+use App\Models\TicketComment;
+use App\Services\CommentService;
 use App\Services\RequestWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -15,6 +17,7 @@ class RequestWebController extends Controller
 {
     public function __construct(
         protected RequestWorkflowService $workflow,
+        protected CommentService $commentService,
     ) {
     }
 
@@ -183,9 +186,17 @@ class RequestWebController extends Controller
         $histories = $supportRequest->statusHistories()->latest('id')->get();
         $supportRequest->load('attachments');
 
+        // Load comments (SV chỉ thấy comment công khai)
+        $comments = $this->commentService->listComments(
+            $supportRequest,
+            $user['role'],
+            perPage: 50,
+        );
+
         return view('requests.show', [
             'request' => $supportRequest,
             'histories' => $histories,
+            'comments' => $comments,
             'user' => $user,
             'departments' => $this->departments(),
             'supportTypes' => $this->supportTypes(),
@@ -352,6 +363,75 @@ class RequestWebController extends Controller
 
         return redirect()->route('requests.index')
             ->with('success', 'Đã xóa yêu cầu thành công.');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Comment Thread (Trao đổi)
+    |--------------------------------------------------------------------------
+    */
+
+    public function storeComment(Request $request, SupportRequest $supportRequest)
+    {
+        $user = $this->currentUser();
+
+        if (! $this->canView($supportRequest, $user)) {
+            return back()->with('error', 'Bạn không có quyền bình luận vào yêu cầu này.');
+        }
+
+        $data = $request->validate([
+            'body'          => 'required|string|max:5000',
+            'is_internal'   => 'sometimes|boolean',
+            'attachments'   => 'sometimes|array|max:5',
+            'attachments.*' => 'file|max:10240',
+        ], [
+            'body.required'      => 'Nội dung bình luận không được để trống.',
+            'body.max'           => 'Nội dung bình luận tối đa 5000 ký tự.',
+            'attachments.max'    => 'Chỉ được đính kèm tối đa 5 file.',
+            'attachments.*.max'  => 'Mỗi file đính kèm không quá 10 MB.',
+        ]);
+
+        $files = $request->file('attachments', []) ?: [];
+        if (! is_array($files)) {
+            $files = [$files];
+        }
+
+        try {
+            $this->commentService->addComment(
+                ticket:   $supportRequest,
+                data:     $data,
+                userId:   $user['id'],
+                userName: $user['full_name'],
+                userRole: $user['role'],
+                files:    $files,
+            );
+        } catch (ValidationException $e) {
+            return back()->with('error', $e->getMessage())->withInput();
+        }
+
+        return back()->with('success', 'Đã thêm bình luận.');
+    }
+
+    public function destroyComment(SupportRequest $supportRequest, TicketComment $comment)
+    {
+        $user = $this->currentUser();
+
+        // Đảm bảo comment thuộc ticket
+        if ($comment->request_id !== $supportRequest->id) {
+            return back()->with('error', 'Bình luận không thuộc yêu cầu này.');
+        }
+
+        try {
+            $this->commentService->deleteComment(
+                $comment,
+                $user['id'],
+                $user['role'],
+            );
+        } catch (ValidationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Đã xóa bình luận.');
     }
 
     /**
