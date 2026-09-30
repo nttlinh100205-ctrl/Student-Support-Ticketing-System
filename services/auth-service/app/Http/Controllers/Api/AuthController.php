@@ -16,6 +16,7 @@ use App\Services\Auth\Token\RefreshTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
+use App\Http\Requests\Auth\ChangePasswordRequest;
 
 class AuthController extends Controller
 {
@@ -204,4 +205,55 @@ class AuthController extends Controller
             );
         }
     }
+public function changePassword(
+    ChangePasswordRequest $request
+): JsonResponse {
+    try {
+        $payload = $request->attributes->get('jwt');
+
+        if (
+            !is_array($payload) ||
+            !isset($payload['sub'])
+        ) {
+            return ApiResponse::error(
+                'Không xác định được người dùng.',
+                401
+            );
+        }
+
+        $user = User::query()->find(
+            (int) $payload['sub']
+        );
+
+        if ($user === null) {
+            return ApiResponse::error(
+                'Người dùng không tồn tại.',
+                401
+            );
+        }
+
+        $updatedUser = $this->authService->changePassword(
+            user: $user,
+            currentPassword: $request
+                ->string('current_password')
+                ->toString(),
+            newPassword: $request
+                ->string('new_password')
+                ->toString(),
+        );
+
+        return ApiResponse::success(
+            [
+                'user' => $updatedUser,
+                'must_change_password' => false,
+            ],
+            'Đổi mật khẩu thành công.'
+        );
+    } catch (RuntimeException $e) {
+        return ApiResponse::error(
+            $e->getMessage(),
+            400
+        );
+    }
+}
 }

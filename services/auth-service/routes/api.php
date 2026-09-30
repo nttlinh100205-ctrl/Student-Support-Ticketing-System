@@ -27,5 +27,9 @@ Route::prefix('auth')->group(function () {
             '/logout-all',
             [AuthController::class, 'logoutAll']
         );
+Route::post(
+    '/change-password',
+    [AuthController::class, 'changePassword']
+);
     });
 });

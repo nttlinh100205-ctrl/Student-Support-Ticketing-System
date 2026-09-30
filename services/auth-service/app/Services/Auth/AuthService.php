@@ -175,4 +175,33 @@ class AuthService
             'user' => $user->fresh(),
         ];
     }
+public function changePassword(
+    User $user,
+    string $currentPassword,
+    string $newPassword,
+): User {
+    if (!Hash::check($currentPassword, $user->password)) {
+        throw new RuntimeException(
+            'Mật khẩu hiện tại không đúng.'
+        );
+    }
+
+    if ($currentPassword === $newPassword) {
+        throw new RuntimeException(
+            'Mật khẩu mới phải khác mật khẩu hiện tại.'
+        );
+    }
+
+    $user->forceFill([
+        'password' => $newPassword,
+        'must_change_password' => false,
+        'failed_login_attempts' => 0,
+        'locked_until' => null,
+    ])->save();
+
+    // Đổi mật khẩu phải đăng xuất các phiên đăng nhập khác.
+    $this->refreshTokenService->revokeAllForUser($user);
+
+    return $user->fresh();
+}
 }
