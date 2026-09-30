@@ -31,5 +31,9 @@ Route::post(
     '/change-password',
     [AuthController::class, 'changePassword']
 );
+Route::post(
+    '/avatar',
+    [AuthController::class, 'uploadAvatar']
+);
     });
 });

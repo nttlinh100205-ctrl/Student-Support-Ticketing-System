@@ -17,6 +17,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
 use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\AvatarUploadRequest;
+use App\Services\Auth\AvatarService;
 
 class AuthController extends Controller
 {
@@ -25,6 +27,7 @@ class AuthController extends Controller
         private readonly JwtIssuer $jwtIssuer,
         private readonly RefreshTokenService $refreshTokenService,
         private readonly PasswordResetService $passwordResetService,
+private readonly AvatarService $avatarService,
     ) {
     }
 
@@ -250,6 +253,52 @@ public function changePassword(
             'Đổi mật khẩu thành công.'
         );
     } catch (RuntimeException $e) {
+        return ApiResponse::error(
+            $e->getMessage(),
+            400
+        );
+    }
+}
+public function uploadAvatar(
+    AvatarUploadRequest $request
+): JsonResponse {
+    try {
+        $payload = $request->attributes->get('jwt');
+
+        if (
+            !is_array($payload) ||
+            !isset($payload['sub'])
+        ) {
+            return ApiResponse::error(
+                'Không xác định được người dùng.',
+                401
+            );
+        }
+
+        $user = User::query()->find(
+            (int) $payload['sub']
+        );
+
+        if ($user === null) {
+            return ApiResponse::error(
+                'Người dùng không tồn tại.',
+                401
+            );
+        }
+
+        $updatedUser = $this->avatarService->upload(
+            user: $user,
+            file: $request->file('avatar'),
+        );
+
+        return ApiResponse::success(
+            [
+                'user' => $updatedUser,
+                'avatar_path' => $updatedUser->avatar_path,
+            ],
+            'Cập nhật ảnh đại diện thành công.'
+        );
+    } catch (\Throwable $e) {
         return ApiResponse::error(
             $e->getMessage(),
             400
