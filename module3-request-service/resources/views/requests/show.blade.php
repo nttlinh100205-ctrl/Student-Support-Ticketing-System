@@ -6,12 +6,14 @@
 @php
     $statusLabels = [
         'new' => 'Mới tạo', 'received' => 'Đã tiếp nhận', 'in_progress' => 'Đang xử lý',
+        'waiting_info' => 'Chờ bổ sung',
         'resolved' => 'Chờ phản hồi SV', 'closed' => 'Đã đóng', 'cancelled' => 'Đã hủy',
     ];
     $statusColors = [
         'new' => 'bg-blue-100 text-blue-800 border-blue-200',
         'received' => 'bg-indigo-100 text-indigo-800 border-indigo-200',
         'in_progress' => 'bg-amber-100 text-amber-800 border-amber-200',
+        'waiting_info' => 'bg-orange-100 text-orange-800 border-orange-200',
         'resolved' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
         'closed' => 'bg-slate-100 text-slate-700 border-slate-200',
         'cancelled' => 'bg-rose-100 text-rose-800 border-rose-200',
@@ -24,6 +26,7 @@
 
     $statusVal = $request->status instanceof \App\Enums\RequestStatus ? $request->status->value : $request->status;
     $priorityVal = $request->priority instanceof \App\Enums\RequestPriority ? $request->priority->value : $request->priority;
+    $slaFlag = $request->sla_flag instanceof \App\Enums\SlaFlag ? $request->sla_flag->value : $request->sla_flag;
     $allowedNext = $transitions[$statusVal] ?? [];
     // Staff không tự đóng — chờ SV; cũng không tự gửi lại in_progress từ resolved (chỉ SV)
     if ($user['role'] === 'staff') {
@@ -37,6 +40,7 @@
         $allowedNext = array_values(array_filter($allowedNext, fn ($s) => $s === 'closed'));
     }
     $isTerminal = in_array($statusVal, ['closed', 'cancelled'], true);
+    $canReopen = $statusVal === 'closed' && in_array($user['role'], ['staff', 'department_head', 'admin'], true);
     $canChangeStatus = in_array($user['role'], ['staff', 'department_head', 'admin'], true);
     $canAssign = in_array($user['role'], ['department_head', 'admin'], true);
     $needsAssign = $canChangeStatus && $request->assigned_to === null && ! $isTerminal;
@@ -97,13 +101,88 @@
             <p class="text-xs text-slate-400">Cán bộ xử lý</p>
             <p class="font-medium text-slate-800">
                 @php
-                    $staffNames = [21 => 'Nguyễn Văn A', 22 => 'Phạm Minh D', 23 => 'Hoàng Thị E'];
+                    $staffNames = [
+                        21 => 'Nguyễn Văn A', 22 => 'Phạm Minh D',
+                    ];
                 @endphp
                 {{ $request->assigned_to ? ($staffNames[$request->assigned_to] ?? '#'.$request->assigned_to) : 'Chưa gán' }}
             </p>
         </div>
     </div>
 </div>
+
+@if($user['role'] === 'student' && $request->student_id === $user['id'])
+    <a href="{{ route('requests.copy', $request) }}" class="mb-5 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+        Sao chép yêu cầu
+    </a>
+@endif
+
+@if($request->sla_deadline_at)
+    <div class="mb-5 rounded-lg border px-4 py-3 text-sm {{ $slaFlag === 'breached' ? 'border-rose-200 bg-rose-50 text-rose-800' : ($slaFlag === 'warning' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-700') }}">
+        <strong>{{ $slaFlag === 'breached' ? 'Đã quá hạn SLA' : ($slaFlag === 'warning' ? 'Sắp quá hạn SLA' : 'Hạn xử lý SLA') }}</strong>
+        <span class="ml-1">{{ $request->sla_deadline_at->format('d/m/Y H:i') }}</span>
+        @if($slaFlag !== 'breached' && $request->slaRemainingHours() !== null)
+            <span class="ml-2">Còn {{ max(0, $request->slaRemainingHours()) }} giờ</span>
+        @endif
+    </div>
+@endif
+
+@if($canReopen)
+    <form method="POST" action="{{ route('requests.update-status', $request) }}" class="mb-5">
+        @csrf
+        @method('PUT')
+        <button type="submit" name="status" value="in_progress"
+                class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-800 hover:bg-blue-100">
+            Mở lại yêu cầu
+        </button>
+    </form>
+@endif
+
+@if($canRate || $request->rating)
+    <section class="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 mb-5" aria-labelledby="request-rating-title">
+        <h3 id="request-rating-title" class="text-sm font-semibold text-slate-700">Đánh giá kết quả hỗ trợ</h3>
+        @if($canRate)
+            <p class="mt-1 text-sm text-slate-500">Yêu cầu đã hoàn tất. Đánh giá của bạn giúp cải thiện chất lượng hỗ trợ.</p>
+            <form method="POST" action="{{ route('requests.rating.store', $request) }}" class="mt-4 space-y-4">
+                @csrf
+                <fieldset>
+                    <legend class="text-sm font-medium text-slate-700 mb-2">Mức độ hài lòng</legend>
+                    <div class="flex items-center gap-1" x-data="{ rating: {{ (int) old('rating', 0) }} }" role="radiogroup" aria-label="Chọn mức độ hài lòng từ 1 đến 5 sao">
+                        @foreach([1 => 'Rất chưa hài lòng', 2 => 'Chưa hài lòng', 3 => 'Bình thường', 4 => 'Hài lòng', 5 => 'Rất hài lòng'] as $score => $label)
+                            <label class="cursor-pointer rounded focus-within:outline-none focus-within:ring-2 focus-within:ring-amber-500" title="{{ $label }}">
+                                <input class="peer sr-only" type="radio" name="rating" value="{{ $score }}" x-model.number="rating" @checked((int) old('rating') === $score) aria-label="{{ $score }} sao: {{ $label }}" required>
+                                <span class="block text-4xl leading-none transition-colors"
+                                      aria-hidden="true"
+                                      :class="rating >= {{ $score }} ? 'text-amber-500' : 'text-slate-300'"
+                                      x-text="rating >= {{ $score }} ? '★' : '☆'">☆</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">Chọn từ 1 đến 5 sao</p>
+                    @error('rating')<p class="mt-1 text-sm text-rose-600">{{ $message }}</p>@enderror
+                </fieldset>
+                <div>
+                    <label for="rating-comment" class="block text-sm font-medium text-slate-700 mb-1">Nhận xét <span class="font-normal text-slate-400">(không bắt buộc)</span></label>
+                    <textarea id="rating-comment" name="rating_comment" rows="3" maxlength="1000" placeholder="Chia sẻ thêm về trải nghiệm hỗ trợ..."
+                              class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">{{ old('rating_comment') }}</textarea>
+                    @error('rating_comment')<p class="mt-1 text-sm text-rose-600">{{ $message }}</p>@enderror
+                </div>
+                <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">
+                    Gửi đánh giá
+                </button>
+            </form>
+        @else
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+                <span class="font-semibold text-amber-600" aria-label="{{ $request->rating }} trên 5 sao">{{ str_repeat('★', (int) $request->rating) }}{{ str_repeat('☆', 5 - (int) $request->rating) }}</span>
+                <span class="text-sm font-medium text-slate-700">{{ $request->rating }}/5</span>
+                @if($request->rated_at)<span class="text-xs text-slate-400">{{ $request->rated_at->format('d/m/Y') }}</span>@endif
+            </div>
+            @if($request->rating_comment)
+                <p class="mt-2 text-sm text-slate-600 whitespace-pre-wrap">{{ $request->rating_comment }}</p>
+            @endif
+        @endif
+    </section>
+@endif
 
 <div class="grid md:grid-cols-3 gap-5">
     {{-- Content + Actions --}}
@@ -200,6 +279,35 @@
                 </div>
             @endif
 
+            @if($canAssign)
+                <div class="pt-4 border-t border-slate-100">
+                    <p class="text-sm font-medium text-slate-700 mb-2">Chuyển phòng ban</p>
+                    <form method="POST" action="{{ route('requests.transfer', $request) }}" class="space-y-2">
+                        @csrf
+                        @method('PUT')
+                        <select name="department_id" id="transfer-department" required onchange="filterTransferSupportTypes()"
+                                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Chọn phòng ban nhận --</option>
+                            @foreach($departments as $departmentId => $departmentName)
+                                @if($departmentId !== $request->department_id)
+                                    <option value="{{ $departmentId }}">{{ $departmentName }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        <div class="flex gap-2">
+                            <select name="support_type_id" id="transfer-support-type" required
+                                    class="min-w-0 flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- Chọn loại hỗ trợ --</option>
+                                @foreach($supportTypes as $supportTypeId => $supportType)
+                                    <option value="{{ $supportTypeId }}" data-dept="{{ $supportType['department_id'] }}">{{ $supportType['name'] }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">Chuyển</button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
             {{-- Assign — mock staff --}}
             @if($canAssign)
                 <div class="{{ $canChangeStatus || $canStudentFeedback ? 'pt-4 border-t border-slate-100' : '' }}">
@@ -211,11 +319,11 @@
                         <select name="assigned_to" required
                                 class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">-- Chọn cán bộ --</option>
-                            <option value="21">#21 — Nguyễn Văn A (Cán bộ, Phòng Tài chính)</option>
-                            <option value="22">#22 — Phạm Minh D (Cán bộ, Phòng Tài chính)</option>
-                            <option value="23">#23 — Hoàng Thị E (Cán bộ, Phòng Đào tạo)</option>
-                            <option value="24">#24 — Trần Văn G (Cán bộ, Phòng CSVC)</option>
-                            <option value="25">#25 — Lê Thị H (Cán bộ, Phòng CSVC)</option>
+                            @foreach($demoUsers as $staff)
+                                @if($staff['role'] === 'staff' && in_array($staff['id'], config("master_data.staff_by_department.{$request->department_id}", []), true))
+                                    <option value="{{ $staff['id'] }}" @selected($request->assigned_to === $staff['id'])>#{{ $staff['id'] }} — {{ $staff['full_name'] }}</option>
+                                @endif
+                            @endforeach
                         </select>
                         <button type="submit"
                                 class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
@@ -310,6 +418,11 @@
 {{-- Comment Thread (Trao đổi)                                         --}}
 {{-- ═══════════════════════════════════════════════════════════════════ --}}
 <div class="mt-5 bg-white rounded-xl border border-slate-200 p-6">
+    @if($statusVal === 'waiting_info' && $user['role'] === 'student' && $request->student_id === $user['id'])
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Cán bộ đang chờ bạn bổ sung thông tin. Hãy gửi nội dung hoặc tài liệu cần thiết tại đây; yêu cầu sẽ tự chuyển lại sang đang xử lý.
+        </div>
+    @endif
     <div class="flex items-center justify-between mb-5">
         <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
@@ -338,7 +451,16 @@
             </div>
 
             <div class="flex-1 space-y-2">
-                <textarea name="body" rows="3" required
+                @if(in_array($user['role'], ['staff', 'department_head', 'admin'], true))
+                    <select aria-label="Chọn câu trả lời mẫu" onchange="document.getElementById('comment-body').value = this.value; this.value = ''"
+                            class="w-full border border-slate-200 rounded-lg bg-white px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Chèn câu trả lời mẫu...</option>
+                        @foreach($replyTemplates as $templateKey => $template)
+                            <option value="{{ $template }}">{{ ['received' => 'Đã tiếp nhận', 'need_info' => 'Yêu cầu bổ sung', 'in_progress' => 'Đang xử lý', 'resolved' => 'Đã xử lý'][$templateKey] ?? $templateKey }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                <textarea id="comment-body" name="body" rows="3" required
                           placeholder="Nhập nội dung trao đổi..."
                           class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition"
                 >{{ old('body') }}</textarea>
@@ -439,7 +561,7 @@
                                 <div class="mt-3 pt-2 border-t {{ $comment->is_internal ? 'border-amber-200/50' : 'border-slate-100' }}">
                                     <div class="flex flex-wrap gap-2">
                                         @foreach($comment->attachments as $att)
-                                            <a href="{{ $att->url() }}" target="_blank" rel="noopener"
+                                            <a href="{{ route('requests.comments.attachments.preview', ['supportRequest' => $request, 'comment' => $comment, 'commentAttachment' => $att]) }}" target="_blank" rel="noopener"
                                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 transition shadow-sm">
                                                 @if($att->isImage())
                                                     <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -487,6 +609,15 @@ function updateFileLabel(input) {
     const count = input.files.length;
     document.getElementById('file-count').textContent =
         count > 0 ? count + ' file đã chọn' : '';
+}
+function filterTransferSupportTypes() {
+    const departmentId = document.getElementById('transfer-department').value;
+    const select = document.getElementById('transfer-support-type');
+    Array.from(select.options).forEach((option, index) => {
+        if (index === 0) return;
+        option.hidden = Boolean(departmentId) && option.dataset.dept !== departmentId;
+        if (option.hidden && option.selected) option.selected = false;
+    });
 }
 </script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>

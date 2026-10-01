@@ -67,7 +67,7 @@ class SlaService
 
         // --- ĐÃ QUÁ HẠN ---
         if ($now->greaterThanOrEqualTo($deadline)) {
-            if ($ticket->sla_flag !== SlaFlag::Breached->value) {
+            if ($ticket->sla_flag !== SlaFlag::Breached) {
                 $ticket->sla_flag = SlaFlag::Breached->value;
                 $ticket->save();
 
@@ -88,7 +88,7 @@ class SlaService
         $elapsed   = $created->diffInSeconds($now);
 
         if ($totalSecs > 0 && ($elapsed / $totalSecs) >= $warningPercent) {
-            if ($ticket->sla_flag !== SlaFlag::Warning->value) {
+            if ($ticket->sla_flag !== SlaFlag::Warning) {
                 $ticket->sla_flag = SlaFlag::Warning->value;
                 $ticket->save();
 

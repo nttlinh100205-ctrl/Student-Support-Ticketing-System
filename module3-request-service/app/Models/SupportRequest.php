@@ -40,6 +40,9 @@ class SupportRequest extends Model
         'closed_at',
         'sla_deadline_at',
         'sla_flag',
+        'rating',
+        'rating_comment',
+        'rated_at',
     ];
 
     protected $casts = [
@@ -50,6 +53,8 @@ class SupportRequest extends Model
         'resolved_at'     => 'datetime',
         'closed_at'       => 'datetime',
         'sla_deadline_at' => 'datetime',
+        'rating'          => 'integer',
+        'rated_at'        => 'datetime',
     ];
 
     public function statusHistories()

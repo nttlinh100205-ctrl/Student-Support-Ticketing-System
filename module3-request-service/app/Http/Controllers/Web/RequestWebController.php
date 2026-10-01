@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Web;
 
 use App\Enums\RequestStatus;
 use App\Http\Controllers\Controller;
+use App\Models\CommentAttachment;
 use App\Models\SupportRequest;
 use App\Models\TicketComment;
 use App\Services\CommentService;
 use App\Services\RequestWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 
@@ -112,7 +115,7 @@ class RequestWebController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $user = $this->currentUser();
         if ($user['role'] !== 'student') {
@@ -120,8 +123,14 @@ class RequestWebController extends Controller
                 ->with('error', 'Chỉ sinh viên được tạo yêu cầu hỗ trợ.');
         }
 
+        $copyRequest = $request->filled('copy_from')
+            ? SupportRequest::query()->whereKey((int) $request->query('copy_from'))
+                ->where('student_id', $user['id'])->first()
+            : null;
+
         return view('requests.create', [
             'user' => $user,
+            'copyRequest' => $copyRequest,
             'departments' => $this->departments(),
             'supportTypes' => $this->supportTypes(),
             'demoUsers' => $this->demoUsers(),
@@ -162,6 +171,13 @@ class RequestWebController extends Controller
             return back()->withInput()->with('error', 'Loại hỗ trợ không thuộc phòng ban đã chọn.');
         }
 
+        if (! $request->boolean('confirm_duplicate')) {
+            $duplicates = $this->workflow->findPotentialDuplicates($data, $user['id']);
+            if ($duplicates->isNotEmpty()) {
+                return back()->withInput()->with('possible_duplicates', $duplicates);
+            }
+        }
+
         $files = $request->file('attachments', []) ?: [];
         if (! is_array($files)) {
             $files = [$files];
@@ -185,6 +201,13 @@ class RequestWebController extends Controller
 
         $histories = $supportRequest->statusHistories()->latest('id')->get();
         $supportRequest->load('attachments');
+        $statusVal = $supportRequest->status instanceof RequestStatus
+            ? $supportRequest->status->value
+            : $supportRequest->status;
+        $canRate = $user['role'] === 'student'
+            && $supportRequest->student_id === $user['id']
+            && $statusVal === RequestStatus::Closed->value
+            && $supportRequest->rating === null;
 
         // Load comments (SV chỉ thấy comment công khai)
         $comments = $this->commentService->listComments(
@@ -195,6 +218,7 @@ class RequestWebController extends Controller
 
         return view('requests.show', [
             'request' => $supportRequest,
+            'canRate' => $canRate,
             'histories' => $histories,
             'comments' => $comments,
             'user' => $user,
@@ -202,7 +226,93 @@ class RequestWebController extends Controller
             'supportTypes' => $this->supportTypes(),
             'transitions' => RequestWorkflowService::TRANSITIONS,
             'demoUsers' => $this->demoUsers(),
+            'replyTemplates' => config('master_data.reply_templates', []),
         ]);
+    }
+
+    public function copy(SupportRequest $supportRequest)
+    {
+        $user = $this->currentUser();
+        if ($user['role'] !== 'student' || $supportRequest->student_id !== $user['id']) {
+            return redirect()->route('requests.index')
+                ->with('error', 'Chỉ sinh viên tạo yêu cầu mới được sao chép yêu cầu này.');
+        }
+
+        return redirect()->route('requests.create', ['copy_from' => $supportRequest->id]);
+    }
+
+    public function rate(Request $request, SupportRequest $supportRequest)
+    {
+        $user = $this->currentUser();
+        $statusVal = $supportRequest->status instanceof RequestStatus
+            ? $supportRequest->status->value
+            : $supportRequest->status;
+
+        if ($user['role'] !== 'student' || $supportRequest->student_id !== $user['id']) {
+            return back()->with('error', 'Chỉ sinh viên gửi yêu cầu mới được đánh giá.');
+        }
+
+        if ($statusVal !== RequestStatus::Closed->value) {
+            return back()->with('error', 'Chỉ yêu cầu đã hoàn tất mới được đánh giá.');
+        }
+
+        $data = $request->validate([
+            'rating' => 'required|integer|between:1,5',
+            'rating_comment' => 'nullable|string|max:1000',
+        ], [
+            'rating.required' => 'Vui lòng chọn mức đánh giá.',
+            'rating.between' => 'Mức đánh giá phải từ 1 đến 5 sao.',
+            'rating_comment.max' => 'Nhận xét tối đa 1000 ký tự.',
+        ]);
+
+        $updated = SupportRequest::query()
+            ->whereKey($supportRequest->id)
+            ->where('student_id', $user['id'])
+            ->where('status', RequestStatus::Closed->value)
+            ->whereNull('rating')
+            ->update([
+                'rating' => $data['rating'],
+                'rating_comment' => $data['rating_comment'] ?? null,
+                'rated_at' => now(),
+            ]);
+
+        if (! $updated) {
+            return back()->with('error', 'Yêu cầu này đã được đánh giá hoặc không còn đủ điều kiện.');
+        }
+
+        return back()->with('success', 'Cảm ơn bạn đã đánh giá kết quả hỗ trợ.');
+    }
+
+    public function previewCommentAttachment(
+        SupportRequest $supportRequest,
+        TicketComment $comment,
+        CommentAttachment $commentAttachment,
+    ) {
+        $user = $this->currentUser();
+
+        if (! $this->canView($supportRequest, $user)
+            || $comment->request_id !== $supportRequest->id
+            || $commentAttachment->comment_id !== $comment->id
+            || ($user['role'] === 'student' && $comment->is_internal)) {
+            abort(404);
+        }
+
+        $disk = Storage::disk('local');
+        abort_unless($disk->exists($commentAttachment->path), 404);
+
+        $path = $disk->path($commentAttachment->path);
+        $mimeType = $commentAttachment->mime_type ?: 'application/octet-stream';
+        $headers = [
+            'Content-Type' => $mimeType,
+            'X-Content-Type-Options' => 'nosniff',
+        ];
+        $inlineTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'text/plain'];
+
+        if (in_array($mimeType, $inlineTypes, true)) {
+            return response()->file($path, $headers);
+        }
+
+        return response()->download($path, $commentAttachment->original_name, $headers);
     }
 
     public function edit(SupportRequest $supportRequest)
@@ -266,7 +376,7 @@ class RequestWebController extends Controller
     {
         $user = $this->currentUser();
         $data = $request->validate([
-            'status' => 'required|in:new,received,in_progress,resolved,closed,cancelled',
+            'status' => 'required|in:new,received,in_progress,waiting_info,resolved,closed,cancelled',
             'note' => 'nullable|string|max:1000',
         ]);
 
@@ -321,6 +431,33 @@ class RequestWebController extends Controller
         }
 
         return back()->with('success', 'Đã gán cán bộ xử lý.');
+    }
+
+    public function transfer(Request $request, SupportRequest $supportRequest)
+    {
+        $user = $this->currentUser();
+        if (! in_array($user['role'], ['department_head', 'admin'], true)
+            || ($user['role'] === 'department_head' && $supportRequest->department_id !== $user['department_id'])) {
+            return back()->with('error', 'Bạn không có quyền chuyển yêu cầu này.');
+        }
+
+        $data = $request->validate([
+            'department_id' => ['required', 'integer', Rule::in(array_keys($this->departments()))],
+            'support_type_id' => 'required|integer',
+        ]);
+
+        try {
+            $this->workflow->transfer(
+                $supportRequest,
+                (int) $data['department_id'],
+                (int) $data['support_type_id'],
+                $user['id'],
+            );
+        } catch (ValidationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('requests.index')->with('success', 'Đã chuyển yêu cầu sang phòng ban mới.');
     }
 
     public function cancel(Request $request, SupportRequest $supportRequest)
@@ -464,6 +601,13 @@ class RequestWebController extends Controller
                 'department_id' => 3,
                 'full_name' => 'Nguyễn Văn A',
                 'email' => 'canbo01@university.edu.vn',
+            ],
+            [
+                'id' => 22,
+                'role' => 'staff',
+                'department_id' => 3,
+                'full_name' => 'Phạm Minh D',
+                'email' => 'canbo02@university.edu.vn',
             ],
             [
                 'id' => 31,

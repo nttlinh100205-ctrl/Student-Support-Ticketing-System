@@ -33,11 +33,16 @@ Route::post('/switch-role', [RequestWebController::class, 'switchRole'])->name('
 Route::get('/requests', [RequestWebController::class, 'index'])->name('requests.index');
 Route::get('/requests/create', [RequestWebController::class, 'create'])->name('requests.create');
 Route::post('/requests', [RequestWebController::class, 'store'])->name('requests.store');
+Route::get('/requests/{supportRequest}/copy', [RequestWebController::class, 'copy'])->name('requests.copy');
 Route::get('/requests/{supportRequest}', [RequestWebController::class, 'show'])->name('requests.show');
+Route::post('/requests/{supportRequest}/rating', [RequestWebController::class, 'rate'])->name('requests.rating.store');
+Route::get('/requests/{supportRequest}/comments/{comment}/attachments/{commentAttachment}/preview', [RequestWebController::class, 'previewCommentAttachment'])
+    ->name('requests.comments.attachments.preview');
 Route::get('/requests/{supportRequest}/edit', [RequestWebController::class, 'edit'])->name('requests.edit');
 Route::put('/requests/{supportRequest}', [RequestWebController::class, 'update'])->name('requests.update');
 Route::put('/requests/{supportRequest}/status', [RequestWebController::class, 'updateStatus'])->name('requests.update-status');
 Route::put('/requests/{supportRequest}/assign', [RequestWebController::class, 'assign'])->name('requests.assign');
+Route::put('/requests/{supportRequest}/transfer', [RequestWebController::class, 'transfer'])->name('requests.transfer');
 Route::put('/requests/{supportRequest}/cancel', [RequestWebController::class, 'cancel'])->name('requests.cancel');
 Route::delete('/requests/{supportRequest}', [RequestWebController::class, 'destroy'])->name('requests.destroy');
 

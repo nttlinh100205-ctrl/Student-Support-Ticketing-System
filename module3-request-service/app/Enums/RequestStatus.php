@@ -11,6 +11,7 @@ enum RequestStatus: string
     case New = 'new';
     case Received = 'received';
     case InProgress = 'in_progress';
+    case WaitingInfo = 'waiting_info';
     case Resolved = 'resolved';
     case Closed = 'closed';
     case Cancelled = 'cancelled';
@@ -21,6 +22,7 @@ enum RequestStatus: string
             self::New => 'Mới tạo',
             self::Received => 'Đã tiếp nhận',
             self::InProgress => 'Đang xử lý',
+            self::WaitingInfo => 'Chờ bổ sung',
             self::Resolved => 'Đã xử lý xong',
             self::Closed => 'Đã đóng',
             self::Cancelled => 'Đã hủy',

@@ -24,4 +24,20 @@ return [
         9 => ['name' => 'Sửa chữa cơ sở vật chất', 'department_id' => 6],
         10 => ['name' => 'Vệ sinh / an toàn khuôn viên', 'department_id' => 6],
     ],
+
+    'staff_by_department' => [
+        1 => [21, 22],
+        2 => [21, 22],
+        3 => [21, 22],
+        4 => [21, 22],
+        5 => [21, 22],
+        6 => [21, 22],
+    ],
+
+    'reply_templates' => [
+        'received' => 'Yêu cầu của bạn đã được tiếp nhận. Cán bộ sẽ kiểm tra và phản hồi sớm.',
+        'need_info' => 'Bạn vui lòng bổ sung thêm thông tin hoặc tài liệu để chúng tôi tiếp tục xử lý yêu cầu này.',
+        'in_progress' => 'Yêu cầu đang được xử lý. Chúng tôi sẽ cập nhật kết quả tại cuộc trao đổi này.',
+        'resolved' => 'Yêu cầu đã được xử lý. Bạn vui lòng kiểm tra và phản hồi nếu cần hỗ trợ thêm.',
+    ],
 ];

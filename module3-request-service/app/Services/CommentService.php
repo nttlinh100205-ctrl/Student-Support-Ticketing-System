@@ -17,6 +17,10 @@ use Illuminate\Validation\ValidationException;
  */
 class CommentService
 {
+    public function __construct(
+        protected RequestWorkflowService $workflow,
+    ) {}
+
     /**
      * Tạo comment mới + upload file đính kèm.
      *
@@ -63,11 +67,11 @@ class CommentService
                 'is_internal' => $data['is_internal'] ?? false,
             ]);
 
-            // Upload & tạo bản ghi attachment
+            // Upload & tạo bản ghi attachment trên disk local/private
             foreach ($files as $file) {
                 $path = $file->store(
-                    "comments/{$ticket->id}/{$comment->id}",
-                    'public'
+                    "private/comments/{$ticket->id}/{$comment->id}",
+                    'local'
                 );
 
                 $comment->attachments()->create([
@@ -79,6 +83,15 @@ class CommentService
             }
 
             $comment->load('attachments');
+
+            if ($userRole === 'student' && $ticket->status->value === 'waiting_info') {
+                $this->workflow->changeStatus(
+                    $ticket,
+                    'in_progress',
+                    $userId,
+                    'Sinh viên đã bổ sung thông tin qua bình luận.',
+                );
+            }
 
             return $comment;
         });
@@ -119,13 +132,70 @@ class CommentService
         }
 
         DB::transaction(function () use ($comment) {
-            // Xóa file vật lý trên storage
+            // Xóa file vật lý trên storage local/private
             foreach ($comment->attachments as $attachment) {
-                Storage::disk('public')->delete($attachment->path);
+                Storage::disk('local')->delete($attachment->path);
             }
 
             // DB cascade sẽ xóa attachments record
             $comment->delete();
         });
+    }
+
+    /**
+     * Upload file đính kèm cho comment theo disk local/private.
+     */
+    public function uploadAttachment(
+        SupportRequest $supportRequest,
+        TicketComment $comment,
+        \Illuminate\Http\UploadedFile $file,
+        int $userId,
+        string $userRole,
+        ?int $departmentId = null,
+    ): CommentAttachment {
+        if ($comment->request_id !== $supportRequest->id) {
+            throw ValidationException::withMessages([
+                'comment' => ['Bình luận không thuộc yêu cầu này.'],
+            ]);
+        }
+
+        if (! $this->canAccessRequest($supportRequest, $userId, $userRole, $departmentId)) {
+            throw ValidationException::withMessages([
+                'request' => ['Bạn không có quyền đính kèm file cho yêu cầu này.'],
+            ]);
+        }
+
+        $path = $file->store("private/comments/{$supportRequest->id}/{$comment->id}", 'local');
+
+        return $comment->attachments()->create([
+            'original_name' => $file->getClientOriginalName(),
+            'path' => $path,
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize() ?: 0,
+        ]);
+    }
+
+    public function previewAttachment(TicketComment $comment, CommentAttachment $attachment): \Symfony\Component\HttpFoundation\Response
+    {
+        if ($attachment->comment_id !== $comment->id) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response(
+            $attachment->path,
+            $attachment->original_name,
+            ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
+        );
+    }
+
+    protected function canAccessRequest(SupportRequest $supportRequest, int $userId, string $userRole, ?int $departmentId = null): bool
+    {
+        return match ($userRole) {
+            'student' => $supportRequest->student_id === $userId,
+            'staff' => $supportRequest->assigned_to === $userId,
+            'department_head' => $supportRequest->department_id === $departmentId,
+            'admin' => true,
+            default => false,
+        };
     }
 }

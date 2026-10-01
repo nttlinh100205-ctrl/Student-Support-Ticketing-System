@@ -6,16 +6,20 @@
 @php
     $statusLabels = [
         'new' => 'Mới tạo', 'received' => 'Đã tiếp nhận', 'in_progress' => 'Đang xử lý',
+        'waiting_info' => 'Chờ bổ sung',
         'resolved' => 'Chờ phản hồi SV', 'closed' => 'Đã đóng', 'cancelled' => 'Đã hủy',
     ];
     $statusColors = [
         'new' => 'bg-sky-50 text-sky-700 ring-sky-200',
         'received' => 'bg-indigo-50 text-indigo-700 ring-indigo-200',
         'in_progress' => 'bg-amber-50 text-amber-700 ring-amber-200',
+        'waiting_info' => 'bg-orange-50 text-orange-700 ring-orange-200',
         'resolved' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
         'closed' => 'bg-slate-100 text-slate-600 ring-slate-200',
         'cancelled' => 'bg-rose-50 text-rose-700 ring-rose-200',
     ];
+    $slaLabels = ['warning' => 'Sắp quá hạn', 'breached' => 'Quá hạn'];
+    $slaColors = ['warning' => 'bg-amber-100 text-amber-800', 'breached' => 'bg-rose-100 text-rose-800'];
     $priorityLabels = ['low' => 'Thấp', 'normal' => 'Bình thường', 'high' => 'Cao', 'urgent' => 'Khẩn cấp'];
     $priorityColors = [
         'low' => 'bg-slate-100 text-slate-600',
@@ -36,7 +40,7 @@
     });
 @endphp
 
-<div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
     <div>
         <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Danh sách yêu cầu</h2>
         <p class="text-sm text-slate-500 mt-1">
@@ -52,8 +56,8 @@
         </p>
     </div>
     @if($user['role'] === 'student')
-        <a href="{{ route('requests.create') }}"
-           class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition shadow-md shadow-indigo-600/20">
+          <a href="{{ route('requests.create') }}"
+              class="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition shadow-md shadow-indigo-600/20">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Tạo yêu cầu
         </a>
@@ -66,7 +70,7 @@
     $hasActiveFilter = !empty($search) || !empty($statusFilter) || !empty($priorityFilter)
         || !empty($departmentFilter) || !empty($assignedToFilter) || !empty($fromFilter) || !empty($toFilter);
 @endphp
-<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 mb-5">
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5 mb-5">
     <form method="GET">
         @if(! $isHeadOrAdmin)
             {{-- Student / Staff: 1 hàng như cũ --}}
@@ -129,7 +133,7 @@
             </style>
             <div class="space-y-2.5">
                 {{-- Hàng 1 --}}
-                <div class="filter-head-r1 grid gap-2.5 items-end">
+                    <div class="filter-head-r1 grid gap-2.5 items-end">
                     <div class="relative min-w-0">
                         <label class="block text-xs text-slate-400 mb-1">Tìm kiếm</label>
                         <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 bottom-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -199,7 +203,7 @@
 {{-- Khung riêng: yêu cầu KHẨN CẤP --}}
 @if($urgentItems->isNotEmpty())
 <div class="mb-5 rounded-2xl border-2 border-red-200 bg-red-50/60 overflow-hidden shadow-sm">
-    <div class="px-5 py-3 border-b border-red-200/80 flex items-center gap-2 bg-red-50">
+                <div class="px-4 sm:px-5 py-3 border-b border-red-200/80 flex items-center gap-2 bg-red-50">
         <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
         <h3 class="text-sm font-bold text-red-800 uppercase tracking-wide">Yêu cầu khẩn cấp</h3>
         <span class="ml-auto text-xs font-semibold text-red-600 bg-white/80 px-2.5 py-0.5 rounded-full ring-1 ring-red-200">
@@ -210,9 +214,10 @@
         @foreach($urgentItems as $r)
             @php
                 $statusVal = $r->status instanceof \App\Enums\RequestStatus ? $r->status->value : $r->status;
+                $slaVal = $r->sla_flag instanceof \App\Enums\SlaFlag ? $r->sla_flag->value : $r->sla_flag;
             @endphp
             <a href="{{ route('requests.show', $r) }}"
-               class="flex flex-wrap items-center gap-4 px-5 py-3.5 hover:bg-red-50/80 transition">
+               class="flex flex-wrap items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 hover:bg-red-50/80 transition">
                 <span class="font-mono text-sm font-semibold text-red-700">{{ $r->code }}</span>
                 <span class="flex-1 min-w-0">
                     <span class="block font-medium text-slate-900 truncate">{{ $r->title }}</span>
@@ -221,6 +226,11 @@
                 <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusColors[$statusVal] ?? 'bg-slate-100' }}">
                     {{ $statusLabels[$statusVal] ?? $statusVal }}
                 </span>
+                @if(isset($slaLabels[$slaVal]))
+                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $slaColors[$slaVal] }}">
+                        {{ $slaLabels[$slaVal] }} · {{ $r->sla_deadline_at?->format('d/m H:i') }}
+                    </span>
+                @endif
                 <span class="text-xs text-slate-500 whitespace-nowrap">{{ $r->created_at?->format('d/m/Y H:i') }}</span>
             </a>
         @endforeach
@@ -230,7 +240,7 @@
 
 {{-- Danh sách còn lại (không gồm khẩn cấp trên trang này) --}}
 @if($requests->isEmpty())
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-16 text-center">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-10 sm:p-16 text-center">
         <p class="text-slate-600 font-medium">Chưa có yêu cầu nào</p>
         <p class="text-sm text-slate-400 mt-1">Danh sách trống theo bộ lọc hiện tại</p>
     </div>
@@ -240,13 +250,15 @@
     </div>
 @else
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <table class="w-full text-sm">
+        <div class="hidden md:block overflow-x-auto">
+        <table class="w-full min-w-[720px] text-sm">
             <thead>
                 <tr class="bg-slate-50/80 border-b border-slate-100 text-left text-slate-500 text-xs uppercase tracking-wider">
                     <th class="px-5 py-3.5 font-semibold">Mã</th>
                     <th class="px-5 py-3.5 font-semibold">Tiêu đề</th>
                     <th class="px-5 py-3.5 font-semibold">Ưu tiên</th>
                     <th class="px-5 py-3.5 font-semibold">Trạng thái</th>
+                    <th class="px-5 py-3.5 font-semibold">SLA</th>
                     <th class="px-5 py-3.5 font-semibold">Ngày tạo</th>
                 </tr>
             </thead>
@@ -255,6 +267,7 @@
                     @php
                         $statusVal = $r->status instanceof \App\Enums\RequestStatus ? $r->status->value : $r->status;
                         $priorityVal = $r->priority instanceof \App\Enums\RequestPriority ? $r->priority->value : $r->priority;
+                        $slaVal = $r->sla_flag instanceof \App\Enums\SlaFlag ? $r->sla_flag->value : $r->sla_flag;
                     @endphp
                     <tr class="hover:bg-slate-50/50 transition">
                         <td class="px-5 py-4">
@@ -278,6 +291,13 @@
                                 {{ $statusLabels[$statusVal] ?? $statusVal }}
                             </span>
                         </td>
+                        <td class="px-5 py-4">
+                            @if(isset($slaLabels[$slaVal]))
+                                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $slaColors[$slaVal] }}">{{ $slaLabels[$slaVal] }}</span>
+                            @else
+                                <span class="text-xs text-slate-400">Đúng hạn</span>
+                            @endif
+                        </td>
                         <td class="px-5 py-4 text-slate-500 whitespace-nowrap text-[13px]">
                             {{ $r->created_at?->format('d/m/Y H:i') }}
                         </td>
@@ -285,6 +305,40 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
+
+        <div class="md:hidden divide-y divide-slate-100">
+            @foreach($normalItems as $r)
+                @php
+                    $statusVal = $r->status instanceof \App\Enums\RequestStatus ? $r->status->value : $r->status;
+                    $priorityVal = $r->priority instanceof \App\Enums\RequestPriority ? $r->priority->value : $r->priority;
+                    $slaVal = $r->sla_flag instanceof \App\Enums\SlaFlag ? $r->sla_flag->value : $r->sla_flag;
+                @endphp
+                <a href="{{ route('requests.show', $r) }}" class="block p-4 hover:bg-slate-50 transition">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <span class="font-mono text-xs font-semibold text-indigo-600">{{ $r->code }}</span>
+                            <h3 class="mt-1 font-medium text-slate-900 leading-snug">{{ $r->title }}</h3>
+                            <p class="mt-1 text-xs text-slate-500">{{ $deptNames[$r->department_id] ?? 'Phòng #'.$r->department_id }}</p>
+                        </div>
+                        <span class="inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusColors[$statusVal] ?? 'bg-slate-100' }}">
+                            {{ $statusLabels[$statusVal] ?? $statusVal }}
+                        </span>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between gap-3">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $priorityColors[$priorityVal] ?? 'bg-slate-100' }}">
+                            {{ $priorityLabels[$priorityVal] ?? $priorityVal }}
+                        </span>
+                        <span class="text-right text-xs text-slate-500">
+                            @if(isset($slaLabels[$slaVal]))
+                                <span class="block font-medium {{ $slaVal === 'breached' ? 'text-rose-700' : 'text-amber-700' }}">{{ $slaLabels[$slaVal] }}</span>
+                            @endif
+                            {{ $r->created_at?->format('d/m/Y H:i') }}
+                        </span>
+                    </div>
+                </a>
+            @endforeach
+        </div>
 
         @if($requests->hasPages())
             <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/50">

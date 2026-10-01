@@ -29,7 +29,11 @@ class TicketCommentResource extends JsonResource
                 return $this->attachments->map(fn ($a) => [
                     'id'            => $a->id,
                     'original_name' => $a->original_name,
-                    'url'           => $a->url(),
+                    'url'           => route('api.requests.comments.attachments.preview', [
+                        'supportRequest' => $this->request_id,
+                        'comment' => $this->id,
+                        'commentAttachment' => $a->id,
+                    ]),
                     'mime_type'     => $a->mime_type,
                     'size'          => $a->size,
                 ]);

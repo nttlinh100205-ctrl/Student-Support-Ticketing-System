@@ -9,6 +9,7 @@ use App\Models\RequestStatusHistory;
 use App\Models\SupportRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 
@@ -21,9 +22,10 @@ class RequestWorkflowService
     public const TRANSITIONS = [
         'new' => ['received', 'cancelled'],
         'received' => ['in_progress', 'cancelled'],
-        'in_progress' => ['resolved', 'cancelled'],
+        'in_progress' => ['waiting_info', 'resolved', 'cancelled'],
+        'waiting_info' => ['in_progress', 'cancelled'],
         'resolved' => ['closed', 'in_progress'], // SV xác nhận đóng | SV yêu cầu xử lý lại
-        'closed' => [],
+        'closed' => ['in_progress'],
         'cancelled' => [],
     ];
 
@@ -43,10 +45,13 @@ class RequestWorkflowService
 
             $priority = $payload['priority'] ?? 'normal';
             $createdAt = now();
+            $assignedTo = $this->selectStaffForDepartment((int) $payload['department_id']);
 
             $request = SupportRequest::create([
                 ...$payload,
                 'student_id'      => $studentId,
+                'assigned_to'     => $assignedTo,
+                'assigned_at'     => $assignedTo ? $createdAt : null,
                 'status'          => RequestStatus::New->value,
                 'priority'        => $priority,
                 'code'            => $this->generateCode(),
@@ -54,7 +59,8 @@ class RequestWorkflowService
                 'sla_flag'        => SlaFlag::OnTime->value,
             ]);
 
-            $this->logHistory($request, null, RequestStatus::New->value, $studentId, null);
+            $historyNote = $assignedTo ? "Tự động phân công cán bộ #{$assignedTo}." : null;
+            $this->logHistory($request, null, RequestStatus::New->value, $studentId, $historyNote);
 
             $this->storeAttachments($request, $files);
 
@@ -120,6 +126,12 @@ class RequestWorkflowService
             if ($toStatus === RequestStatus::Closed->value && $request->closed_at === null) {
                 $request->closed_at = now();
             }
+            if ($from === RequestStatus::Closed->value && $toStatus === RequestStatus::InProgress->value) {
+                $request->closed_at = null;
+                $request->resolved_at = null;
+                $request->sla_deadline_at = $this->slaService->calculateDeadline($request->priority->value, now());
+                $request->sla_flag = SlaFlag::OnTime->value;
+            }
             // SV yêu cầu xử lý lại → reset mốc resolved để xử lý vòng mới
             if ($from === RequestStatus::Resolved->value && $toStatus === RequestStatus::InProgress->value) {
                 $request->resolved_at = null;
@@ -142,11 +154,107 @@ class RequestWorkflowService
             ]);
         }
 
+        if (! in_array($staffId, config("master_data.staff_by_department.{$request->department_id}", []), true)) {
+            throw ValidationException::withMessages([
+                'assigned_to' => 'Cán bộ được chọn không thuộc phòng ban đang xử lý yêu cầu.',
+            ]);
+        }
+
         $request->assigned_to = $staffId;
         $request->assigned_at = now();
         $request->save();
 
         return $request;
+    }
+
+    public function transfer(SupportRequest $request, int $departmentId, int $supportTypeId, int $changedBy): SupportRequest
+    {
+        if (in_array($request->status->value, ['closed', 'cancelled'], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Chỉ có thể chuyển yêu cầu chưa đóng hoặc chưa hủy.',
+            ]);
+        }
+
+        $departments = config('master_data.departments', []);
+        $supportTypes = config('master_data.support_types', []);
+        if (! isset($departments[$departmentId])
+            || ! isset($supportTypes[$supportTypeId])
+            || (int) $supportTypes[$supportTypeId]['department_id'] !== $departmentId) {
+            throw ValidationException::withMessages([
+                'department_id' => 'Phòng ban hoặc loại hỗ trợ đích không hợp lệ.',
+            ]);
+        }
+
+        if ($request->department_id === $departmentId) {
+            throw ValidationException::withMessages([
+                'department_id' => 'Vui lòng chọn phòng ban khác để chuyển tiếp.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($request, $departmentId, $supportTypeId, $changedBy, $departments) {
+            $fromDepartmentId = $request->department_id;
+            $request->department_id = $departmentId;
+            $request->support_type_id = $supportTypeId;
+            $request->assigned_to = $this->selectStaffForDepartment($departmentId);
+            $request->assigned_at = $request->assigned_to ? now() : null;
+            $request->save();
+
+            $note = sprintf(
+                'Chuyển yêu cầu từ %s sang %s.%s',
+                $departments[$fromDepartmentId] ?? "phòng #{$fromDepartmentId}",
+                $departments[$departmentId],
+                $request->assigned_to ? " Tự động phân công cán bộ #{$request->assigned_to}." : '',
+            );
+            $status = $request->status->value;
+            $this->logHistory($request, $status, $status, $changedBy, $note);
+
+            return $request->fresh();
+        });
+    }
+
+    public function findPotentialDuplicates(array $data, int $studentId)
+    {
+        $title = Str::lower(Str::squish($data['title']));
+        $tokens = collect(explode(' ', $title))->filter(fn ($token) => mb_strlen($token) >= 3)->unique();
+        if ($tokens->isEmpty()) {
+            return collect();
+        }
+
+        return SupportRequest::query()
+            ->where('student_id', $studentId)
+            ->where('department_id', $data['department_id'])
+            ->whereNotIn('status', ['closed', 'cancelled'])
+            ->latest()
+            ->limit(100)
+            ->get(['id', 'code', 'title', 'status', 'created_at'])
+            ->map(function (SupportRequest $candidate) use ($title) {
+                similar_text($title, Str::lower(Str::squish($candidate->title)), $similarity);
+                $candidate->setAttribute('title_similarity', $similarity);
+
+                return $candidate;
+            })
+            ->filter(fn (SupportRequest $candidate) => $candidate->title_similarity >= 75)
+            ->take(3)
+            ->values();
+    }
+
+    protected function selectStaffForDepartment(int $departmentId): ?int
+    {
+        $staffIds = config("master_data.staff_by_department.{$departmentId}", []);
+        if ($staffIds === []) {
+            return null;
+        }
+
+        return collect($staffIds)
+            ->map(fn ($staffId) => [
+                'id' => (int) $staffId,
+                'load' => SupportRequest::query()
+                    ->where('assigned_to', $staffId)
+                    ->whereNotIn('status', ['closed', 'cancelled'])
+                    ->count(),
+            ])
+            ->sortBy(['load', 'id'])
+            ->first()['id'];
     }
 
    

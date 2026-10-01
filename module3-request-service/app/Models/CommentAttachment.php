@@ -33,7 +33,15 @@ class CommentAttachment extends Model
 
     public function url(): string
     {
-        return Storage::disk('public')->url($this->path);
+        if (! $this->comment()->exists()) {
+            return '';
+        }
+
+        return route('api.requests.comments.attachments.preview', [
+            'supportRequest' => $this->comment?->request_id,
+            'comment' => $this->comment_id,
+            'commentAttachment' => $this->id,
+        ]);
     }
 
     public function isImage(): bool

@@ -96,6 +96,16 @@ class RequestController extends Controller
         }
 
         $data = $request->safe()->except(['attachments']);
+        if (! $request->boolean('confirm_duplicate')) {
+            $duplicates = $this->workflow->findPotentialDuplicates($data, $this->auth->userId());
+            if ($duplicates->isNotEmpty()) {
+                return ApiResponse::error(
+                    'Yêu cầu có thể trùng với: '.$duplicates->pluck('code')->implode(', ').'. Gửi lại với confirm_duplicate=true nếu vẫn muốn tạo.',
+                    409,
+                );
+            }
+        }
+
         $files = $request->file('attachments', []) ?: [];
         if (! is_array($files)) {
             $files = [$files];
@@ -184,6 +194,33 @@ class RequestController extends Controller
             $updated = $this->workflow->assign(
                 $supportRequest,
                 (int) $request->validated('assigned_to'),
+                $this->auth->userId(),
+            );
+        } catch (ValidationException $e) {
+            return ApiResponse::error($e->getMessage(), 409);
+        }
+
+        return ApiResponse::success(new SupportRequestResource($updated));
+    }
+
+    public function transfer(Request $request, SupportRequest $supportRequest)
+    {
+        $role = $this->auth->role();
+        if (! in_array($role, ['department_head', 'admin'], true)
+            || ($role === 'department_head' && $supportRequest->department_id !== $this->auth->departmentId())) {
+            return ApiResponse::error('Bạn không có quyền chuyển yêu cầu này.', 403);
+        }
+
+        $data = $request->validate([
+            'department_id' => 'required|integer',
+            'support_type_id' => 'required|integer',
+        ]);
+
+        try {
+            $updated = $this->workflow->transfer(
+                $supportRequest,
+                (int) $data['department_id'],
+                (int) $data['support_type_id'],
                 $this->auth->userId(),
             );
         } catch (ValidationException $e) {

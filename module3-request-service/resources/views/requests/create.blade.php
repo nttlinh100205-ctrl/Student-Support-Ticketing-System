@@ -9,7 +9,19 @@
     </a>
 
     <h2 class="text-2xl font-bold text-slate-900 mb-1">Tạo yêu cầu hỗ trợ mới</h2>
-    <p class="text-sm text-slate-500 mb-6">Điền thông tin bên dưới. Yêu cầu sẽ được gửi đến phòng ban tương ứng.</p>
+    <p class="text-sm text-slate-500 mb-6">{{ $copyRequest ? 'Thông tin đã được sao chép. Bạn có thể chỉnh sửa trước khi gửi.' : 'Điền thông tin bên dưới. Yêu cầu sẽ được gửi đến phòng ban tương ứng.' }}</p>
+
+    @if(session('possible_duplicates'))
+        <div class="mb-5 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
+            <p class="font-semibold">Có yêu cầu đang mở với tiêu đề tương tự:</p>
+            <ul class="mt-2 space-y-1">
+                @foreach(session('possible_duplicates') as $duplicate)
+                    <li><a class="font-medium underline" href="{{ route('requests.show', $duplicate) }}">{{ $duplicate->code }} · {{ $duplicate->title }}</a></li>
+                @endforeach
+            </ul>
+            <p class="mt-2 text-amber-800">Kiểm tra danh sách trên trước khi tiếp tục. Nếu vẫn cần yêu cầu mới, hãy chọn nút xác nhận bên dưới.</p>
+        </div>
+    @endif
 
     @if($errors->any())
         <div class="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-3 mb-5 text-sm">
@@ -34,7 +46,7 @@
                     onchange="filterSupportTypes()">
                 <option value="">-- Chọn phòng ban --</option>
                 @foreach($departments as $id => $name)
-                    <option value="{{ $id }}" @selected(old('department_id') == $id)>{{ $name }}</option>
+                    <option value="{{ $id }}" @selected(old('department_id', $copyRequest?->department_id) == $id)>{{ $name }}</option>
                 @endforeach
             </select>
         </div>
@@ -48,7 +60,7 @@
                 <option value="">-- Chọn loại hỗ trợ --</option>
                 @foreach($supportTypes as $id => $type)
                     <option value="{{ $id }}" data-dept="{{ $type['department_id'] }}"
-                            @selected(old('support_type_id') == $id)>
+                            @selected(old('support_type_id', $copyRequest?->support_type_id) == $id)>
                         {{ $type['name'] }}
                     </option>
                 @endforeach
@@ -59,7 +71,7 @@
             <label class="block text-sm font-medium text-slate-700 mb-1.5">
                 Tiêu đề <span class="text-rose-500">*</span>
             </label>
-            <input type="text" name="title" required maxlength="255" value="{{ old('title') }}"
+            <input type="text" name="title" required maxlength="255" value="{{ old('title', $copyRequest?->title) }}"
                    placeholder="VD: Xin xác nhận sinh viên để vay vốn"
                    class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
         </div>
@@ -69,7 +81,7 @@
                 Nội dung chi tiết <span class="text-rose-500">*</span>
             </label>
             <textarea name="content" required rows="5" placeholder="Mô tả rõ nhu cầu hỗ trợ của bạn..."
-                      class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">{{ old('content') }}</textarea>
+                      class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">{{ old('content', $copyRequest?->content) }}</textarea>
         </div>
 
         <div>
@@ -78,7 +90,7 @@
                 @foreach(['low' => 'Thấp', 'normal' => 'Bình thường', 'high' => 'Cao', 'urgent' => 'Khẩn cấp'] as $val => $label)
                     <label class="flex-1 text-center border rounded-lg py-2 text-sm cursor-pointer transition has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-700 has-[:checked]:font-medium border-slate-200 text-slate-600 hover:border-slate-300">
                         <input type="radio" name="priority" value="{{ $val }}" class="sr-only"
-                               @checked(old('priority', 'normal') === $val)>
+                               @checked(old('priority', $copyRequest?->priority?->value ?? 'normal') === $val)>
                         {{ $label }}
                     </label>
                 @endforeach
@@ -96,10 +108,17 @@
         </div>
 
         <div class="pt-2 flex gap-3">
-            <button type="submit"
-                    class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm">
-                Gửi yêu cầu
-            </button>
+            @if(session('possible_duplicates'))
+                <button type="submit" name="confirm_duplicate" value="1"
+                        class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm">
+                    Vẫn tạo yêu cầu mới
+                </button>
+            @else
+                <button type="submit"
+                        class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm">
+                    Gửi yêu cầu
+                </button>
+            @endif
             <a href="{{ route('requests.index') }}"
                class="px-5 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition">
                 Hủy

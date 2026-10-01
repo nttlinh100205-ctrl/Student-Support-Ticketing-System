@@ -33,10 +33,10 @@
     </style>
 </head>
 <body class="bg-slate-100/80 text-slate-800 antialiased min-h-screen">
-    <div class="min-h-screen flex">
+    <div class="min-h-screen flex flex-col md:flex-row">
         {{-- Sidebar --}}
-        <aside class="w-60 bg-white border-r border-slate-200/80 flex flex-col shrink-0 shadow-soft">
-            <div class="p-5 border-b border-slate-100">
+        <aside class="w-full md:w-60 bg-white border-b md:border-b-0 md:border-r border-slate-200/80 flex flex-col shrink-0 shadow-soft">
+            <div class="p-4 md:p-5 border-b border-slate-100">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-brand-500/30">
                         SV
@@ -49,9 +49,9 @@
             </div>
 
             <nav class="flex-1 p-3 space-y-1">
-                <p class="px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Menu</p>
+                <p class="hidden md:block px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Menu</p>
                 <a href="{{ route('requests.index') }}"
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                   class="inline-flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                           {{ request()->routeIs('requests.index') || request()->routeIs('requests.show')
                               ? 'bg-brand-50 text-brand-700 shadow-sm'
                               : 'text-slate-600 hover:bg-slate-50' }}">
@@ -60,7 +60,7 @@
                 </a>
                 @if(($user['role'] ?? '') === 'student')
                 <a href="{{ route('requests.create') }}"
-                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                   class="inline-flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                           {{ request()->routeIs('requests.create')
                               ? 'bg-brand-50 text-brand-700 shadow-sm'
                               : 'text-slate-600 hover:bg-slate-50' }}">
@@ -73,7 +73,7 @@
             {{-- Role switcher --}}
             <div class="p-3 border-t border-slate-100 bg-slate-50/50">
                 <p class="px-2 mb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Đổi vai trò (test)</p>
-                <form method="POST" action="{{ route('requests.switch-role') }}" class="space-y-0.5">
+                <form method="POST" action="{{ route('requests.switch-role') }}" class="grid grid-cols-2 gap-1 md:block md:space-y-0.5">
                     @csrf
                     @foreach($demoUsers ?? [] as $u)
                         <button type="submit" name="user_id" value="{{ $u['id'] }}"
@@ -103,8 +103,8 @@
             </div>
         </aside>
 
-        <main class="flex-1 overflow-auto">
-            <div class="max-w-6xl mx-auto p-6 md:p-8">
+        <main class="min-w-0 flex-1 overflow-auto">
+            <div class="max-w-6xl mx-auto p-4 sm:p-6 md:p-8">
                 @if(session('success'))
                     <div class="mb-5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 px-4 py-3 text-sm flex items-center gap-2 shadow-sm">
                         <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>

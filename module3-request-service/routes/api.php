@@ -14,6 +14,7 @@ Route::middleware('auth.fake')->prefix('requests')->group(function () {
     Route::put('/{supportRequest}', [RequestController::class, 'update']);
     Route::put('/{supportRequest}/status', [RequestController::class, 'updateStatus']);
     Route::put('/{supportRequest}/assign', [RequestController::class, 'assign']);
+    Route::put('/{supportRequest}/transfer', [RequestController::class, 'transfer']);
     Route::put('/{supportRequest}/cancel', [RequestController::class, 'cancel']);
     Route::delete('/{supportRequest}', [RequestController::class, 'destroy']);
     Route::get('/{supportRequest}/history', [RequestController::class, 'history']);
@@ -26,6 +27,11 @@ Route::middleware('auth.fake')->prefix('requests')->group(function () {
     Route::get('/{supportRequest}/comments', [CommentController::class, 'index']);
     Route::post('/{supportRequest}/comments', [CommentController::class, 'store']);
     Route::delete('/{supportRequest}/comments/{comment}', [CommentController::class, 'destroy']);
+    Route::post('/{supportRequest}/comments/{comment}/attachments', [\App\Http\Controllers\Api\AttachmentController::class, 'store'])
+        ->name('api.requests.comments.attachments.store');
+
+    Route::withoutMiddleware('auth.fake')->get('/{supportRequest}/comments/{comment}/attachments/{commentAttachment}/preview', [\App\Http\Controllers\Api\AttachmentController::class, 'preview'])
+        ->name('api.requests.comments.attachments.preview');
 });
 
 /*
