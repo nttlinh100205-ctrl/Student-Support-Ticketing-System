@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SupportDepartmentSeeder::class,
             SupportTypeSeeder::class,
+            Module2ExtensionSeeder::class,
         ]);
     }
 }

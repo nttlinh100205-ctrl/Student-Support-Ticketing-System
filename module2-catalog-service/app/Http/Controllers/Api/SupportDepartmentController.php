@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SupportDepartmentResource;
 use App\Models\SupportDepartment;
-use App\Models\SupportRequest;
+use App\Services\RequestUsage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -195,11 +195,7 @@ class SupportDepartmentController extends Controller
             ], 422);
         }
 
-        if (
-            SupportRequest::query()
-                ->where('department_id', $department->id)
-                ->exists()
-        ) {
+        if (RequestUsage::usesDepartment($department->id)) {
             return response()->json([
                 'message' => 'Không thể xóa phòng ban vì đã có yêu cầu hỗ trợ liên quan. Hãy chuyển sang ngừng hoạt động.',
             ], 422);

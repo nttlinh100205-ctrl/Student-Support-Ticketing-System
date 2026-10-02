@@ -1,59 +1,53 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Module 2 – Catalog Service (Danh mục & tổ chức)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Quản lý phòng ban, loại hỗ trợ, cán bộ theo phòng ban, và phần mở rộng:
 
-## About Laravel
+- **SLA theo loại yêu cầu**: mỗi loại hỗ trợ có `sla_days` (số ngày xử lý dự kiến). Module 3 dùng để tính hạn và cảnh báo quá hạn.
+- **Biểu mẫu theo loại yêu cầu**: mỗi loại quy định các trường cần nhập và giấy tờ cần đính kèm (kiểu `file`).
+- **FAQ** theo phòng ban / loại yêu cầu, hiển thị cho sinh viên trước khi gửi để giảm yêu cầu trùng.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Cài đặt
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Mở `/catalog` (sinh viên tra cứu) hoặc `/admin/departments` (quản trị). Đổi vai trò Admin / Sinh viên ở cuối thanh bên.
 
-## Learning Laravel
+## Xác thực
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Giống Module 3: mọi API cần header `X-User-Id` và `X-User-Role` (`admin`, `student`, `staff`, `department_head`).
+Khi Module 1 có JWT thật, chỉ cần đổi `FakeAuthMiddleware` và binding trong `AuthContextServiceProvider`.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## API cho các module khác (`auth.fake`)
 
-## Laravel Sponsors
+| Method | URL | Mô tả |
+|---|---|---|
+| GET | `/api/v1/catalog/departments` | Phòng ban đang hoạt động |
+| GET | `/api/v1/catalog/support-types?department_id=` | Loại hỗ trợ đang hoạt động (kèm `sla_days`) |
+| GET | `/api/v1/catalog/support-types/{id}/form` | Thông tin loại + `sla_days` + các trường biểu mẫu |
+| POST | `/api/v1/catalog/support-types/{id}/validate` | Kiểm tra `values[field_key]` theo biểu mẫu: 200 nếu hợp lệ, 422 kèm lỗi theo tên trường |
+| GET | `/api/v1/catalog/support-types/{id}/faqs` | FAQ chung của phòng + FAQ riêng của loại |
+| GET | `/api/v1/catalog/departments/{id}/faqs` | FAQ theo phòng ban |
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Module 3 nên gọi `.../validate` trước khi lưu yêu cầu. Trường kiểu `file` nhận tệp tải lên hoặc tên / mã tệp đã lưu ở Module 3.
 
-### Premium Partners
+## API quản trị (`role:admin`)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- Phòng ban: `GET|POST /api/v1/admin/departments`, `GET|PUT|DELETE /api/v1/admin/departments/{id}`
+- Cán bộ: `GET /api/v1/admin/departments/{id}/staff`, `PUT /api/v1/admin/departments/{id}/staff/{userId}` (`role`: `STAFF` | `DEPARTMENT_HEAD`), `GET /api/v1/admin/staff-candidates`
+- Loại hỗ trợ: `GET|POST /api/v1/admin/support-types`, `GET|PUT|DELETE /api/v1/admin/support-types/{id}` (có `sla_days`)
+- Biểu mẫu: `GET|POST /api/v1/admin/support-types/{id}/fields`, `GET|PUT /.../fields/{fieldId}`, `PUT /.../fields/{fieldId}/status`
+- FAQ: `GET|POST /api/v1/admin/faqs`, `GET|PUT /api/v1/admin/faqs/{id}`, `PUT /api/v1/admin/faqs/{id}/status`
 
-## Contributing
+Không xóa được phòng ban / loại hỗ trợ đã có yêu cầu: bảng `requests` của Module 3 được kiểm tra khi hai service dùng chung database.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Kiểm thử
 
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan test
+```

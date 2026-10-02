@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SupportTypeResource;
-use App\Models\SupportRequest;
 use App\Models\SupportType;
+use App\Services\RequestUsage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -199,11 +199,19 @@ class SupportTypeController extends Controller
                 'exists:support_departments,id',
             ],
 
+            // Số ngày xử lý dự kiến; null = chưa quy định.
+            'sla_days' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:365',
+            ],
+
             'is_active' => [
                 'sometimes',
                 'boolean',
             ],
-        ]);
+        ], $this->slaMessages());
 
         /*
          * Nếu không truyền trạng thái
@@ -304,11 +312,18 @@ class SupportTypeController extends Controller
                 'exists:support_departments,id',
             ],
 
+            'sla_days' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:365',
+            ],
+
             'is_active' => [
                 'sometimes',
                 'boolean',
             ],
-        ]);
+        ], $this->slaMessages());
 
         $supportType->update(
             $data
@@ -345,14 +360,7 @@ class SupportTypeController extends Controller
          * Nếu bảng requests đang sử dụng support_type_id
          * thì không cho xóa để tránh mất liên kết lịch sử.
          */
-        if (
-            SupportRequest::query()
-                ->where(
-                    'support_type_id',
-                    $supportType->id
-                )
-                ->exists()
-        ) {
+        if (RequestUsage::usesSupportType($supportType->id)) {
             return response()->json([
                 'message' => 'Không thể xóa loại hỗ trợ vì đã có yêu cầu sử dụng loại hỗ trợ này.',
             ], 422);
@@ -363,5 +371,14 @@ class SupportTypeController extends Controller
         return response()->json([
             'message' => 'Xóa loại hỗ trợ thành công.',
         ]);
+    }
+
+    private function slaMessages(): array
+    {
+        return [
+            'sla_days.integer' => 'Số ngày xử lý phải là số nguyên.',
+            'sla_days.min' => 'Số ngày xử lý phải từ 1 đến 365.',
+            'sla_days.max' => 'Số ngày xử lý phải từ 1 đến 365.',
+        ];
     }
 }

@@ -104,7 +104,6 @@
 <script>
 (() => {
     const el = id => document.getElementById(id);
-    const token = localStorage.getItem('access_token');
     let page = 1, lastPage = 1, requestId = 0, loading = false;
     let filters = {};
     let users = [];
@@ -117,13 +116,10 @@
         const response = await fetch(url, {
             ...options,
             headers: { Accept: 'application/json', 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`, ...(options.headers || {}) }
+                ...DemoAuth.headers(), ...(options.headers || {}) }
         });
         if (response.status === 401) {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('current_user');
-            window.location.href = '/login';
-            throw new Error('Phiên đăng nhập đã hết hạn.');
+            throw new Error('Chưa xác thực. Hãy chọn vai trò ở thanh bên.');
         }
         const data = await response.json().catch(() => null);
         if (!response.ok) {
@@ -159,7 +155,7 @@
         )));
     }
     async function loadUsers() {
-        const list = await loadAllPages('/api/v1/admin/users');
+        const list = await loadAllPages('/api/v1/admin/staff-candidates');
         users = list.filter(user => user.role !== 'ADMIN');
         const select = el('userSelect'), previous = select.value;
         select.replaceChildren(new Option('-- Chọn tài khoản --', ''));
@@ -282,8 +278,8 @@
         button.disabled = true;
         button.textContent = 'Đang lưu...';
         try {
-            const result = await api(`/api/v1/admin/users/${userId}/role`, {
-                method: 'PUT', body: JSON.stringify({ role: el('roleSelect').value, department_id: Number(departmentId) })
+            const result = await api(`/api/v1/admin/departments/${departmentId}/staff/${userId}`, {
+                method: 'PUT', body: JSON.stringify({ role: el('roleSelect').value })
             });
             notify(result.message || 'Gán cán bộ thành công.');
             await loadStaff(1);
@@ -293,10 +289,8 @@
         finally { button.disabled = false; button.textContent = 'Gán vào phòng ban'; }
     });
     async function init() {
-        if (!token) { window.location.href = '/login'; return; }
         try {
-            const me = await api('/api/v1/auth/me');
-            if (me.user?.role !== 'ADMIN') { notify('Trang này chỉ dành cho ADMIN.', true); return; }
+            if (DemoAuth.user().role !== 'admin') { notify('Trang này chỉ dành cho ADMIN.', true); return; }
             await Promise.all([loadDepartments(), loadUsers()]);
             el('staffContent').hidden = false;
             await loadStaff();

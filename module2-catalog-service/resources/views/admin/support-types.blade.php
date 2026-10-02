@@ -196,7 +196,6 @@
     const el = id => document.getElementById(id);
     const apiUrl = '/api/v1/admin/support-types';
     const departmentApiUrl = '/api/v1/admin/departments';
-    const token = localStorage.getItem('access_token');
 
     let currentPage = 1;
     let lastPage = 1;
@@ -219,16 +218,13 @@
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
+                ...DemoAuth.headers(),
                 ...(options.headers || {})
             }
         });
 
         if (response.status === 401) {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('current_user');
-            window.location.href = '/login';
-            throw new Error('Phiên đăng nhập đã hết hạn.');
+            throw new Error('Chưa xác thực. Hãy chọn vai trò ở thanh bên.');
         }
 
         if (response.status === 403) {
@@ -647,17 +643,11 @@
     });
 
     async function init() {
-        if (!token) {
-            window.location.href = '/login';
-            return;
-        }
-
         notify('Đang tải dữ liệu...');
 
         try {
-            const result = await api('/api/v1/auth/me');
 
-            if (result.user?.role !== 'ADMIN') {
+            if (DemoAuth.user().role !== 'admin') {
                 notify('Trang này chỉ dành cho ADMIN.', true);
                 return;
             }

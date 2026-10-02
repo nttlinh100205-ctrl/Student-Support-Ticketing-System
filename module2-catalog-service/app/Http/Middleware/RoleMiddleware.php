@@ -2,46 +2,36 @@
 
 namespace App\Http\Middleware;
 
+use App\Contracts\AuthContext;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class RoleMiddleware
 {
+    public function __construct(protected AuthContext $auth)
+    {
+    }
+
     /**
-     * Kiểm tra quyền của người dùng.
+     * Kiểm tra vai trò người gọi API.
      *
      * Ví dụ:
-     * ->middleware('role:ADMIN')
-     * ->middleware('role:ADMIN,STAFF')
+     * ->middleware('role:admin')
+     * ->middleware('role:admin,staff')
      */
     public function handle(
         Request $request,
         Closure $next,
         ...$roles
     ): Response {
-        $user = $request->user();
+        $roles = array_map('strtolower', $roles);
 
-// Chưa đăng nhập
-if (! $user) {
-    return response()->json([
-        'message' => 'Unauthenticated.',
-    ], 401);
-}
-
-// Tài khoản đã bị khóa
-if ($user->status !== 'ACTIVE') {
-    return response()->json([
-        'message' => 'Tài khoản đã bị khóa.',
-    ], 403);
-}
-
-// Tài khoản không có quyền được yêu cầu
-if (! in_array($user->role, $roles, true)) {
-    return response()->json([
-        'message' => 'Bạn không có quyền truy cập chức năng này.',
-    ], 403);
-}
+        if (! in_array($this->auth->role(), $roles, true)) {
+            return response()->json([
+                'message' => 'Bạn không có quyền truy cập chức năng này.',
+            ], 403);
+        }
 
         return $next($request);
     }
