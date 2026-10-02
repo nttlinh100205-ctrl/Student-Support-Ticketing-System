@@ -128,7 +128,7 @@
                 <div style="font-size: 10px; color: #5a6274;">Cổng Dịch vụ Trực tuyến &amp; Tiếp nhận Yêu cầu</div>
             </td>
             <td style="width: 40%; text-align: right; font-size: 10px; color: #5a6274;">
-                <div>Mẫu báo cáo: <strong>M5-REPORT</strong></div>
+                <div>Mẫu báo cáo: <strong>REPORT</strong></div>
                 <div>Thời gian xuất: <strong>{{ $generatedAt }}</strong></div>
             </td>
         </tr>

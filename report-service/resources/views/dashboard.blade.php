@@ -3,50 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Module 5: Báo cáo Thống kê &amp; Đánh giá Hiệu suất — Hỗ trợ Sinh viên</title>
+    <title>Hệ thống Báo cáo &amp; Thống kê Hỗ trợ Sinh viên</title>
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root {
-            --bg-body: #f4f6fb;
+            /* Bright, Clean & Modern University Palette */
+            --bg-body: #f8fafc;
             --bg-card: #ffffff;
-            --bg-card-subtle: #f8fafc;
+            --bg-card-subtle: #f1f5f9;
+            --bg-card-hover: #f8fafc;
+            
             --text-main: #0f172a;
-            --text-muted: #64748b;
+            --text-muted: #475569;
             --text-light: #94a3b8;
+            
             --border: #e2e8f0;
-            --border-hover: #cbd5e1;
+            --border-subtle: #f1f5f9;
+            --border-focus: #3b82f6;
             
             --primary: #2563eb;
+            --primary-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
             --primary-light: #eff6ff;
             --primary-dark: #1d4ed8;
             
-            --success: #10b981;
+            --success: #059669;
             --success-light: #ecfdf5;
-            --success-dark: #059669;
+            --success-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
             
-            --warning: #f59e0b;
+            --warning: #d97706;
             --warning-light: #fffbeb;
-            --warning-dark: #d97706;
+            --warning-gradient: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
             
-            --danger: #ef4444;
+            --danger: #dc2626;
             --danger-light: #fef2f2;
-            --danger-dark: #dc2626;
+            --danger-gradient: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
             
-            --indigo: #6366f1;
+            --indigo: #4f46e5;
             --indigo-light: #eef2ff;
+            --indigo-gradient: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            
+            --cyan: #0284c7;
+            --cyan-light: #f0f9ff;
             
             --gold: #f59e0b;
             
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+            --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+            --shadow-sm: 0 2px 4px 0 rgba(15, 23, 42, 0.05);
+            --shadow-md: 0 4px 12px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+            --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
             
-            --radius-sm: 6px;
-            --radius: 12px;
-            --radius-lg: 16px;
+            --radius-sm: 8px;
+            --radius: 14px;
+            --radius-lg: 20px;
         }
 
         * {
@@ -56,13 +72,17 @@
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg-body);
+            background-image: radial-gradient(at 0% 0%, rgba(239, 246, 255, 0.7) 0px, transparent 50%),
+                              radial-gradient(at 100% 0%, rgba(236, 253, 245, 0.6) 0px, transparent 50%);
+            background-attachment: fixed;
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
         }
 
         h1, h2, h3, h4, .font-heading {
@@ -70,12 +90,13 @@
             letter-spacing: -0.02em;
         }
 
-        /* ---------- Header / Navigation ---------- */
+        /* ---------- Masthead / Navigation ---------- */
         header {
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border);
-            padding: 0.85rem 2rem;
+            padding: 0.9rem 2.25rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -88,37 +109,39 @@
         .brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
         }
 
-        .brand-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #2563eb, #6366f1);
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--primary-gradient);
             color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+            font-size: 1.25rem;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+            flex-shrink: 0;
         }
 
-        .brand-text .badge-mod {
-            font-size: 0.68rem;
+        .brand-text .sub-title {
+            font-size: 0.72rem;
             font-weight: 700;
             text-transform: uppercase;
-            background: var(--primary-light);
+            letter-spacing: 0.05em;
             color: var(--primary);
-            padding: 2px 7px;
+            background: var(--primary-light);
+            padding: 2px 8px;
             border-radius: 999px;
             display: inline-block;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
 
         .brand-text h1 {
-            font-size: 1.15rem;
+            font-size: 1.18rem;
             font-weight: 700;
             color: var(--text-main);
             line-height: 1.2;
@@ -127,25 +150,32 @@
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
         }
 
-        .account-badge {
+        .account-chip {
             display: flex;
             align-items: center;
             gap: 10px;
-            background: var(--bg-card-subtle);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 999px;
-            padding: 4px 14px 4px 6px;
+            padding: 5px 16px 5px 6px;
+            box-shadow: var(--shadow-xs);
+            transition: all 0.2s ease;
         }
 
-        .avatar {
+        .account-chip:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .avatar-circle {
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4f46e5, #7c3aed);
-            color: #fff;
+            background: var(--indigo-gradient);
+            color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -153,11 +183,11 @@
             font-weight: 700;
         }
 
-        .account-badge select {
+        .account-chip select {
             border: none;
             background: transparent;
             font-family: inherit;
-            font-size: 0.85rem;
+            font-size: 0.86rem;
             font-weight: 600;
             color: var(--text-main);
             outline: none;
@@ -168,75 +198,77 @@
         .container {
             max-width: 1440px;
             margin: 0 auto;
-            padding: 1.75rem 2rem 3rem;
+            padding: 2rem 2.25rem 3.5rem;
             width: 100%;
             flex: 1;
         }
 
-        .top-row {
+        .page-intro {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.75rem;
             flex-wrap: wrap;
             gap: 1rem;
         }
 
-        .top-row h2 {
-            font-size: 1.5rem;
+        .page-intro h2 {
+            font-size: 1.65rem;
             font-weight: 700;
             color: var(--text-main);
         }
 
-        .top-row p {
-            font-size: 0.86rem;
+        .page-intro p {
+            font-size: 0.9rem;
             color: var(--text-muted);
-            margin-top: 2px;
+            margin-top: 3px;
         }
 
-        .sync-info {
-            display: flex;
+        .sync-badge {
+            display: inline-flex;
             align-items: center;
             gap: 8px;
             font-size: 0.82rem;
+            font-weight: 600;
             color: var(--text-muted);
-            background: #fff;
-            padding: 6px 12px;
-            border-radius: 20px;
+            background: #ffffff;
+            padding: 7px 14px;
+            border-radius: 999px;
             border: 1px solid var(--border);
+            box-shadow: var(--shadow-xs);
         }
 
-        .pulse-dot {
+        .live-dot {
             width: 8px;
             height: 8px;
             background-color: var(--success);
             border-radius: 50%;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-            animation: pulse 2s infinite;
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
+            animation: pulseDot 2s infinite ease-in-out;
         }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        @keyframes pulseDot {
+            0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.5); }
+            70% { box-shadow: 0 0 0 6px rgba(5, 150, 105, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
         }
 
-        /* ---------- Filter Panel ---------- */
-        .filter-card {
+        /* ---------- Filter Panel (Bright Card) ---------- */
+        .filter-panel {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 1.25rem 1.5rem;
-            margin-bottom: 1.75rem;
-            box-shadow: var(--shadow-sm);
+            padding: 1.4rem 1.6rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
         }
 
         .presets-row {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 1.1rem;
-            padding-bottom: 0.9rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
             border-bottom: 1px solid var(--border);
             flex-wrap: wrap;
         }
@@ -246,37 +278,41 @@
             font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
-            margin-right: 4px;
+            letter-spacing: 0.04em;
+            margin-right: 6px;
         }
 
         .preset-btn {
             background: var(--bg-card-subtle);
             border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 5px 12px;
-            font-size: 0.8rem;
+            border-radius: var(--radius-sm);
+            padding: 6px 14px;
+            font-size: 0.82rem;
             font-weight: 600;
             color: var(--text-muted);
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
+            font-family: inherit;
         }
 
         .preset-btn:hover {
             border-color: var(--primary);
             color: var(--primary);
             background: var(--primary-light);
+            transform: translateY(-1px);
         }
 
         .preset-btn.active {
-            background: var(--primary);
-            color: #fff;
-            border-color: var(--primary);
+            background: var(--primary-gradient);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 3px 8px rgba(37, 99, 235, 0.28);
         }
 
         .filter-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
+            gap: 1.1rem;
             align-items: flex-end;
         }
 
@@ -287,34 +323,34 @@
         }
 
         .filter-group label {
-            font-size: 0.76rem;
-            font-weight: 600;
+            font-size: 0.75rem;
+            font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
 
         .filter-group input, .filter-group select {
-            background: var(--bg-card-subtle);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
-            padding: 8px 12px;
+            padding: 9px 12px;
             font-size: 0.88rem;
             font-family: inherit;
             color: var(--text-main);
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: all 0.2s ease;
             width: 100%;
         }
 
         .filter-group input:focus, .filter-group select:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-            background: #fff;
         }
 
         .btn-group {
             display: flex;
-            gap: 8px;
+            gap: 9px;
             flex-wrap: wrap;
         }
 
@@ -322,81 +358,79 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 7px;
-            padding: 8px 16px;
+            gap: 8px;
+            padding: 9px 18px;
             border-radius: var(--radius-sm);
             font-size: 0.86rem;
             font-weight: 600;
             cursor: pointer;
             border: 1px solid transparent;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
             text-decoration: none;
             font-family: inherit;
-            height: 38px;
+            height: 40px;
             white-space: nowrap;
         }
 
         .btn-primary {
-            background: var(--primary);
-            color: #fff;
+            background: var(--primary-gradient);
+            color: #ffffff;
+            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
         }
         .btn-primary:hover {
             background: var(--primary-dark);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            box-shadow: 0 5px 15px rgba(37, 99, 235, 0.35);
+            transform: translateY(-1px);
         }
 
-        .btn-outline {
-            background: #fff;
-            border-color: var(--border);
-            color: var(--text-main);
+        .btn-excel {
+            background: #ffffff;
+            border: 1px solid #10b981;
+            color: #059669;
         }
-        .btn-outline:hover {
-            border-color: var(--border-hover);
-            background: var(--bg-card-subtle);
-        }
-
-        .btn-success {
-            background: var(--success-light);
-            border-color: rgba(16, 185, 129, 0.3);
-            color: var(--success-dark);
-        }
-        .btn-success:hover {
-            background: var(--success);
-            color: #fff;
+        .btn-excel:hover {
+            background: var(--success-gradient);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+            transform: translateY(-1px);
         }
 
-        .btn-danger {
-            background: var(--danger-light);
-            border-color: rgba(239, 68, 68, 0.3);
-            color: var(--danger-dark);
+        .btn-pdf {
+            background: #ffffff;
+            border: 1px solid #ef4444;
+            color: #dc2626;
         }
-        .btn-danger:hover {
-            background: var(--danger);
-            color: #fff;
+        .btn-pdf:hover {
+            background: var(--danger-gradient);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+            transform: translateY(-1px);
         }
 
-        /* ---------- KPI Strip Cards ---------- */
+        /* ---------- KPI Summary Cards (Bright & Elevated) ---------- */
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.25rem;
-            margin-bottom: 2rem;
+            gap: 1.35rem;
+            margin-bottom: 2.25rem;
         }
 
         .kpi-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 1.35rem 1.4rem;
-            box-shadow: var(--shadow-sm);
+            padding: 1.4rem 1.5rem;
+            box-shadow: var(--shadow-md);
             position: relative;
             overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .kpi-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
         }
 
         .kpi-card::before {
@@ -408,87 +442,155 @@
             height: 4px;
         }
 
-        .kpi-card.blue::before { background: linear-gradient(90deg, #2563eb, #3b82f6); }
-        .kpi-card.green::before { background: linear-gradient(90deg, #10b981, #34d399); }
-        .kpi-card.gold::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-        .kpi-card.red::before { background: linear-gradient(90deg, #ef4444, #f87171); }
-        .kpi-card.indigo::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
+        .kpi-card.blue::before { background: var(--primary-gradient); }
+        .kpi-card.green::before { background: var(--success-gradient); }
+        .kpi-card.gold::before { background: var(--warning-gradient); }
+        .kpi-card.indigo::before { background: var(--indigo-gradient); }
+        .kpi-card.red::before { background: var(--danger-gradient); }
 
         .kpi-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .kpi-title {
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.04em;
         }
 
-        .kpi-icon-wrap {
-            width: 34px;
-            height: 34px;
-            border-radius: 8px;
+        .kpi-icon-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            font-size: 1.1rem;
         }
 
-        .kpi-icon-wrap.blue { background: var(--primary-light); color: var(--primary); }
-        .kpi-icon-wrap.green { background: var(--success-light); color: var(--success); }
-        .kpi-icon-wrap.gold { background: var(--warning-light); color: var(--warning); }
-        .kpi-icon-wrap.red { background: var(--danger-light); color: var(--danger); }
-        .kpi-icon-wrap.indigo { background: var(--indigo-light); color: var(--indigo); }
+        .kpi-icon-badge.blue { background: var(--primary-light); color: var(--primary); }
+        .kpi-icon-badge.green { background: var(--success-light); color: var(--success); }
+        .kpi-icon-badge.gold { background: var(--warning-light); color: var(--warning); }
+        .kpi-icon-badge.indigo { background: var(--indigo-light); color: var(--indigo); }
+        .kpi-icon-badge.red { background: var(--danger-light); color: var(--danger); }
 
         .kpi-val {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 2.1rem;
+            font-size: 2.2rem;
             font-weight: 700;
             color: var(--text-main);
             line-height: 1.15;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
-        .kpi-desc {
-            font-size: 0.8rem;
+        .kpi-footer {
+            font-size: 0.82rem;
             color: var(--text-muted);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
 
         .badge-pill {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            padding: 2px 8px;
+            padding: 3px 9px;
             border-radius: 999px;
-            font-size: 0.72rem;
+            font-size: 0.74rem;
             font-weight: 700;
         }
 
-        .badge-pill.success { background: var(--success-light); color: var(--success-dark); }
-        .badge-pill.danger { background: var(--danger-light); color: var(--danger-dark); }
-        .badge-pill.warning { background: var(--warning-light); color: var(--warning-dark); }
+        .badge-pill.success { background: var(--success-light); color: var(--success); }
+        .badge-pill.danger { background: var(--danger-light); color: var(--danger); }
+        .badge-pill.warning { background: var(--warning-light); color: var(--warning); }
         .badge-pill.info { background: var(--primary-light); color: var(--primary); }
 
-        /* ---------- Chart Grids ---------- */
+        /* ---------- SLA Warning Banner ---------- */
+        .sla-alert-banner {
+            background: linear-gradient(90deg, #fef2f2 0%, #fff1f2 100%);
+            border: 1px solid #fecaca;
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 2.25rem;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sla-alert-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #fee2e2;
+            color: var(--danger);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .sla-alert-content h4 {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: #991b1b;
+            margin-bottom: 2px;
+        }
+
+        .sla-alert-content p {
+            font-size: 0.84rem;
+            color: #b91c1c;
+        }
+
+        /* ---------- Card & Chart Containers ---------- */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.6rem;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.35rem;
+            padding-bottom: 0.9rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title-group h3 {
+            font-size: 1.12rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .card-title-group p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
         .chart-grid-2 {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 1.5rem;
+            gap: 1.6rem;
             margin-bottom: 2rem;
         }
 
         .chart-grid-3 {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
+            gap: 1.6rem;
             margin-bottom: 2rem;
         }
 
@@ -498,49 +600,13 @@
             }
         }
 
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 1.5rem;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.25rem;
-            padding-bottom: 0.85rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .card-title-group h3 {
-            font-size: 1.08rem;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-
-        .card-title-group p {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .chart-container {
+        .chart-wrap {
             position: relative;
             width: 100%;
-            height: 280px;
+            height: 290px;
         }
 
         /* ---------- Tables & Rankings ---------- */
-        .tables-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.75rem;
-            margin-bottom: 2rem;
-        }
-
         .table-responsive {
             overflow-x: auto;
         }
@@ -553,17 +619,18 @@
         }
 
         th {
-            padding: 10px 14px;
+            padding: 12px 16px;
             color: var(--text-muted);
             font-weight: 700;
             font-size: 0.74rem;
             text-transform: uppercase;
+            letter-spacing: 0.04em;
             border-bottom: 1px solid var(--border);
             background: var(--bg-card-subtle);
         }
 
         td {
-            padding: 12px 14px;
+            padding: 13px 16px;
             border-bottom: 1px solid var(--border);
             color: var(--text-main);
             vertical-align: middle;
@@ -578,14 +645,14 @@
         }
 
         .rank-badge {
-            width: 26px;
-            height: 26px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
         }
 
         .rank-1 { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
@@ -593,69 +660,35 @@
         .rank-3 { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
         .rank-default { background: var(--bg-card-subtle); color: var(--text-muted); }
 
-        .progress-bar-wrap {
+        .progress-track {
             width: 100%;
             min-width: 90px;
-            height: 7px;
+            height: 8px;
             background: #e2e8f0;
             border-radius: 999px;
             overflow: hidden;
             margin-top: 4px;
         }
 
-        .progress-bar-fill {
+        .progress-fill {
             height: 100%;
             border-radius: 999px;
-            transition: width 0.4s ease;
+            background: var(--primary-gradient);
+            transition: width 0.5s ease;
         }
 
-        .bg-blue { background: #2563eb; }
-        .bg-green { background: #10b981; }
-        .bg-amber { background: #f59e0b; }
-        .bg-red { background: #ef4444; }
-
-        /* ---------- SLA Overdue Alert Box ---------- */
-        .alert-box {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-radius: var(--radius);
-            padding: 1.2rem 1.4rem;
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-        }
-
-        .alert-box-icon {
-            font-size: 1.5rem;
-            color: var(--danger);
-        }
-
-        .alert-box-content h4 {
-            font-size: 0.96rem;
-            font-weight: 700;
-            color: #991b1b;
-            margin-bottom: 3px;
-        }
-
-        .alert-box-content p {
-            font-size: 0.82rem;
-            color: #b91c1c;
-        }
-
-        /* ---------- Star Ratings ---------- */
-        .star-rating {
+        .star-stars {
             color: var(--gold);
             font-size: 0.95rem;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
 
         /* ---------- Footer ---------- */
         footer {
-            background: #fff;
+            background: #ffffff;
             border-top: 1px solid var(--border);
-            padding: 1.25rem 2rem;
-            font-size: 0.8rem;
+            padding: 1.4rem 2.25rem;
+            font-size: 0.82rem;
             color: var(--text-muted);
             display: flex;
             justify-content: space-between;
@@ -668,22 +701,23 @@
 </head>
 <body>
 
+    <!-- Header Navigation -->
     <header>
         <div class="brand">
-            <div class="brand-icon">M5</div>
+            <div class="brand-logo">SV</div>
             <div class="brand-text">
-                <span class="badge-mod">Phân hệ 5 · Báo cáo &amp; Đánh giá</span>
-                <h1>Trung tâm Điều hành &amp; Thống kê Hiệu suất</h1>
+                <span class="sub-title">Cổng Dịch vụ Một cửa · Module 5</span>
+                <h1>Trung tâm Báo cáo &amp; Phân tích Hiệu suất Hỗ trợ Sinh viên</h1>
             </div>
         </div>
 
         <div class="header-actions">
-            <div class="account-badge">
-                <div class="avatar" id="userAvatar">AD</div>
+            <div class="account-chip">
+                <div class="avatar-circle" id="userAvatar">AD</div>
                 <select id="roleSelector" onchange="switchRole()">
-                    <option value="admin" data-id="1" data-dept="" data-name="Nguyễn Văn Quản">Quản trị viên (Toàn quyền)</option>
+                    <option value="admin" data-id="1" data-dept="" data-name="Nguyễn Văn Quản">Ban Giám Hiệu / Quản trị viên</option>
                     <option value="department_head" data-id="5" data-dept="3" data-name="Lê Thị Hương">Trưởng phòng CTSV</option>
-                    <option value="staff" data-id="101" data-dept="1" data-name="Phạm Văn Đức">Cán bộ Phòng Đào tạo</option>
+                    <option value="staff" data-id="101" data-dept="1" data-name="Phạm Văn Đức">Cán bộ Tiếp nhận Đào tạo</option>
                 </select>
             </div>
         </div>
@@ -691,20 +725,20 @@
 
     <div class="container">
 
-        <!-- Top Title & Sync Info -->
-        <div class="top-row">
+        <!-- Page Intro & Live Sync -->
+        <div class="page-intro">
             <div>
-                <h2>Báo cáo Tổng hợp &amp; Phân tích SLA</h2>
-                <p>Theo dõi thời gian thực khối lượng yêu cầu, chất lượng xử lý, tỷ lệ quá hạn và mức độ hài lòng của sinh viên.</p>
+                <h2>Báo cáo Toàn diện &amp; Đánh giá Mức độ Hài lòng</h2>
+                <p>Theo dõi thời gian thực lưu lượng yêu cầu sinh viên, tỷ lệ tuân thủ SLA, chất lượng phục vụ và khối lượng xử lý của từng cán bộ.</p>
             </div>
-            <div class="sync-info">
-                <span class="pulse-dot"></span>
-                <span id="lastSyncTime">Đang đồng bộ dữ liệu...</span>
+            <div class="sync-badge">
+                <span class="live-dot"></span>
+                <span id="lastSyncTime">Đang tải dữ liệu báo cáo...</span>
             </div>
         </div>
 
-        <!-- Filter Controls -->
-        <div class="filter-card">
+        <!-- Filter Controls (Bright Panel) -->
+        <div class="filter-panel">
             <!-- Fast Presets -->
             <div class="presets-row">
                 <span class="presets-label">Khoảng thời gian:</span>
@@ -727,7 +761,7 @@
                     <input type="date" id="toDate" value="2026-09-30">
                 </div>
                 <div class="filter-group">
-                    <label>Phòng ban</label>
+                    <label>Phòng ban hỗ trợ</label>
                     <select id="deptFilter" onchange="loadDashboardData()">
                         <option value="">Tất cả phòng ban</option>
                         <option value="1">Phòng Đào tạo (PDT)</option>
@@ -738,9 +772,9 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label>Loại yêu cầu</label>
+                    <label>Dịch vụ sinh viên</label>
                     <select id="typeFilter" onchange="loadDashboardData()">
-                        <option value="">Tất cả loại yêu cầu</option>
+                        <option value="">Tất cả dịch vụ</option>
                         <option value="1">Cấp lại thẻ sinh viên (SLA 24h)</option>
                         <option value="2">Xin xác nhận sinh viên (SLA 48h)</option>
                         <option value="3">Đăng ký học phần bổ sung (SLA 72h)</option>
@@ -750,7 +784,7 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label>Cán bộ phụ trách</label>
+                    <label>Cán bộ tiếp nhận</label>
                     <select id="staffFilter" onchange="loadDashboardData()">
                         <option value="">Tất cả cán bộ</option>
                         <option value="101">Phạm Văn Đức (Phòng Đào tạo)</option>
@@ -764,58 +798,58 @@
                 </div>
                 <div class="btn-group">
                     <button class="btn btn-primary" onclick="loadDashboardData()">
-                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                        Lọc dữ liệu
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        Lọc số liệu
                     </button>
-                    <button class="btn btn-success" onclick="exportExcel()">
-                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <button class="btn btn-excel" onclick="exportExcel()">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         Xuất Excel
                     </button>
-                    <button class="btn btn-danger" onclick="exportPdf()">
-                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    <button class="btn btn-pdf" onclick="exportPdf()">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                         Xuất PDF
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- KPI Cards Strip -->
+        <!-- KPI Metrics Strip -->
         <div class="kpi-grid">
-            <!-- KPI 1: Tổng số yêu cầu -->
+            <!-- KPI 1: Tổng số yêu cầu sinh viên -->
             <div class="kpi-card blue">
                 <div class="kpi-header">
-                    <span class="kpi-title">Tổng số yêu cầu</span>
-                    <div class="kpi-icon-wrap blue">📥</div>
+                    <span class="kpi-title">Yêu cầu tiếp nhận</span>
+                    <div class="kpi-icon-badge blue">📋</div>
                 </div>
                 <div class="kpi-val" id="kpiTotal">0</div>
-                <div class="kpi-desc">
+                <div class="kpi-footer">
                     <span class="badge-pill success" id="kpiResolvedRate">0% hoàn tất</span>
-                    <span>(<span id="kpiResolvedCount">0</span> đã giải quyết)</span>
+                    <span>(<strong id="kpiResolvedCount">0</strong> đã giải quyết)</span>
                 </div>
             </div>
 
-            <!-- KPI 2: Tỉ lệ Quá hạn & Đúng hạn SLA -->
+            <!-- KPI 2: Tỉ lệ đạt SLA -->
             <div class="kpi-card green" id="kpiSlaCard">
                 <div class="kpi-header">
-                    <span class="kpi-title">Tỉ lệ tuân thủ SLA</span>
-                    <div class="kpi-icon-wrap green">⏱️</div>
+                    <span class="kpi-title">Tỷ lệ đúng hạn SLA</span>
+                    <div class="kpi-icon-badge green">⏱️</div>
                 </div>
                 <div class="kpi-val" id="kpiSlaCompliance">100%</div>
-                <div class="kpi-desc">
-                    <span class="badge-pill danger" id="kpiSlaOverdue">Quá hạn: 0% (0 YC)</span>
-                    <span>Đúng hạn: <strong id="kpiSlaOnTime">0</strong></span>
+                <div class="kpi-footer">
+                    <span class="badge-pill danger" id="kpiSlaOverdue">Quá hạn: 0%</span>
+                    <span>Đúng hạn: <strong id="kpiSlaOnTime">0 YC</strong></span>
                 </div>
             </div>
 
-            <!-- KPI 3: Điểm hài lòng trung bình (CSAT) -->
+            <!-- KPI 3: Điểm hài lòng CSAT -->
             <div class="kpi-card gold">
                 <div class="kpi-header">
-                    <span class="kpi-title">Điểm hài lòng (CSAT)</span>
-                    <div class="kpi-icon-wrap gold">⭐</div>
+                    <span class="kpi-title">Hài lòng sinh viên (CSAT)</span>
+                    <div class="kpi-icon-badge gold">⭐</div>
                 </div>
                 <div class="kpi-val" id="kpiCsat" style="color: var(--gold);">5.0 ⭐</div>
-                <div class="kpi-desc">
-                    <span class="badge-pill warning" id="kpiRatingVotes">0 lượt đánh giá</span>
+                <div class="kpi-footer">
+                    <span class="badge-pill warning" id="kpiRatingVotes">0 đánh giá</span>
                     <span>Thang điểm 5.0</span>
                 </div>
             </div>
@@ -824,115 +858,115 @@
             <div class="kpi-card indigo">
                 <div class="kpi-header">
                     <span class="kpi-title">Thời gian xử lý TB</span>
-                    <div class="kpi-icon-wrap indigo">⚡</div>
+                    <div class="kpi-icon-badge indigo">⚡</div>
                 </div>
                 <div class="kpi-val" id="kpiAvgHours">0h</div>
-                <div class="kpi-desc">
-                    <span class="badge-pill info">Chuẩn SLA</span>
-                    <span>Từ lúc tạo đến khi giải quyết</span>
+                <div class="kpi-footer">
+                    <span class="badge-pill info">Chuẩn cam kết</span>
+                    <span>Từ lúc tiếp nhận đến xong</span>
                 </div>
             </div>
 
-            <!-- KPI 5: Khối lượng công việc đang xử lý -->
+            <!-- KPI 5: Hồ sơ đang xử lý -->
             <div class="kpi-card red">
                 <div class="kpi-header">
-                    <span class="kpi-title">Đang xử lý / Tồn đọng</span>
-                    <div class="kpi-icon-wrap red">🔥</div>
+                    <span class="kpi-title">Hồ sơ đang xử lý</span>
+                    <div class="kpi-icon-badge red">📁</div>
                 </div>
                 <div class="kpi-val" id="kpiActiveWorkload">0</div>
-                <div class="kpi-desc">
-                    <span class="badge-pill danger" id="kpiPendingStatus">Cần tập trung</span>
-                    <span>Yêu cầu đang tiến hành</span>
+                <div class="kpi-footer">
+                    <span class="badge-pill danger" id="kpiPendingStatus">Bình thường</span>
+                    <span>Hồ sơ đang tiến hành</span>
                 </div>
             </div>
         </div>
 
-        <!-- SLA Alert banner if overdue tickets exist -->
-        <div id="slaAlertBox" class="alert-box" style="display: none;">
-            <div class="alert-box-icon">⚠️</div>
-            <div class="alert-box-content">
-                <h4>Cảnh báo vi phạm thời gian cam kết SLA</h4>
-                <p id="slaAlertText">Hệ thống ghi nhận một số yêu cầu hỗ trợ đã vượt quá khung thời gian cam kết SLA định mức. Vui lòng ưu tiên xử lý ngay.</p>
+        <!-- SLA Warning Banner (Hiển thị khi có yêu cầu quá hạn) -->
+        <div id="slaAlertBanner" class="sla-alert-banner" style="display: none;">
+            <div class="sla-alert-icon">⚠️</div>
+            <div class="sla-alert-content">
+                <h4>Cảnh báo vi phạm thời gian cam kết chuẩn SLA</h4>
+                <p id="slaAlertText">Hệ thống ghi nhận có yêu cầu hỗ trợ sinh viên bị quá thời gian cam kết. Đề nghị các cán bộ phụ trách ưu tiên xử lý ngay.</p>
             </div>
         </div>
 
-        <!-- HÀNG BIỂU ĐỒ 1: Biểu đồ đường (Xu hướng theo thời gian) & Biểu đồ tròn (Trạng thái) -->
+        <!-- HÀNG BIỂU ĐỒ 1: Biểu đồ đường (Xu hướng) & Biểu đồ tròn (Trạng thái) -->
         <div class="chart-grid-2">
-            <!-- Biểu đồ Đường -->
+            <!-- Biểu đồ Đường: Xu hướng -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title-group">
-                        <h3>Biểu đồ đường: Xu hướng tiếp nhận yêu cầu theo thời gian</h3>
-                        <p>Số lượng yêu cầu sinh viên gửi qua các ngày trong kỳ báo cáo</p>
+                        <h3>Biểu đồ đường: Xu hướng tiếp nhận yêu cầu sinh viên</h3>
+                        <p>Biến động số lượng sinh viên nộp hồ sơ qua các ngày trong kỳ</p>
                     </div>
                 </div>
-                <div class="chart-container">
+                <div class="chart-wrap">
                     <canvas id="timeLineChart"></canvas>
                 </div>
             </div>
 
-            <!-- Biểu đồ Tròn 1: Phân bổ Trạng thái -->
+            <!-- Biểu đồ Tròn: Trạng thái yêu cầu -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title-group">
-                        <h3>Biểu đồ tròn: Trạng thái yêu cầu</h3>
-                        <p>Phân bổ tỷ lệ theo các bước quy trình</p>
+                        <h3>Biểu đồ tròn: Trạng thái hồ sơ</h3>
+                        <p>Tỷ lệ phân bổ theo tiến trình xử lý dịch vụ</p>
                     </div>
                 </div>
-                <div class="chart-container">
+                <div class="chart-wrap">
                     <canvas id="statusDonutChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- HÀNG BIỂU ĐỒ 2: Biểu đồ cột (Khối lượng từng cán bộ) & Biểu đồ tròn (SLA & Đánh giá) -->
+        <!-- HÀNG BIỂU ĐỒ 2: Biểu đồ cột (Khối lượng cán bộ) & Biểu đồ tròn (SLA & Điểm sao) -->
         <div class="chart-grid-3">
-            <!-- Biểu đồ Cột 1: Khối lượng công việc từng cán bộ -->
+            <!-- Biểu đồ Cột: Khối lượng cán bộ -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title-group">
                         <h3>Biểu đồ cột: Khối lượng công việc cán bộ</h3>
-                        <p>Số việc đang xử lý so với đã hoàn thành</p>
+                        <p>Hồ sơ đang xử lý so với đã hoàn thành</p>
                     </div>
                 </div>
-                <div class="chart-container">
+                <div class="chart-wrap">
                     <canvas id="staffBarChart"></canvas>
                 </div>
             </div>
 
-            <!-- Biểu đồ Tròn 2: Tỷ lệ Đúng hạn vs Quá hạn SLA -->
+            <!-- Biểu đồ Tròn: Tỷ lệ SLA -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title-group">
-                        <h3>Biểu đồ tròn: Tỷ lệ đạt SLA</h3>
-                        <p>Tuân thủ cam kết thời gian định mức</p>
+                        <h3>Biểu đồ tròn: Tỷ lệ tuân thủ SLA</h3>
+                        <p>Cam kết giải quyết đúng thời hạn</p>
                     </div>
                 </div>
-                <div class="chart-container">
+                <div class="chart-wrap">
                     <canvas id="slaDonutChart"></canvas>
                 </div>
             </div>
 
-            <!-- Biểu đồ Cột 2: Phân bổ Mức độ Hài lòng (Stars) -->
+            <!-- Biểu đồ Cột: Phân bổ sao đánh giá -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title-group">
                         <h3>Biểu đồ cột: Phân bổ sao đánh giá</h3>
-                        <p>Đánh giá chất lượng từ sinh viên (1 - 5 ⭐)</p>
+                        <p>Khảo sát mức độ hài lòng của sinh viên</p>
                     </div>
                 </div>
-                <div class="chart-container">
+                <div class="chart-wrap">
                     <canvas id="starsBarChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- BẢNG XẾP HẠNG CÁN BỘ & HIỆU SUẤT XỬ LÝ -->
-        <div class="card" style="margin-bottom: 2rem;">
+        <!-- BẢNG XẾP HẠNG CÁN BỘ TIẾP DÂN & HỖ TRỢ SINH VIÊN -->
+        <div class="card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <h3>Bảng xếp hạng Cán bộ theo Hiệu suất &amp; Mức độ Hài lòng</h3>
-                    <p>Đánh giá dựa trên tỷ lệ giải quyết (40%), tuân thủ SLA (35%) và điểm hài lòng CSAT (25%)</p>
+                    <h3>Bảng xếp hạng Cán bộ theo Hiệu suất &amp; Hài lòng sinh viên</h3>
+                    <p>Đánh giá tổng hợp: Tỷ lệ giải quyết (40%), Chuẩn SLA (35%), Điểm hài lòng CSAT (25%)</p>
                 </div>
             </div>
             <div class="table-responsive">
@@ -945,8 +979,8 @@
                             <th style="text-align: center;">Đang xử lý</th>
                             <th style="text-align: center;">Đã hoàn thành</th>
                             <th style="text-align: center;">Tổng việc</th>
-                            <th style="width: 140px;">Tiến độ</th>
-                            <th style="text-align: center;">Đạt SLA</th>
+                            <th style="width: 130px;">Tiến độ</th>
+                            <th style="text-align: center;">Chuẩn SLA</th>
                             <th style="text-align: center;">Điểm CSAT</th>
                             <th style="text-align: center;">Điểm Tổng</th>
                             <th style="text-align: center;">Xếp loại</th>
@@ -959,14 +993,14 @@
             </div>
         </div>
 
-        <!-- BẢNG XẾP HẠNG PHÒNG BAN & KHỐI LƯỢNG CÔNG VIỆC -->
-        <div class="chart-grid-2" style="margin-bottom: 2rem;">
-            <!-- Bảng xếp hạng Phòng ban -->
+        <!-- BẢNG XẾP HẠNG PHÒNG BAN & GIÁM SÁT TẢI CÔNG VIỆC -->
+        <div class="chart-grid-2">
+            <!-- Xếp hạng Phòng ban -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title-group">
-                        <h3>Bảng xếp hạng Phòng ban</h3>
-                        <p>So sánh năng suất và sự hài lòng giữa các đơn vị</p>
+                        <h3>Bảng xếp hạng Phòng ban hỗ trợ</h3>
+                        <p>So sánh năng suất và chất lượng dịch vụ giữa các đơn vị</p>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -989,12 +1023,12 @@
                 </div>
             </div>
 
-            <!-- Bảng Khối lượng công việc từng cán bộ (Workload Monitor) -->
+            <!-- Giám sát tải công việc (Workload Monitor) -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title-group">
                         <h3>Giám sát Khối lượng Công việc (Workload Monitor)</h3>
-                        <p>Cảnh báo mức độ tải công việc để điều phối nhân sự</p>
+                        <p>Theo dõi để điều phối cán bộ tránh ùn tắc hồ sơ</p>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -1016,23 +1050,23 @@
             </div>
         </div>
 
-        <!-- PHẢN HỒI VÀ ĐÁNH GIÁ TỪ SINH VIÊN (FEED) -->
+        <!-- PHẢN HỒI & NHẬN XÉT CỦA SINH VIÊN -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <h3>Phản hồi &amp; Đánh giá từ Sinh viên</h3>
-                    <p>Ý kiến đóng góp thực tế của sinh viên sau khi yêu cầu được hỗ trợ</p>
+                    <h3>Phản hồi &amp; Ý kiến Đóng góp từ Sinh viên</h3>
+                    <p>Khảo sát ý kiến sinh viên gửi sau khi nhận kết quả hỗ trợ</p>
                 </div>
             </div>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 120px;">Mã Yêu Cầu</th>
+                            <th style="width: 130px;">Mã Yêu Cầu</th>
                             <th>Sinh viên</th>
-                            <th>Phòng ban</th>
+                            <th>Phòng ban tiếp nhận</th>
                             <th>Mức đánh giá</th>
-                            <th>Nhận xét chi tiết</th>
+                            <th>Nội dung nhận xét</th>
                             <th>Thời gian gửi</th>
                         </tr>
                     </thead>
@@ -1045,14 +1079,18 @@
 
     </div>
 
+    <!-- Footer -->
     <footer>
-        <span>Hệ thống Tiếp nhận &amp; Xử lý Yêu cầu Hỗ trợ Sinh viên · Module 5 (Report &amp; Analytics Service)</span>
-        <span>Phiên bản Enterprise 2.5 · Hỗ trợ xuất Excel, PDF &amp; Báo cáo SLA</span>
+        <div>
+            <strong>Hệ thống Tiếp nhận &amp; Xử lý Yêu cầu Hỗ trợ Sinh viên</strong> · Phân hệ 5: Báo cáo &amp; Đánh giá
+        </div>
+        <div>
+            <span>Giao diện Bright &amp; Modern · Phiên bản 2.5</span>
+        </div>
     </footer>
 
-    <!-- JAVASCRIPT LOGIC & CHARTS -->
+    <!-- JavaScript & Chart.js Logic -->
     <script>
-        // Chart instances
         let timeLineChartInstance = null;
         let statusDonutChartInstance = null;
         let staffBarChartInstance = null;
@@ -1082,7 +1120,6 @@
             const opt = selector.options[selector.selectedIndex];
             const name = opt.getAttribute('data-name') || opt.textContent;
             
-            // initials
             const parts = name.trim().split(/\s+/);
             const initials = parts.length === 1 ? parts[0].slice(0, 2) : (parts[0][0] + parts[parts.length - 1][0]);
             document.getElementById('userAvatar').innerText = initials.toUpperCase();
@@ -1098,7 +1135,6 @@
             const fromInput = document.getElementById('fromDate');
             const toInput = document.getElementById('toDate');
             const now = new Date();
-
             const formatDate = (d) => d.toISOString().split('T')[0];
 
             if (preset === 'all') {
@@ -1151,14 +1187,13 @@
 
                 if (result.success && result.data) {
                     renderDashboard(result.data);
-                    document.getElementById('lastSyncTime').innerText = `Đã cập nhật lúc ${new Date().toLocaleTimeString('vi-VN')}`;
+                    document.getElementById('lastSyncTime').innerText = `Đã đồng bộ lúc ${new Date().toLocaleTimeString('vi-VN')}`;
                 } else {
                     document.getElementById('lastSyncTime').innerText = 'Không tải được số liệu';
-                    console.error('Error in response:', result);
                 }
             } catch (err) {
                 console.error(err);
-                document.getElementById('lastSyncTime').innerText = 'Lỗi kết nối API';
+                document.getElementById('lastSyncTime').innerText = 'Lỗi kết nối máy chủ';
             }
         }
 
@@ -1180,16 +1215,16 @@
             const onTimeCount = sla.on_time_count || 0;
 
             document.getElementById('kpiSlaCompliance').innerText = `${compliance}%`;
-            document.getElementById('kpiSlaOverdue').innerText = `Quá hạn: ${overdue}% (${overdueCount} YC)`;
+            document.getElementById('kpiSlaOverdue').innerText = `Quá hạn: ${overdue}%`;
             document.getElementById('kpiSlaOnTime').innerText = `${onTimeCount} YC`;
 
-            // SLA Alert Box
-            const alertBox = document.getElementById('slaAlertBox');
+            // SLA Banner
+            const alertBanner = document.getElementById('slaAlertBanner');
             if (overdueCount > 0) {
-                alertBox.style.display = 'flex';
-                document.getElementById('slaAlertText').innerText = `Hệ thống ghi nhận ${overdueCount} yêu cầu (${overdue}%) đã vượt quá thời gian cam kết SLA. Vui lòng kiểm tra các cán bộ liên quan để giải quyết kịp thời.`;
+                alertBanner.style.display = 'flex';
+                document.getElementById('slaAlertText').innerText = `Hệ thống ghi nhận ${overdueCount} yêu cầu (${overdue}%) đã vượt quá thời gian cam kết SLA. Đề nghị các cán bộ phụ trách ưu tiên xử lý ngay.`;
             } else {
-                alertBox.style.display = 'none';
+                alertBanner.style.display = 'none';
             }
 
             // CSAT
@@ -1222,9 +1257,7 @@
             renderStaffWorkloads(data.staff_workloads || []);
         }
 
-        /* ---------- CHARTS IMPLEMENTATION ---------- */
-
-        // 1. Biểu đồ đường: Xu hướng theo ngày
+        // Biểu đồ đường (Line chart)
         function renderTimeLineChart(timeData) {
             const ctx = document.getElementById('timeLineChart').getContext('2d');
             const labels = timeData.map(d => {
@@ -1282,7 +1315,7 @@
             });
         }
 
-        // 2. Biểu đồ tròn: Trạng thái
+        // Biểu đồ tròn trạng thái (Doughnut chart)
         function renderStatusDonutChart(statusData) {
             const ctx = document.getElementById('statusDonutChart').getContext('2d');
             const labels = ['Mới', 'Đã tiếp nhận', 'Đang xử lý', 'Đã giải quyết', 'Đã hủy'];
@@ -1310,7 +1343,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '68%',
+                    cutout: '70%',
                     plugins: {
                         legend: {
                             position: 'bottom',
@@ -1325,7 +1358,7 @@
             });
         }
 
-        // 3. Biểu đồ cột: Khối lượng công việc cán bộ
+        // Biểu đồ cột khối lượng cán bộ (Bar chart)
         function renderStaffBarChart(workloads) {
             const ctx = document.getElementById('staffBarChart').getContext('2d');
             const labels = workloads.map(w => w.staff_name);
@@ -1382,7 +1415,7 @@
             });
         }
 
-        // 4. Biểu đồ tròn: Đạt SLA vs Quá hạn
+        // Biểu đồ tròn SLA (Doughnut chart)
         function renderSlaDonutChart(onTime, overdue) {
             const ctx = document.getElementById('slaDonutChart').getContext('2d');
 
@@ -1402,7 +1435,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '68%',
+                    cutout: '70%',
                     plugins: {
                         legend: {
                             position: 'bottom',
@@ -1413,7 +1446,7 @@
             });
         }
 
-        // 5. Biểu đồ cột: Phân bổ sao đánh giá
+        // Biểu đồ cột phân bổ sao đánh giá (Bar chart)
         function renderStarsBarChart(byStars) {
             const ctx = document.getElementById('starsBarChart').getContext('2d');
             const labels = ['1 ⭐', '2 ⭐', '3 ⭐', '4 ⭐', '5 ⭐'];
@@ -1432,7 +1465,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Số lượt đánh giá',
+                        label: 'Lượt đánh giá',
                         data: values,
                         backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#3b82f6', '#10b981'],
                         borderRadius: 6
@@ -1452,7 +1485,7 @@
             });
         }
 
-        /* ---------- TABLES IMPLEMENTATION ---------- */
+        /* ---------- TABLES ---------- */
 
         function renderStaffRankings(rankings) {
             const tbody = document.getElementById('staffRankingTableBody');
@@ -1480,13 +1513,13 @@
                             <strong>${s.staff_name}</strong>
                         </td>
                         <td style="color: var(--text-muted); font-size: 0.82rem;">${s.department_name}</td>
-                        <td style="text-align: center; color: var(--warning-dark); font-weight: 600;">${inProg}</td>
-                        <td style="text-align: center; color: var(--success-dark); font-weight: 600;">${s.resolved_count}</td>
+                        <td style="text-align: center; color: var(--warning); font-weight: 700;">${inProg}</td>
+                        <td style="text-align: center; color: var(--success); font-weight: 700;">${s.resolved_count}</td>
                         <td style="text-align: center; font-weight: 700;">${s.total_assigned}</td>
                         <td>
-                            <div style="font-size: 0.76rem; font-weight: 600; color: var(--text-muted);">${s.completion_rate}%</div>
-                            <div class="progress-bar-wrap">
-                                <div class="progress-bar-fill bg-blue" style="width: ${s.completion_rate}%"></div>
+                            <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted);">${s.completion_rate}%</div>
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: ${s.completion_rate}%"></div>
                             </div>
                         </td>
                         <td style="text-align: center;">
@@ -1497,7 +1530,7 @@
                         <td style="text-align: center; font-weight: 700; color: var(--gold);">
                             ${s.csat} ⭐
                         </td>
-                        <td style="text-align: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1rem; color: var(--primary);">
+                        <td style="text-align: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--primary);">
                             ${s.performance_score}
                         </td>
                         <td style="text-align: center;">
@@ -1526,9 +1559,9 @@
                         </td>
                         <td><strong>${d.department_name}</strong></td>
                         <td style="text-align: center;">${d.total_assigned}</td>
-                        <td style="text-align: center; color: var(--success); font-weight: 600;">${d.resolved_count}</td>
+                        <td style="text-align: center; color: var(--success); font-weight: 700;">${d.resolved_count}</td>
                         <td style="text-align: center;"><span class="badge-pill ${d.sla_rate >= 85 ? 'success' : 'warning'}">${d.sla_rate}%</span></td>
-                        <td style="text-align: center; color: var(--gold); font-weight: 600;">${d.csat} ⭐</td>
+                        <td style="text-align: center; color: var(--gold); font-weight: 700;">${d.csat} ⭐</td>
                         <td style="text-align: center; font-weight: 700; color: var(--primary);">${d.performance_score}</td>
                     </tr>
                 `;
@@ -1553,8 +1586,8 @@
                             <strong>${w.staff_name}</strong>
                             <div style="font-size: 0.75rem; color: var(--text-muted);">${w.department_name}</div>
                         </td>
-                        <td style="text-align: center; font-weight: 700; color: var(--warning-dark);">${w.in_progress}</td>
-                        <td style="text-align: center; color: var(--success-dark);">${w.resolved}</td>
+                        <td style="text-align: center; font-weight: 700; color: var(--warning);">${w.in_progress}</td>
+                        <td style="text-align: center; color: var(--success); font-weight: 700;">${w.resolved}</td>
                         <td style="text-align: center; font-weight: 700;">${w.total}</td>
                         <td style="text-align: center;"><span class="${statusBadge}">${w.workload_status}</span></td>
                     </tr>
@@ -1579,7 +1612,7 @@
                             <td><strong style="color: var(--primary);">#${r.request_id}</strong></td>
                             <td>Sinh viên #${r.student_id}</td>
                             <td>Phòng ban #${r.department_id || 'N/A'}</td>
-                            <td><span class="star-rating">${'⭐'.repeat(r.rating)}</span></td>
+                            <td><span class="star-stars">${'⭐'.repeat(r.rating)}</span></td>
                             <td>${r.comment || '<span style="color: var(--text-light); font-style: italic;">Không có nhận xét</span>'}</td>
                             <td style="color: var(--text-muted); font-size: 0.8rem;">${new Date(r.created_at).toLocaleString('vi-VN')}</td>
                         </tr>
