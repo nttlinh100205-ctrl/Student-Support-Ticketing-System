@@ -1,0 +1,77 @@
+<?php
+
+use App\Http\Controllers\Web\RequestWebController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', fn () => redirect()->route('requests.index'));
+
+Route::post('/switch-role', [RequestWebController::class, 'switchRole'])->name('requests.switch-role');
+
+Route::get('/requests', [RequestWebController::class, 'index'])->name('requests.index');
+Route::get('/requests/create', [RequestWebController::class, 'create'])->name('requests.create');
+Route::post('/requests', [RequestWebController::class, 'store'])->name('requests.store');
+Route::get('/requests/{supportRequest}', [RequestWebController::class, 'show'])->name('requests.show');
+Route::put('/requests/{supportRequest}/status', [RequestWebController::class, 'updateStatus'])->name('requests.update-status');
+Route::put('/requests/{supportRequest}/assign', [RequestWebController::class, 'assign'])->name('requests.assign');
+Route::put('/requests/{supportRequest}/cancel', [RequestWebController::class, 'cancel'])->name('requests.cancel');
+
+
+/**
+ * ============================================================
+ * CLIENT - TÀI KHOẢN VÀ QUYỀN TRUY CẬP
+ * ============================================================
+ */
+
+/**
+ * Trang đăng nhập
+ */
+Route::get('/login', function () {
+    return view('auth.login');
+})->name('login');
+
+
+/**
+ * Trang đăng ký
+ */
+Route::get('/register', function () {
+    return view('auth.register');
+})->name('register');
+
+
+/**
+ * Trang hồ sơ cá nhân
+ */
+Route::get('/profile', function () {
+    return view('profile.index');
+})->name('profile');
+
+
+/**
+ * Trang quản lý tài khoản dành cho ADMIN
+ */
+Route::get('/admin/users', function () {
+    return view('admin.users');
+})->name('admin.users');
+
+
+// Giao diện quản lý phòng ban.
+// Dữ liệu được lấy qua API có xác thực và kiểm tra quyền ADMIN.
+Route::view('/admin/departments', 'admin.departments')
+    ->name('admin.departments');
+
+
+    Route::get('/admin/support-types', function () {
+    return view('admin.support-types');
+})->name('admin.support-types');
+
+Route::get('/admin/department-staff', function () {
+    return view('admin.department-staff');
+})->name('admin.department-staff');
+
+// MODULE 2 - Quản lý biểu mẫu theo loại hỗ trợ.
+Route::view('/admin/support-type-fields', 'admin.support-type-fields')
+    ->name('admin.support-type-fields');
+
+    // MODULE 2 - Quản lý câu hỏi thường gặp.
+Route::view('/admin/faqs', 'admin.faqs')
+    ->name('admin.faqs');
