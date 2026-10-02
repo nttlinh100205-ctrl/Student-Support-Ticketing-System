@@ -18,6 +18,17 @@ php artisan serve
 
 Mở `/catalog` (sinh viên tra cứu) hoặc `/admin/departments` (quản trị). Đổi vai trò Admin / Sinh viên ở cuối thanh bên.
 
+### Dữ liệu demo (tùy chọn)
+
+`migrate --seed` chỉ nạp dữ liệu cơ bản. Để có đủ 5 phòng ban, 8 loại hỗ trợ kèm SLA, biểu mẫu và FAQ dùng khi demo:
+
+```bash
+php artisan db:seed --class=Module2DemoSeeder
+```
+
+Seeder này không chạy tự động, chạy lại nhiều lần không tạo trùng (tìm theo mã). Không tạo tài khoản (bảng `users` thuộc Module 1).
+SLA và nội dung chỉ để minh họa. Module khác nên tham chiếu phòng ban / loại hỗ trợ theo **mã** (`KT`, `PKBT`…), không theo ID.
+
 ## Xác thực
 
 Giống Module 3: mọi API cần header `X-User-Id` và `X-User-Role` (`admin`, `student`, `staff`, `department_head`).
