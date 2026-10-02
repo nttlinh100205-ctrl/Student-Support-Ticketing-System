@@ -11,11 +11,26 @@ Dịch vụ độc lập trong kiến trúc Microservices của Hệ thống Ti�
   - Phân bổ theo phòng ban (`by_department`) và loại yêu cầu (`by_support_type`).
   - Thời gian xử lý trung bình theo giờ (`avg_processing_hours`).
   - Biểu đồ biến động yêu cầu theo ngày (`requests_over_time`).
-  - Thống kê mức độ hài lòng của sinh viên (`ratings_summary`).
-  - Bộ lọc đa chiều: `department_id`, `support_type_id`, `from_date`, `to_date`.
+  - **Chỉ số SLA & Tỉ lệ quá hạn (`sla_metrics`)**:
+    - Số lượng và tỷ lệ đúng hạn SLA (`sla_compliance_rate`).
+    - Số lượng và tỷ lệ quá hạn SLA (`sla_overdue_rate`).
+    - Danh sách các yêu cầu bị quá hạn SLA (`overdue_requests`).
+  - **Bảng xếp hạng Hiệu suất & Hài lòng (`department_rankings`, `staff_rankings`)**:
+    - Xếp hạng phòng ban và cán bộ dựa trên tỷ lệ giải quyết, tỷ lệ đạt SLA và điểm CSAT.
+  - **Giám sát Khối lượng công việc cán bộ (`staff_workloads`)**:
+    - Thống kê chi tiết số việc đang xử lý, đã xong, tổng tải và cảnh báo quá tải.
+  - **Thống kê mức độ hài lòng của sinh viên (`ratings_summary`)**:
+    - Điểm CSAT trung bình, phân bổ theo số sao, theo phòng ban và theo từng cán bộ.
+  - **Bộ lọc đa chiều & Thời gian**: `department_id`, `support_type_id`, `staff_id`, `from_date`, `to_date`.
 
-- **Xuất dữ liệu chi tiết (`GET /api/reports/export`)**:
-  - Xuất danh sách yêu cầu ra file CSV định dạng UTF-8 BOM, tương thích hiển thị tiếng Việt trên Microsoft Excel.
+- **Xuất dữ liệu & Báo cáo (`GET /api/reports/export` & `GET /api/reports/export-pdf`)**:
+  - **Xuất Excel (CSV)**: Xuất danh sách yêu cầu ra file CSV kèm UTF-8 BOM, hiển thị tiếng Việt chuẩn trên Excel.
+  - **Xuất PDF**: Tạo file PDF báo cáo chuẩn (`DomPDF`) gồm đầy đủ tiêu đề, các chỉ số KPI, bảng xếp hạng phòng ban/cán bộ và danh sách quá hạn SLA.
+
+- **Giao diện Dashboard trực quan (`/` hoặc `/dashboard`)**:
+  - Đầy đủ 3 nhóm biểu đồ: **Biểu đồ Cột** (Khối lượng cán bộ, phân bổ sao), **Biểu đồ Tròn** (Trạng thái yêu cầu, Tỷ lệ SLA), **Biểu đồ Đường** (Xu hướng yêu cầu theo thời gian).
+  - Bộ nút chọn nhanh khoảng thời gian (Hôm nay, 7 ngày qua, 30 ngày qua, Tháng 9/2026, Quý 3).
+
 
 - **Đánh giá chất lượng hỗ trợ (`/api/ratings`)**:
   - Sinh viên gửi đánh giá (1-5 sao và nhận xét) cho các yêu cầu đã hoàn tất (`resolved`/`closed`).
