@@ -2,17 +2,20 @@
 
 namespace Tests\Feature;
 
+// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
     /**
-     * Test trang gốc chuyển hướng đến trang danh sách yêu cầu.
+     * A basic test example.
+     *
+     * @return void
      */
-    public function test_the_application_redirects_from_root_to_requests(): void
+    public function test_the_application_returns_a_successful_response()
     {
         $response = $this->get('/');
 
-        $response->assertRedirect('/requests');
+        $response->assertStatus(200);
     }
 }
