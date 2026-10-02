@@ -21,4 +21,9 @@ class ReportController extends Controller
     {
         return $this->reportService->exportCsv($request->validated());
     }
+
+    public function exportPdf(ReportExportRequest $request)
+    {
+        return $this->reportService->exportPdf($request->validated());
+    }
 }

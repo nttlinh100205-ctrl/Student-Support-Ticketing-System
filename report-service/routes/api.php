@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('can-view-reports')->group(function () {
     Route::get('/reports/statistics', [ReportController::class, 'statistics']);
     Route::get('/reports/export', [ReportController::class, 'export']);
+    Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf']);
     Route::get('/reports/ratings/statistics', [RatingController::class, 'summary']);
     Route::get('/ratings', [RatingController::class, 'index']);
 });
