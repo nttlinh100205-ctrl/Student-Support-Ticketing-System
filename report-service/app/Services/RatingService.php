@@ -144,11 +144,28 @@ class RatingService
             ];
         })->values()->toArray();
 
+        $allRequests = collect($this->requestClient->getRequests())->keyBy('id');
+        $byStaff = $ratings->groupBy(function ($r) use ($allRequests) {
+            $req = $allRequests->get($r->request_id);
+
+            return $req['staff_id'] ?? 0;
+        })->filter(fn ($items, $staffId) => $staffId > 0)->map(function ($items, $staffId) use ($allRequests) {
+            $firstReq = $allRequests->first(fn ($req) => ($req['staff_id'] ?? null) == $staffId);
+
+            return [
+                'staff_id' => (int) $staffId,
+                'staff_name' => $firstReq['staff_name'] ?? ('Cán bộ #'.$staffId),
+                'total_ratings' => $items->count(),
+                'average_rating' => round($items->avg('rating'), 2),
+            ];
+        })->values()->toArray();
+
         return [
             'total_ratings' => $total,
             'average_rating' => $average,
             'by_stars' => $byStars,
             'by_department' => $byDepartment,
+            'by_staff' => $byStaff,
         ];
     }
 }

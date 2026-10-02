@@ -23,4 +23,14 @@ interface OrgServiceClientInterface
      * @return array<string, mixed>|null
      */
     public function getSupportTypeById(int $supportTypeId): ?array;
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getStaffMembers(): array;
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getStaffById(int $staffId): ?array;
 }

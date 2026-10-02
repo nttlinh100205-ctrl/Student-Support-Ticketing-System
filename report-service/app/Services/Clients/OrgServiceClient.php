@@ -104,6 +104,52 @@ class OrgServiceClient implements OrgServiceClientInterface
     }
 
     /**
+     * Lấy danh sách cán bộ / nhân viên hỗ trợ từ Org Service (:8002).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getStaffMembers(): array
+    {
+        $mock = config('services.org_service.mock', true);
+        $baseUrl = config('services.org_service.url', 'http://localhost:8002');
+
+        if (! $mock) {
+            try {
+                $response = Http::timeout(5)
+                    ->withHeaders($this->forwardHeaders())
+                    ->get("{$baseUrl}/api/staff");
+
+                if ($response->successful()) {
+                    $json = $response->json();
+
+                    return $json['data'] ?? [];
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Không thể kết nối tới Org Service (staff): '.$e->getMessage());
+            }
+        }
+
+        $path = storage_path('app/mock_staff.json');
+        if (! file_exists($path)) {
+            return [];
+        }
+
+        return json_decode(file_get_contents($path), true) ?: [];
+    }
+
+    /**
+     * Lấy chi tiết cán bộ hỗ trợ theo ID.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getStaffById(int $staffId): ?array
+    {
+        $staff = $this->getStaffMembers();
+
+        return collect($staff)->firstWhere('id', $staffId);
+    }
+
+    /**
      * Chuyển tiếp các header xác thực.
      *
      * @return array<string, string>
