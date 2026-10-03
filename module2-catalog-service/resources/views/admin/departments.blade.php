@@ -154,14 +154,15 @@
 
             throw new Error(errors || 'Không thể xử lý yêu cầu.');
         }
+                    // Danh sách phân trang được bọc trong "data" (API contract) -> mở lớp bọc.
+        if (data && data.data && Array.isArray(data.data.data)) {
+            return data.data;
+        }
 
         return data;
     }
 
-            // Danh sách phân trang được bọc trong "data" (API contract) -> mở lớp bọc.
-        if (data && data.data && Array.isArray(data.data.data)) {
-            return data.data;
-        }
+
 
 
 
