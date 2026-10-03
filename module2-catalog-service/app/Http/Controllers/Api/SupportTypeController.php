@@ -8,12 +8,15 @@ use App\Http\Requests\UpdateSupportTypeRequest;
 use App\Http\Resources\SupportTypeResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\SupportType;
-use App\Services\RequestUsage;
+use App\Services\SupportTypeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class SupportTypeController extends Controller
 {
+    public function __construct(private SupportTypeService $supportTypes) {}
+
     /**
      * Danh sách loại hỗ trợ: tìm theo tên / mã, lọc phòng ban,
      * lọc trạng thái và phân trang.
@@ -26,35 +29,8 @@ class SupportTypeController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        // Load phòng ban để SupportTypeResource trả kèm thông tin department.
-        $query = SupportType::query()
-            ->with(['department:id,name,code,is_active']);
-
-        $search = trim($filters['search'] ?? '');
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
-            });
-        }
-
-        if (array_key_exists('department_id', $filters)) {
-            $query->where('department_id', $filters['department_id']);
-        }
-
-        if (array_key_exists('is_active', $filters)) {
-            $query->where('is_active', $filters['is_active']);
-        }
-
-        $paginator = $query
-            ->orderBy('name')
-            ->paginate(10)
-            ->withQueryString();
-
-        $paginator->through(function ($supportType) use ($request) {
-            return (new SupportTypeResource($supportType))->resolve($request);
-        });
+        $paginator = $this->supportTypes->paginate($filters)
+            ->through(fn ($supportType) => (new SupportTypeResource($supportType))->resolve($request));
 
         return ApiResponse::success($paginator);
     }
@@ -64,13 +40,7 @@ class SupportTypeController extends Controller
      */
     public function store(StoreSupportTypeRequest $request): JsonResponse
     {
-        $data = $request->validated();
-
-        // Không truyền trạng thái thì mặc định đang hoạt động.
-        $data['is_active'] = $data['is_active'] ?? true;
-
-        $supportType = SupportType::create($data);
-        $supportType->load('department:id,name,code,is_active');
+        $supportType = $this->supportTypes->create($request->validated());
 
         return ApiResponse::success(
             (new SupportTypeResource($supportType))->resolve($request),
@@ -82,11 +52,9 @@ class SupportTypeController extends Controller
     /**
      * Xem chi tiết loại hỗ trợ.
      */
-    public function show(
-        Request $request,
-        SupportType $supportType
-    ): JsonResponse {
-        $supportType->load('department:id,name,code,is_active');
+    public function show(Request $request, SupportType $supportType): JsonResponse
+    {
+        $supportType = $this->supportTypes->withDepartment($supportType);
 
         return ApiResponse::success(
             (new SupportTypeResource($supportType))->resolve($request)
@@ -96,16 +64,9 @@ class SupportTypeController extends Controller
     /**
      * Cập nhật loại hỗ trợ: tên, mã, phòng phụ trách, mô tả, SLA, bật / tắt.
      */
-    public function update(
-        UpdateSupportTypeRequest $request,
-        SupportType $supportType
-    ): JsonResponse {
-        $data = $request->validated();
-
-        $supportType->update($data);
-
-        $supportType = $supportType->fresh();
-        $supportType->load('department:id,name,code,is_active');
+    public function update(UpdateSupportTypeRequest $request, SupportType $supportType): JsonResponse
+    {
+        $supportType = $this->supportTypes->update($supportType, $request->validated());
 
         return ApiResponse::success(
             (new SupportTypeResource($supportType))->resolve($request),
@@ -114,20 +75,16 @@ class SupportTypeController extends Controller
     }
 
     /**
-     * Xóa loại hỗ trợ. Không cho xóa nếu đã có yêu cầu hỗ trợ sử dụng,
-     * để tránh mất liên kết lịch sử — sai nghiệp vụ nên trả 409.
+     * Xóa loại hỗ trợ. Đã có yêu cầu sử dụng thì sai nghiệp vụ nên trả 409.
      */
     public function destroy(SupportType $supportType): JsonResponse
     {
-        if (RequestUsage::usesSupportType($supportType->id)) {
-            return ApiResponse::error(
-                'Không thể xóa loại hỗ trợ vì đã có yêu cầu sử dụng loại hỗ trợ này.',
-                409
-            );
+        try {
+            $this->supportTypes->delete($supportType);
+
+            return ApiResponse::success(null, 'Xóa loại hỗ trợ thành công.');
+        } catch (ValidationException $e) {
+            return ApiResponse::error($e->getMessage(), 409);
         }
-
-        $supportType->delete();
-
-        return ApiResponse::success(null, 'Xóa loại hỗ trợ thành công.');
     }
 }
