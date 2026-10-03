@@ -8,13 +8,16 @@ use App\Http\Requests\UpdateDepartmentRequest;
 use App\Http\Resources\SupportDepartmentResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\SupportDepartment;
-use App\Services\RequestUsage;
+use App\Services\DepartmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class SupportDepartmentController extends Controller
 {
+    public function __construct(private DepartmentService $departments) {}
+
     // Danh sách phòng ban: tìm kiếm, lọc và phân trang.
     public function index(Request $request): JsonResponse
     {
@@ -24,33 +27,8 @@ class SupportDepartmentController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $query = SupportDepartment::query()
-            ->withCount(['staff', 'heads']);
-
-        $search = trim($filters['search'] ?? '');
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
-            });
-        }
-
-        // isset vẫn nhận giá trị 0, nhưng bỏ qua null.
-        if (isset($filters['is_active'])) {
-            $query->where('is_active', $filters['is_active']);
-        }
-
-        $paginator = $query
-            ->orderBy('name')
-            ->orderBy('id')
-            ->paginate(10)
-            ->withQueryString();
-
-        $paginator->through(function ($department) use ($request) {
-            return (new SupportDepartmentResource($department))
-                ->resolve($request);
-        });
+        $paginator = $this->departments->paginate($filters)
+            ->through(fn ($department) => (new SupportDepartmentResource($department))->resolve($request));
 
         return ApiResponse::success($paginator);
     }
@@ -58,12 +36,7 @@ class SupportDepartmentController extends Controller
     // Thêm phòng ban.
     public function store(StoreDepartmentRequest $request): JsonResponse
     {
-        $data = $request->validated();
-
-        $data['is_active'] = $data['is_active'] ?? true;
-
-        $department = SupportDepartment::create($data);
-        $department->loadCount(['staff', 'heads']);
+        $department = $this->departments->create($request->validated());
 
         return ApiResponse::success(
             (new SupportDepartmentResource($department))->resolve($request),
@@ -73,11 +46,9 @@ class SupportDepartmentController extends Controller
     }
 
     // Xem chi tiết phòng ban.
-    public function show(
-        Request $request,
-        SupportDepartment $department
-    ): JsonResponse {
-        $department->loadCount(['staff', 'heads']);
+    public function show(Request $request, SupportDepartment $department): JsonResponse
+    {
+        $department = $this->departments->withStaffCounts($department);
 
         return ApiResponse::success(
             (new SupportDepartmentResource($department))->resolve($request)
@@ -85,14 +56,9 @@ class SupportDepartmentController extends Controller
     }
 
     // Sửa thông tin hoặc bật/tắt phòng ban.
-    public function update(
-        UpdateDepartmentRequest $request,
-        SupportDepartment $department
-    ): JsonResponse {
-        $data = $request->validated();
-        $department->update($data);
-        $department->refresh();
-        $department->loadCount(['staff', 'heads']);
+    public function update(UpdateDepartmentRequest $request, SupportDepartment $department): JsonResponse
+    {
+        $department = $this->departments->update($department, $request->validated());
 
         return ApiResponse::success(
             (new SupportDepartmentResource($department))->resolve($request),
@@ -101,88 +67,27 @@ class SupportDepartmentController extends Controller
     }
 
     // Danh sách cán bộ và trưởng phòng thuộc phòng ban.
-    public function staff(
-        Request $request,
-        SupportDepartment $department
-    ): JsonResponse {
+    public function staff(Request $request, SupportDepartment $department): JsonResponse
+    {
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
-            'role' => [
-                'nullable',
-                Rule::in(['STAFF', 'DEPARTMENT_HEAD']),
-            ],
-            'status' => [
-                'nullable',
-                Rule::in(['ACTIVE', 'LOCKED']),
-            ],
+            'role' => ['nullable', Rule::in(['STAFF', 'DEPARTMENT_HEAD'])],
+            'status' => ['nullable', Rule::in(['ACTIVE', 'LOCKED'])],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $query = $department->users()
-            ->select([
-                'id',
-                'name',
-                'email',
-                'role',
-                'status',
-                'department_id',
-            ])
-            ->whereIn('role', ['STAFF', 'DEPARTMENT_HEAD']);
-
-        $search = trim($filters['search'] ?? '');
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
-
-        if (! empty($filters['role'])) {
-            $query->where('role', $filters['role']);
-        }
-
-        if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        return ApiResponse::success(
-            $query
-                ->orderBy('name')
-                ->orderBy('id')
-                ->paginate(10)
-                ->withQueryString()
-        );
+        return ApiResponse::success($this->departments->paginateStaff($department, $filters));
     }
 
-    // Chỉ xóa phòng ban khi không còn dữ liệu liên kết.
-    // Sai nghiệp vụ trả 409 (dữ liệu gửi lên không sai nên không dùng 422).
-    public function destroy(
-        SupportDepartment $department
-    ): JsonResponse {
-        if ($department->users()->exists()) {
-            return ApiResponse::error(
-                'Không thể xóa phòng ban vì vẫn có tài khoản thuộc phòng ban này.',
-                409
-            );
+    // Sai nghiệp vụ (còn dữ liệu liên kết) trả 409, không dùng 422 vì dữ liệu gửi lên không sai.
+    public function destroy(SupportDepartment $department): JsonResponse
+    {
+        try {
+            $this->departments->delete($department);
+
+            return ApiResponse::success(null, 'Xóa phòng ban thành công.');
+        } catch (ValidationException $e) {
+            return ApiResponse::error($e->getMessage(), 409);
         }
-
-        if ($department->supportTypes()->exists()) {
-            return ApiResponse::error(
-                'Không thể xóa phòng ban vì vẫn có loại hỗ trợ liên kết.',
-                409
-            );
-        }
-
-        if (RequestUsage::usesDepartment($department->id)) {
-            return ApiResponse::error(
-                'Không thể xóa phòng ban vì đã có yêu cầu hỗ trợ liên quan. Hãy chuyển sang ngừng hoạt động.',
-                409
-            );
-        }
-
-        $department->delete();
-
-        return ApiResponse::success(null, 'Xóa phòng ban thành công.');
     }
 }
