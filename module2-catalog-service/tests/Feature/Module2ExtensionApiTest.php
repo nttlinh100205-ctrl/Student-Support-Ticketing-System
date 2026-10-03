@@ -337,7 +337,7 @@ class Module2ExtensionApiTest extends TestCase
             ->putJson("/api/v1/admin/departments/{$this->department->id}/staff/{$user->id}", [
                 'role' => 'STAFF',
             ])
-            ->assertStatus(422);
+            ->assertStatus(409);
     }
 
     public function test_admin_account_cannot_be_assigned(): void
@@ -348,11 +348,11 @@ class Module2ExtensionApiTest extends TestCase
             ->putJson("/api/v1/admin/departments/{$this->department->id}/staff/{$admin->id}", [
                 'role' => 'STAFF',
             ])
-            ->assertStatus(422);
+            ->assertStatus(409);
 
         $this->asAdmin()
             ->getJson('/api/v1/admin/staff-candidates')
             ->assertOk()
-            ->assertJsonCount(0, 'data');
+            ->assertJsonCount(0, 'data.data');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Contracts\AuthContext;
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use App\Models\SupportDepartment;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -42,7 +43,7 @@ class DepartmentStaffController extends Controller
             });
         }
 
-        return response()->json(
+        return ApiResponse::success(
             $query->orderBy('name')
                 ->orderBy('id')
                 ->paginate(50)
@@ -61,15 +62,11 @@ class DepartmentStaffController extends Controller
         User $user
     ): JsonResponse {
         if ($auth->userId() === (int) $user->id) {
-            return response()->json([
-                'message' => 'Không thể tự thay đổi phòng ban của chính mình.',
-            ], 403);
+            return ApiResponse::error('Không thể tự thay đổi phòng ban của chính mình.', 403);
         }
 
         if ($user->role === 'ADMIN') {
-            return response()->json([
-                'message' => 'Không thể gán tài khoản ADMIN vào phòng ban.',
-            ], 422);
+            return ApiResponse::error('Không thể gán tài khoản ADMIN vào phòng ban.', 409);
         }
 
         $data = $request->validate([
@@ -83,9 +80,7 @@ class DepartmentStaffController extends Controller
         $keepingDepartment = (int) $user->department_id === (int) $department->id;
 
         if (! $department->is_active && ! $keepingDepartment) {
-            return response()->json([
-                'message' => 'Không thể gán cán bộ vào phòng ban đã ngừng hoạt động.',
-            ], 422);
+            return ApiResponse::error('Không thể gán cán bộ vào phòng ban đã ngừng hoạt động.', 409);
         }
 
         $user->update([
@@ -95,9 +90,9 @@ class DepartmentStaffController extends Controller
 
         $user->load('department:id,name,code,is_active');
 
-        return response()->json([
-            'message' => 'Gán cán bộ vào phòng ban thành công.',
-            'data' => $user->only(['id', 'name', 'email', 'role', 'status', 'department_id', 'department']),
-        ]);
+        return ApiResponse::success(
+            $user->only(['id', 'name', 'email', 'role', 'status', 'department_id', 'department']),
+            'Gán cán bộ vào phòng ban thành công.'
+        );
     }
 }

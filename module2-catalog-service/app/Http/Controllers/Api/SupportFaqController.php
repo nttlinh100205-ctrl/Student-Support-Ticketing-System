@@ -91,7 +91,6 @@ class SupportFaqController extends Controller
         $this->loadRelations($faq);
 
         return ApiResponse::success($faq, 'Thêm câu hỏi thường gặp thành công.', 201);
-
     }
 
     /**
