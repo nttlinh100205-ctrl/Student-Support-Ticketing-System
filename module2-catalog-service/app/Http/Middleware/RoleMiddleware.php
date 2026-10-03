@@ -9,9 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RoleMiddleware
 {
-    public function __construct(protected AuthContext $auth)
-    {
-    }
+    public function __construct(protected AuthContext $auth) {}
 
     /**
      * Kiểm tra vai trò người gọi API.

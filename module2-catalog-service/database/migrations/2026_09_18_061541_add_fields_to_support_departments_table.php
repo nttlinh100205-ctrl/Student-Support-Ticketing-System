@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('support_departments', 'name')) {
+        if (! Schema::hasColumn('support_departments', 'name')) {
             Schema::table('support_departments', function (Blueprint $table) {
                 $table->string('name', 100)
                     ->default('Phòng Hỗ trợ Sinh viên')
@@ -19,7 +19,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasColumn('support_departments', 'code')) {
+        if (! Schema::hasColumn('support_departments', 'code')) {
             Schema::table('support_departments', function (Blueprint $table) {
                 $table->string('code', 50)
                     ->default('SUPPORT')
@@ -28,7 +28,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasColumn('support_departments', 'description')) {
+        if (! Schema::hasColumn('support_departments', 'description')) {
             Schema::table('support_departments', function (Blueprint $table) {
                 $table->text('description')
                     ->nullable()
@@ -36,7 +36,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasColumn('support_departments', 'is_active')) {
+        if (! Schema::hasColumn('support_departments', 'is_active')) {
             Schema::table('support_departments', function (Blueprint $table) {
                 $table->boolean('is_active')
                     ->default(true)

@@ -214,17 +214,13 @@ class SupportTypeFieldController extends Controller
             ],
         ], [
             'field_key.required' => 'Vui lòng nhập mã trường.',
-            'field_key.regex' =>
-                'Mã trường bắt đầu bằng chữ thường, chỉ gồm chữ thường, số và dấu gạch dưới.',
-            'field_key.unique' =>
-                'Mã trường đã tồn tại trong loại hỗ trợ này.',
+            'field_key.regex' => 'Mã trường bắt đầu bằng chữ thường, chỉ gồm chữ thường, số và dấu gạch dưới.',
+            'field_key.unique' => 'Mã trường đã tồn tại trong loại hỗ trợ này.',
             'label.required' => 'Vui lòng nhập tên hiển thị.',
             'field_type.required' => 'Vui lòng chọn kiểu trường.',
             'field_type.in' => 'Kiểu trường không hợp lệ.',
-            'options.required_if' =>
-                'Kiểu danh sách chọn phải có ít nhất một lựa chọn.',
-            'options.array' =>
-                'Các lựa chọn phải được gửi dưới dạng danh sách.',
+            'options.required_if' => 'Kiểu danh sách chọn phải có ít nhất một lựa chọn.',
+            'options.array' => 'Các lựa chọn phải được gửi dưới dạng danh sách.',
             'options.min' => 'Cần ít nhất một lựa chọn.',
             'options.max' => 'Chỉ được cấu hình tối đa 50 lựa chọn.',
             'options.*.required' => 'Lựa chọn không được để trống.',

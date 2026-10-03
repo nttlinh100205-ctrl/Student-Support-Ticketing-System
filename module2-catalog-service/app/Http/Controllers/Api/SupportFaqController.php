@@ -201,26 +201,16 @@ class SupportFaqController extends Controller
                 'boolean',
             ],
         ], [
-            'department_id.required' =>
-                'Vui lòng chọn phòng ban.',
-            'department_id.exists' =>
-                'Phòng ban không tồn tại.',
-            'support_type_id.exists' =>
-                'Loại hỗ trợ không tồn tại hoặc không thuộc phòng ban đã chọn.',
-            'question.required' =>
-                'Vui lòng nhập câu hỏi.',
-            'question.max' =>
-                'Câu hỏi không được vượt quá 255 ký tự.',
-            'answer.required' =>
-                'Vui lòng nhập câu trả lời.',
-            'answer.max' =>
-                'Câu trả lời không được vượt quá 10.000 ký tự.',
-            'sort_order.integer' =>
-                'Thứ tự hiển thị phải là số nguyên.',
-            'sort_order.min' =>
-                'Thứ tự hiển thị không được nhỏ hơn 0.',
-            'sort_order.max' =>
-                'Thứ tự hiển thị không được vượt quá 65535.',
+            'department_id.required' => 'Vui lòng chọn phòng ban.',
+            'department_id.exists' => 'Phòng ban không tồn tại.',
+            'support_type_id.exists' => 'Loại hỗ trợ không tồn tại hoặc không thuộc phòng ban đã chọn.',
+            'question.required' => 'Vui lòng nhập câu hỏi.',
+            'question.max' => 'Câu hỏi không được vượt quá 255 ký tự.',
+            'answer.required' => 'Vui lòng nhập câu trả lời.',
+            'answer.max' => 'Câu trả lời không được vượt quá 10.000 ký tự.',
+            'sort_order.integer' => 'Thứ tự hiển thị phải là số nguyên.',
+            'sort_order.min' => 'Thứ tự hiển thị không được nhỏ hơn 0.',
+            'sort_order.max' => 'Thứ tự hiển thị không được vượt quá 65535.',
         ]);
 
         $data['question'] = trim($data['question']);
