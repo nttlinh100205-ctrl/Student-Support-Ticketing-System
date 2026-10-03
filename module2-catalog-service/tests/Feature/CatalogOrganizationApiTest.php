@@ -133,7 +133,8 @@ class CatalogOrganizationApiTest extends TestCase
         $this->createRequestRow($department->id, $supportType->id);
 
         $this->deleteJson("/api/v1/admin/support-types/{$supportType->id}")
-            ->assertStatus(422)
+            ->assertStatus(409)
+
             ->assertJsonFragment([
                 'message' => 'Không thể xóa loại hỗ trợ vì đã có yêu cầu sử dụng loại hỗ trợ này.',
             ]);
