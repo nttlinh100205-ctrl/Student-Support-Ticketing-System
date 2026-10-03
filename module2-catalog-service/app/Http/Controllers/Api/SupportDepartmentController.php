@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreDepartmentRequest;
+use App\Http\Requests\UpdateDepartmentRequest;
 use App\Http\Resources\SupportDepartmentResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\SupportDepartment;
@@ -54,20 +56,9 @@ class SupportDepartmentController extends Controller
     }
 
     // Thêm phòng ban.
-    public function store(Request $request): JsonResponse
+    public function store(StoreDepartmentRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                'regex:/^[A-Za-z0-9_-]+$/',
-                Rule::unique('support_departments', 'code'),
-            ],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'is_active' => ['sometimes', 'boolean'],
-        ]);
+        $data = $request->validated();
 
         $data['is_active'] = $data['is_active'] ?? true;
 
@@ -95,23 +86,10 @@ class SupportDepartmentController extends Controller
 
     // Sửa thông tin hoặc bật/tắt phòng ban.
     public function update(
-        Request $request,
+        UpdateDepartmentRequest $request,
         SupportDepartment $department
     ): JsonResponse {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                'regex:/^[A-Za-z0-9_-]+$/',
-                Rule::unique('support_departments', 'code')
-                    ->ignore($department->id),
-            ],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'is_active' => ['sometimes', 'boolean'],
-        ]);
-
+        $data = $request->validated();
         $department->update($data);
         $department->refresh();
         $department->loadCount(['staff', 'heads']);
