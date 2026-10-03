@@ -158,6 +158,13 @@
         return data;
     }
 
+            // Danh sách phân trang được bọc trong "data" (API contract) -> mở lớp bọc.
+        if (data && data.data && Array.isArray(data.data.data)) {
+            return data.data;
+        }
+
+
+
     function resetForm() {
         el('departmentForm').reset();
         el('departmentId').value = '';

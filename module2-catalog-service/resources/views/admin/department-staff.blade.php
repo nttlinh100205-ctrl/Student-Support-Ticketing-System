@@ -129,6 +129,13 @@
         if (!data) throw new Error('Máy chủ trả về dữ liệu không hợp lệ.');
         return data;
     }
+
+            // Danh sách phân trang được bọc trong "data" (API contract) -> mở lớp bọc.
+        if (data && data.data && Array.isArray(data.data.data)) {
+            return data.data;
+        }
+
+
     function paginator(result) {
         const value = Array.isArray(result.data) ? result : result.data;
         if (!value || !Array.isArray(value.data)) throw new Error('Dữ liệu danh sách không đúng định dạng.');
