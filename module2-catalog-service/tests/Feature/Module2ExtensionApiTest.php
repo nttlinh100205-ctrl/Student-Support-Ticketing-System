@@ -254,6 +254,17 @@ class Module2ExtensionApiTest extends TestCase
             ->assertCreated()
             ->json('data.id');
 
+        // Sửa FAQ: bỏ chọn loại hỗ trợ thì thành FAQ chung của phòng ban.
+        $this->asAdmin()
+            ->putJson("/api/v1/admin/faqs/{$faqId}", [
+                'department_id' => $this->department->id,
+                'question' => 'Bao lâu thì nhận được bảng điểm?',
+                'answer' => 'Khoảng 5 ngày làm việc.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.answer', 'Khoảng 5 ngày làm việc.')
+            ->assertJsonPath('data.support_type_id', null);
+
         $this->asAdmin()
             ->putJson("/api/v1/admin/faqs/{$faqId}/status", ['is_active' => false])
             ->assertOk()

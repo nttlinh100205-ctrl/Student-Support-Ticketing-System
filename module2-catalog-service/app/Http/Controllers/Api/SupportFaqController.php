@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreFaqRequest;
+use App\Http\Requests\UpdateFaqRequest;
+use App\Http\Requests\UpdateStatusRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\SupportFaq;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class SupportFaqController extends Controller
 {
@@ -79,9 +80,9 @@ class SupportFaqController extends Controller
     /**
      * Thêm câu hỏi thường gặp.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreFaqRequest $request): JsonResponse
     {
-        $data = $this->validateData($request);
+        $data = $request->faqData();
 
         $data['is_active'] = $data['is_active'] ?? true;
         $data['sort_order'] = $data['sort_order'] ?? 0;
@@ -107,12 +108,10 @@ class SupportFaqController extends Controller
      * Cập nhật nội dung và phạm vi áp dụng.
      */
     public function update(
-        Request $request,
+        UpdateFaqRequest $request,
         SupportFaq $faq
     ): JsonResponse {
-        $data = $this->validateData($request);
-
-        $faq->update($data);
+        $faq->update($request->faqData());
         $faq->refresh();
 
         $this->loadRelations($faq);
@@ -124,14 +123,10 @@ class SupportFaqController extends Controller
      * Bật/tắt FAQ.
      */
     public function updateStatus(
-        Request $request,
+        UpdateStatusRequest $request,
         SupportFaq $faq
     ): JsonResponse {
-        $data = $request->validate([
-            'is_active' => ['required', 'boolean'],
-        ]);
-
-        $faq->update($data);
+        $faq->update($request->validated());
         $faq->refresh();
 
         $this->loadRelations($faq);
@@ -142,96 +137,6 @@ class SupportFaqController extends Controller
                 ? 'Đã bật câu hỏi thường gặp.'
                 : 'Đã ẩn câu hỏi thường gặp.'
         );
-    }
-
-    /**
-     * Kiểm tra nội dung.
-     *
-     * Loại hỗ trợ được chọn phải thuộc phòng ban đã chọn.
-     */
-    private function validateData(Request $request): array
-    {
-        $data = $request->validate([
-            'department_id' => [
-                'required',
-                'integer',
-                'exists:support_departments,id',
-            ],
-
-            'support_type_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('support_types', 'id')
-                    ->where(function ($query) use ($request) {
-                        $query->where(
-                            'department_id',
-                            $request->input('department_id')
-                        );
-                    }),
-            ],
-
-            'question' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-
-            'answer' => [
-                'required',
-                'string',
-                'max:10000',
-            ],
-
-            'sort_order' => [
-                'sometimes',
-                'integer',
-                'min:0',
-                'max:65535',
-            ],
-
-            'is_active' => [
-                'sometimes',
-                'boolean',
-            ],
-        ], [
-            'department_id.required' => 'Vui lòng chọn phòng ban.',
-            'department_id.exists' => 'Phòng ban không tồn tại.',
-            'support_type_id.exists' => 'Loại hỗ trợ không tồn tại hoặc không thuộc phòng ban đã chọn.',
-            'question.required' => 'Vui lòng nhập câu hỏi.',
-            'question.max' => 'Câu hỏi không được vượt quá 255 ký tự.',
-            'answer.required' => 'Vui lòng nhập câu trả lời.',
-            'answer.max' => 'Câu trả lời không được vượt quá 10.000 ký tự.',
-            'sort_order.integer' => 'Thứ tự hiển thị phải là số nguyên.',
-            'sort_order.min' => 'Thứ tự hiển thị không được nhỏ hơn 0.',
-            'sort_order.max' => 'Thứ tự hiển thị không được vượt quá 65535.',
-        ]);
-
-        $data['question'] = trim($data['question']);
-        $data['answer'] = trim($data['answer']);
-
-        $errors = [];
-
-        if ($data['question'] === '') {
-            $errors['question'] = [
-                'Câu hỏi không được để trống.',
-            ];
-        }
-
-        if ($data['answer'] === '') {
-            $errors['answer'] = [
-                'Câu trả lời không được để trống.',
-            ];
-        }
-
-        if ($errors !== []) {
-            throw ValidationException::withMessages($errors);
-        }
-
-        // Không chọn loại hỗ trợ: FAQ chung của phòng ban.
-        $data['support_type_id'] =
-            $data['support_type_id'] ?? null;
-
-        return $data;
     }
 
     private function loadRelations(SupportFaq $faq): void
