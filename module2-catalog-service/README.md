@@ -34,6 +34,25 @@ SLA và nội dung chỉ để minh họa. Module khác nên tham chiếu phòng
 Giống Module 3: mọi API cần header `X-User-Id` và `X-User-Role` (`admin`, `student`, `staff`, `department_head`).
 Khi Module 1 có JWT thật, chỉ cần đổi `FakeAuthMiddleware` và binding trong `AuthContextServiceProvider`.
 
+## Format response
+
+Mọi API trả theo API Contract chung (mục 5):
+
+```json
+{ "success": true, "data": { ... }, "message": null }
+{ "success": false, "message": "Nội dung lỗi", "errors": { "field": ["..."] } }
+```
+
+- Danh sách có phân trang: mảng nằm ở `data.data`, thông tin trang ở `data.current_page`, `data.last_page`, `data.total`.
+- Mã lỗi: `401` thiếu header xác thực, `403` sai quyền, `404` không tìm thấy hoặc đã ngừng hoạt động,
+  `409` sai nghiệp vụ (VD xóa phòng ban còn dữ liệu liên kết), `422` dữ liệu nhập sai (kèm `errors`).
+
+## Cấu trúc code
+
+Controller (`app/Http/Controllers/Api`) chỉ nhận request và trả response qua `ApiResponse`.
+Validate nằm ở Form Request (`app/Http/Requests`), nghiệp vụ nằm ở Service (`app/Services`).
+Service ném `ValidationException` khi sai nghiệp vụ, Controller bắt lại và trả `409`.
+
 ## API cho các module khác (`auth.fake`)
 
 | Method | URL | Mô tả |
@@ -46,6 +65,8 @@ Khi Module 1 có JWT thật, chỉ cần đổi `FakeAuthMiddleware` và binding
 | GET | `/api/v1/catalog/departments/{id}/faqs` | FAQ theo phòng ban |
 
 Module 3 nên gọi `.../validate` trước khi lưu yêu cầu. Trường kiểu `file` nhận tệp tải lên hoặc tên / mã tệp đã lưu ở Module 3.
+Hợp lệ thì `data` gồm `support_type_id`, `sla_days`, `values` (chỉ giữ các trường có trong biểu mẫu).
+
 
 ## API quản trị (`role:admin`)
 
@@ -55,10 +76,13 @@ Module 3 nên gọi `.../validate` trước khi lưu yêu cầu. Trường kiể
 - Biểu mẫu: `GET|POST /api/v1/admin/support-types/{id}/fields`, `GET|PUT /.../fields/{fieldId}`, `PUT /.../fields/{fieldId}/status`
 - FAQ: `GET|POST /api/v1/admin/faqs`, `GET|PUT /api/v1/admin/faqs/{id}`, `PUT /api/v1/admin/faqs/{id}/status`
 
-Không xóa được phòng ban / loại hỗ trợ đã có yêu cầu: bảng `requests` của Module 3 được kiểm tra khi hai service dùng chung database.
+Không xóa được phòng ban còn tài khoản / loại hỗ trợ, hoặc loại hỗ trợ đã có yêu cầu (trả `409`).
+Bảng `requests` của Module 3 chỉ được kiểm tra khi hai service dùng chung database.
 
 ## Kiểm thử
 
 ```bash
-php artisan test
+php artisan test            # Unit (Service) + Feature (API)
+./vendor/bin/pint --test    # kiểm tra format code, chạy ./vendor/bin/pint để tự sửa
 ```
+
