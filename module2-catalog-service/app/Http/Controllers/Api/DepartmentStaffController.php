@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Contracts\AuthContext;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AssignStaffRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\SupportDepartment;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * Gán / chuyển cán bộ giữa các phòng ban.
@@ -56,7 +56,7 @@ class DepartmentStaffController extends Controller
      * Nếu tài khoản đang ở phòng khác thì được chuyển sang phòng này.
      */
     public function assign(
-        Request $request,
+        AssignStaffRequest $request,
         AuthContext $auth,
         SupportDepartment $department,
         User $user
@@ -69,13 +69,6 @@ class DepartmentStaffController extends Controller
             return ApiResponse::error('Không thể gán tài khoản ADMIN vào phòng ban.', 409);
         }
 
-        $data = $request->validate([
-            'role' => ['required', Rule::in(['STAFF', 'DEPARTMENT_HEAD'])],
-        ], [
-            'role.required' => 'Vui lòng chọn vai trò.',
-            'role.in' => 'Vai trò không hợp lệ.',
-        ]);
-
         // Cho phép giữ nguyên phòng cũ dù phòng đó đã ngừng hoạt động.
         $keepingDepartment = (int) $user->department_id === (int) $department->id;
 
@@ -84,7 +77,8 @@ class DepartmentStaffController extends Controller
         }
 
         $user->update([
-            'role' => $data['role'],
+            'role' => $request->validated('role'),
+
             'department_id' => $department->id,
         ]);
 
