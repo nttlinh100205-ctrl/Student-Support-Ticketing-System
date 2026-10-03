@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SupportDepartmentResource;
+use App\Http\Responses\ApiResponse;
 use App\Models\SupportDepartment;
 use App\Services\RequestUsage;
 use Illuminate\Http\JsonResponse;
@@ -44,13 +45,12 @@ class SupportDepartmentController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        // Giữ cấu trúc phân trang đang được frontend sử dụng.
         $paginator->through(function ($department) use ($request) {
             return (new SupportDepartmentResource($department))
                 ->resolve($request);
         });
 
-        return response()->json($paginator);
+        return ApiResponse::success($paginator);
     }
 
     // Thêm phòng ban.
@@ -74,11 +74,11 @@ class SupportDepartmentController extends Controller
         $department = SupportDepartment::create($data);
         $department->loadCount(['staff', 'heads']);
 
-        return response()->json([
-            'message' => 'Thêm phòng ban thành công.',
-            'data' => (new SupportDepartmentResource($department))
-                ->resolve($request),
-        ], 201);
+        return ApiResponse::success(
+            (new SupportDepartmentResource($department))->resolve($request),
+            'Thêm phòng ban thành công.',
+            201
+        );
     }
 
     // Xem chi tiết phòng ban.
@@ -88,10 +88,9 @@ class SupportDepartmentController extends Controller
     ): JsonResponse {
         $department->loadCount(['staff', 'heads']);
 
-        return response()->json([
-            'data' => (new SupportDepartmentResource($department))
-                ->resolve($request),
-        ]);
+        return ApiResponse::success(
+            (new SupportDepartmentResource($department))->resolve($request)
+        );
     }
 
     // Sửa thông tin hoặc bật/tắt phòng ban.
@@ -117,11 +116,10 @@ class SupportDepartmentController extends Controller
         $department->refresh();
         $department->loadCount(['staff', 'heads']);
 
-        return response()->json([
-            'message' => 'Cập nhật phòng ban thành công.',
-            'data' => (new SupportDepartmentResource($department))
-                ->resolve($request),
-        ]);
+        return ApiResponse::success(
+            (new SupportDepartmentResource($department))->resolve($request),
+            'Cập nhật phòng ban thành công.'
+        );
     }
 
     // Danh sách cán bộ và trưởng phòng thuộc phòng ban.
@@ -170,7 +168,7 @@ class SupportDepartmentController extends Controller
             $query->where('status', $filters['status']);
         }
 
-        return response()->json(
+        return ApiResponse::success(
             $query
                 ->orderBy('name')
                 ->orderBy('id')
@@ -180,31 +178,33 @@ class SupportDepartmentController extends Controller
     }
 
     // Chỉ xóa phòng ban khi không còn dữ liệu liên kết.
+    // Sai nghiệp vụ trả 409 (dữ liệu gửi lên không sai nên không dùng 422).
     public function destroy(
         SupportDepartment $department
     ): JsonResponse {
         if ($department->users()->exists()) {
-            return response()->json([
-                'message' => 'Không thể xóa phòng ban vì vẫn có tài khoản thuộc phòng ban này.',
-            ], 422);
+            return ApiResponse::error(
+                'Không thể xóa phòng ban vì vẫn có tài khoản thuộc phòng ban này.',
+                409
+            );
         }
 
         if ($department->supportTypes()->exists()) {
-            return response()->json([
-                'message' => 'Không thể xóa phòng ban vì vẫn có loại hỗ trợ liên kết.',
-            ], 422);
+            return ApiResponse::error(
+                'Không thể xóa phòng ban vì vẫn có loại hỗ trợ liên kết.',
+                409
+            );
         }
 
         if (RequestUsage::usesDepartment($department->id)) {
-            return response()->json([
-                'message' => 'Không thể xóa phòng ban vì đã có yêu cầu hỗ trợ liên quan. Hãy chuyển sang ngừng hoạt động.',
-            ], 422);
+            return ApiResponse::error(
+                'Không thể xóa phòng ban vì đã có yêu cầu hỗ trợ liên quan. Hãy chuyển sang ngừng hoạt động.',
+                409
+            );
         }
 
         $department->delete();
 
-        return response()->json([
-            'message' => 'Xóa phòng ban thành công.',
-        ]);
+        return ApiResponse::success(null, 'Xóa phòng ban thành công.');
     }
 }

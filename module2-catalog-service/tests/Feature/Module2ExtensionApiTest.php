@@ -324,7 +324,8 @@ class Module2ExtensionApiTest extends TestCase
         $this->asAdmin()
             ->getJson("/api/v1/admin/departments/{$this->department->id}/staff")
             ->assertOk()
-            ->assertJsonCount(1, 'data');
+            ->assertJsonCount(1, 'data.data');
+
     }
 
     public function test_cannot_assign_staff_to_inactive_department(): void

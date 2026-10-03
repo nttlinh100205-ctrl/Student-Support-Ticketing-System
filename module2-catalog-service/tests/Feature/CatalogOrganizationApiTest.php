@@ -159,7 +159,7 @@ class CatalogOrganizationApiTest extends TestCase
         ]);
 
         $this->deleteJson("/api/v1/admin/departments/{$department->id}")
-            ->assertStatus(422);
+            ->assertStatus(409);
 
         $this->assertDatabaseHas('support_departments', ['id' => $department->id]);
     }
@@ -179,7 +179,7 @@ class CatalogOrganizationApiTest extends TestCase
         $this->createRequestRow($department->id, 999);
 
         $this->deleteJson("/api/v1/admin/departments/{$department->id}")
-            ->assertStatus(422);
+            ->assertStatus(409);
 
         $this->assertDatabaseHas('support_departments', ['id' => $department->id]);
     }
