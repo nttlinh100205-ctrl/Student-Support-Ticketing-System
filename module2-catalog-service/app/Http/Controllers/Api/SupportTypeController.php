@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreSupportTypeRequest;
+use App\Http\Requests\UpdateSupportTypeRequest;
 use App\Http\Resources\SupportTypeResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\SupportType;
 use App\Services\RequestUsage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class SupportTypeController extends Controller
 {
@@ -61,23 +62,9 @@ class SupportTypeController extends Controller
     /**
      * Thêm loại hỗ trợ.
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreSupportTypeRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                'regex:/^[A-Za-z0-9_-]+$/',
-                Rule::unique('support_types', 'code'),
-            ],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'department_id' => ['required', 'integer', 'exists:support_departments,id'],
-            // Số ngày xử lý dự kiến; null = chưa quy định.
-            'sla_days' => ['nullable', 'integer', 'min:1', 'max:365'],
-            'is_active' => ['sometimes', 'boolean'],
-        ], $this->slaMessages());
+        $data = $request->validated();
 
         // Không truyền trạng thái thì mặc định đang hoạt động.
         $data['is_active'] = $data['is_active'] ?? true;
@@ -110,23 +97,10 @@ class SupportTypeController extends Controller
      * Cập nhật loại hỗ trợ: tên, mã, phòng phụ trách, mô tả, SLA, bật / tắt.
      */
     public function update(
-        Request $request,
+        UpdateSupportTypeRequest $request,
         SupportType $supportType
     ): JsonResponse {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                'regex:/^[A-Za-z0-9_-]+$/',
-                Rule::unique('support_types', 'code')->ignore($supportType->id),
-            ],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'department_id' => ['required', 'integer', 'exists:support_departments,id'],
-            'sla_days' => ['nullable', 'integer', 'min:1', 'max:365'],
-            'is_active' => ['sometimes', 'boolean'],
-        ], $this->slaMessages());
+        $data = $request->validated();
 
         $supportType->update($data);
 
@@ -155,14 +129,5 @@ class SupportTypeController extends Controller
         $supportType->delete();
 
         return ApiResponse::success(null, 'Xóa loại hỗ trợ thành công.');
-    }
-
-    private function slaMessages(): array
-    {
-        return [
-            'sla_days.integer' => 'Số ngày xử lý phải là số nguyên.',
-            'sla_days.min' => 'Số ngày xử lý phải từ 1 đến 365.',
-            'sla_days.max' => 'Số ngày xử lý phải từ 1 đến 365.',
-        ];
     }
 }
