@@ -6,89 +6,47 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\SupportTypeResource;
 use App\Http\Responses\ApiResponse;
 use App\Models\SupportDepartment;
-use App\Models\SupportFaq;
 use App\Models\SupportType;
+use App\Services\CatalogService;
+use App\Services\FormValidationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Validation\Rule;
 
+/**
+ * Tra cứu danh mục (mọi tài khoản đã xác thực): sinh viên xem trước khi gửi yêu cầu,
+ * Module 3 gọi để lấy SLA, biểu mẫu và kiểm tra dữ liệu biểu mẫu.
+ */
 class CatalogController extends Controller
 {
+    private const PAGE_RULE = ['page' => ['nullable', 'integer', 'min:1']];
+
+    public function __construct(
+        private CatalogService $catalog,
+        private FormValidationService $formValidation,
+    ) {}
+
     /**
      * Danh sách phòng ban đang hoạt động.
      */
     public function departments(Request $request): JsonResponse
     {
-        $request->validate([
-            'page' => ['nullable', 'integer', 'min:1'],
-        ]);
+        $request->validate(self::PAGE_RULE);
 
-        $departments = SupportDepartment::query()
-            ->where('is_active', true)
-            ->select([
-                'id',
-                'name',
-                'code',
-                'description',
-            ])
-            ->orderBy('name')
-            ->orderBy('id')
-            ->paginate(20)
-            ->withQueryString();
-
-        return ApiResponse::success($departments);
+        return ApiResponse::success($this->catalog->paginateDepartments());
     }
 
     /**
-     * Loại hỗ trợ đang hoạt động,
-     * thuộc phòng ban đang hoạt động.
+     * Loại hỗ trợ đang hoạt động, thuộc phòng ban đang hoạt động.
      */
     public function supportTypes(Request $request): JsonResponse
     {
-        $filters = $request->validate([
-            'page' => ['nullable', 'integer', 'min:1'],
+        $filters = $request->validate(self::PAGE_RULE + [
             'search' => ['nullable', 'string', 'max:150'],
-            'department_id' => [
-                'nullable',
-                'integer',
-                'exists:support_departments,id',
-            ],
+            'department_id' => ['nullable', 'integer', 'exists:support_departments,id'],
         ]);
 
-        $query = SupportType::query()
-            ->where('is_active', true)
-            ->whereHas('department', function ($q) {
-                $q->where('is_active', true);
-            })
-            ->with('department:id,name,code,is_active');
-
-        if (isset($filters['department_id'])) {
-            $query->where(
-                'department_id',
-                $filters['department_id']
-            );
-        }
-
-        $search = trim($filters['search'] ?? '');
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
-            });
-        }
-
-        $paginator = $query
-            ->orderBy('name')
-            ->orderBy('id')
-            ->paginate(20)
-            ->withQueryString();
-
-        $paginator->through(function ($supportType) use ($request) {
-            return (new SupportTypeResource($supportType))
-                ->resolve($request);
-        });
+        $paginator = $this->catalog->paginateSupportTypes($filters)
+            ->through(fn ($supportType) => (new SupportTypeResource($supportType))->resolve($request));
 
         return ApiResponse::success($paginator);
     }
@@ -96,215 +54,55 @@ class CatalogController extends Controller
     /**
      * Lấy cấu hình biểu mẫu và SLA của một loại hỗ trợ.
      */
-    public function form(
-        Request $request,
-        SupportType $supportType
-    ): JsonResponse {
-        $this->ensureAvailable($supportType);
-
-        $fields = $supportType->fields()
-            ->where('is_active', true)
-            ->get([
-                'id',
-                'support_type_id',
-                'field_key',
-                'label',
-                'field_type',
-                'is_required',
-                'options',
-                'help_text',
-                'sort_order',
-            ]);
+    public function form(Request $request, SupportType $supportType): JsonResponse
+    {
+        $this->catalog->ensureAvailable($supportType);
 
         return ApiResponse::success([
             'support_type' => (new SupportTypeResource($supportType))->resolve($request),
-            'fields' => $fields,
+            'fields' => $this->catalog->activeFields($supportType),
         ]);
     }
 
     /**
-     * FAQ của loại hỗ trợ:
-     * - FAQ chung của phòng phụ trách.
-     * - FAQ riêng của loại hỗ trợ đang chọn.
+     * FAQ của loại hỗ trợ: FAQ chung của phòng phụ trách + FAQ riêng của loại đang chọn.
      */
-    public function faqs(
-        Request $request,
-        SupportType $supportType
-    ): JsonResponse {
-        $request->validate([
-            'page' => ['nullable', 'integer', 'min:1'],
-        ]);
+    public function faqs(Request $request, SupportType $supportType): JsonResponse
+    {
+        $request->validate(self::PAGE_RULE);
 
-        $this->ensureAvailable($supportType);
+        $this->catalog->ensureAvailable($supportType);
 
-        $faqs = SupportFaq::query()
-            ->where('is_active', true)
-            ->where('department_id', $supportType->department_id)
-            ->where(function ($query) use ($supportType) {
-                $query->whereNull('support_type_id')
-                    ->orWhere('support_type_id', $supportType->id);
-            })
-            ->select([
-                'id',
-                'department_id',
-                'support_type_id',
-                'question',
-                'answer',
-                'sort_order',
-            ])
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->paginate(10)
-            ->withQueryString();
-
-        return ApiResponse::success($faqs);
+        return ApiResponse::success($this->catalog->paginateSupportTypeFaqs($supportType));
     }
 
     /**
-     * FAQ theo phòng ban.
-     * Bao gồm FAQ chung và FAQ của các loại hỗ trợ đang hoạt động.
+     * FAQ theo phòng ban: FAQ chung và FAQ của các loại hỗ trợ đang hoạt động.
      */
-    public function departmentFaqs(
-        Request $request,
-        SupportDepartment $department
-    ): JsonResponse {
-        $request->validate([
-            'page' => ['nullable', 'integer', 'min:1'],
-        ]);
+    public function departmentFaqs(Request $request, SupportDepartment $department): JsonResponse
+    {
+        $request->validate(self::PAGE_RULE);
 
-        abort_unless(
-            $department->is_active,
-            404,
-            'Phòng ban hiện không khả dụng.'
-        );
+        $this->catalog->ensureDepartmentAvailable($department);
 
-        $faqs = SupportFaq::query()
-            ->where('is_active', true)
-            ->where('department_id', $department->id)
-            ->where(function ($query) use ($department) {
-                $query->whereNull('support_type_id')
-                    ->orWhereHas('supportType', function ($typeQuery) use ($department) {
-                        $typeQuery->where('is_active', true)
-                            ->where('department_id', $department->id);
-                    });
-            })
-            ->select([
-                'id',
-                'department_id',
-                'support_type_id',
-                'question',
-                'answer',
-                'sort_order',
-            ])
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->paginate(10)
-            ->withQueryString();
-
-        return ApiResponse::success($faqs);
+        return ApiResponse::success($this->catalog->paginateDepartmentFaqs($department));
     }
 
     /**
-     * Kiểm tra dữ liệu sinh viên nhập theo biểu mẫu của loại hỗ trợ.
-     *
-     * Module 3 gọi API này trước khi lưu yêu cầu:
+     * Kiểm tra dữ liệu biểu mẫu cho Module 3:
      * - 200: dữ liệu hợp lệ, trả về các giá trị đã chuẩn hóa.
      * - 422: liệt kê trường thiếu / sai theo tên hiển thị.
-     *
-     * Trường kiểu file nhận tệp tải lên hoặc tên / mã tệp đã tải lên Module 3.
      */
-    public function validateForm(
-        Request $request,
-        SupportType $supportType
-    ): JsonResponse {
-        $this->ensureAvailable($supportType);
+    public function validateForm(Request $request, SupportType $supportType): JsonResponse
+    {
+        $this->catalog->ensureAvailable($supportType);
 
-        $request->validate([
-            'values' => ['nullable', 'array'],
-        ]);
-
-        $fields = $supportType->fields()
-            ->where('is_active', true)
-            ->get();
-
-        $rules = [];
-        $attributes = [];
-
-        foreach ($fields as $field) {
-            $key = "values.{$field->field_key}";
-
-            $rules[$key] = array_merge(
-                [$field->is_required ? 'required' : 'nullable'],
-                $this->valueRules($field->field_type, $field->options ?? [])
-            );
-
-            $attributes[$key] = $field->label;
-        }
-
-        $validated = $request->validate($rules, [
-            'required' => 'Vui lòng nhập :attribute.',
-            'in' => ':attribute không nằm trong danh sách lựa chọn.',
-            'numeric' => ':attribute phải là số.',
-            'date' => ':attribute không phải ngày hợp lệ.',
-            'max' => ':attribute quá dài.',
-        ], $attributes);
-
-        // Chỉ giữ các trường có trong biểu mẫu, bỏ khóa lạ.
-        $values = [];
-
-        foreach ($fields as $field) {
-            $value = $validated['values'][$field->field_key] ?? null;
-
-            if ($value instanceof UploadedFile) {
-                $value = $value->getClientOriginalName();
-            }
-
-            $values[$field->field_key] = $value;
-        }
+        $values = $this->formValidation->validate($supportType, $request->all());
 
         return ApiResponse::success([
             'support_type_id' => $supportType->id,
             'sla_days' => $supportType->sla_days,
             'values' => $values,
         ], 'Thông tin biểu mẫu hợp lệ.');
-    }
-
-    /**
-     * Quy tắc kiểm tra theo kiểu trường.
-     */
-    private function valueRules(string $type, array $options): array
-    {
-        return match ($type) {
-            'number' => ['numeric'],
-            'date' => ['date'],
-            'select' => [Rule::in($options)],
-            'textarea' => ['string', 'max:5000'],
-            'file' => [function (string $attribute, $value, $fail) {
-                $valid = $value instanceof UploadedFile
-                    ? $value->isValid() && $value->getSize() <= 10 * 1024 * 1024
-                    : is_string($value) && trim($value) !== '' && mb_strlen($value) <= 255;
-
-                if (! $valid) {
-                    $fail(':attribute phải là tệp hợp lệ (tối đa 10MB).');
-                }
-            }],
-            default => ['string', 'max:255'],
-        };
-    }
-
-    /**
-     * Chặn đọc cấu hình của loại hỗ trợ hoặc phòng ban đã tắt.
-     */
-    private function ensureAvailable(SupportType $supportType): void
-    {
-        $supportType->load('department:id,name,code,is_active');
-
-        abort_unless(
-            $supportType->is_active
-                && $supportType->department
-                && $supportType->department->is_active,
-            404,
-            'Loại hỗ trợ hiện không khả dụng.'
-        );
     }
 }
