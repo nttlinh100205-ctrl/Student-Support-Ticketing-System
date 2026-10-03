@@ -2,28 +2,8 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
-
-class UpdateSupportTypeFieldRequest extends FormRequest
-{
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return false;
-    }
-
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
-    public function rules(): array
-    {
-        return [
-            //
-        ];
-    }
-}
+/**
+ * Sửa trường biểu mẫu dùng cùng quy tắc với thêm mới;
+ * rule unique của field_key đã tự bỏ qua trường đang sửa.
+ */
+class UpdateSupportTypeFieldRequest extends StoreSupportTypeFieldRequest {}

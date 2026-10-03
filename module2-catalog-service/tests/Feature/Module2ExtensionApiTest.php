@@ -142,8 +142,21 @@ class Module2ExtensionApiTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors('options');
 
+        // Sửa trường: giữ nguyên mã không bị báo trùng; đổi sang kiểu khác select thì bỏ options.
+        $this->asAdmin()
+            ->putJson("{$base}/{$fieldId}", [
+                'field_key' => 'semester',
+                'label' => 'Học kỳ đăng ký',
+                'field_type' => 'text',
+                'options' => ['Học kỳ 1'],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.label', 'Học kỳ đăng ký')
+            ->assertJsonPath('data.options', null);
+
         $this->asAdmin()
             ->putJson("{$base}/{$fieldId}/status", ['is_active' => false])
+
             ->assertOk()
             ->assertJsonPath('data.is_active', false);
 
