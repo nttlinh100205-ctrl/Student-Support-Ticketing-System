@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use App\Models\SupportFaq;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -67,7 +68,7 @@ class SupportFaqController extends Controller
             );
         }
 
-        return response()->json(
+        return ApiResponse::success(
             $query->orderBy('sort_order')
                 ->orderBy('id')
                 ->paginate(10)
@@ -89,10 +90,8 @@ class SupportFaqController extends Controller
 
         $this->loadRelations($faq);
 
-        return response()->json([
-            'message' => 'Thêm câu hỏi thường gặp thành công.',
-            'data' => $faq,
-        ], 201);
+        return ApiResponse::success($faq, 'Thêm câu hỏi thường gặp thành công.', 201);
+
     }
 
     /**
@@ -102,9 +101,7 @@ class SupportFaqController extends Controller
     {
         $this->loadRelations($faq);
 
-        return response()->json([
-            'data' => $faq,
-        ]);
+        return ApiResponse::success($faq);
     }
 
     /**
@@ -121,10 +118,7 @@ class SupportFaqController extends Controller
 
         $this->loadRelations($faq);
 
-        return response()->json([
-            'message' => 'Cập nhật câu hỏi thường gặp thành công.',
-            'data' => $faq,
-        ]);
+        return ApiResponse::success($faq, 'Cập nhật câu hỏi thường gặp thành công.');
     }
 
     /**
@@ -143,12 +137,12 @@ class SupportFaqController extends Controller
 
         $this->loadRelations($faq);
 
-        return response()->json([
-            'message' => $faq->is_active
+        return ApiResponse::success(
+            $faq,
+            $faq->is_active
                 ? 'Đã bật câu hỏi thường gặp.'
-                : 'Đã ẩn câu hỏi thường gặp.',
-            'data' => $faq,
-        ]);
+                : 'Đã ẩn câu hỏi thường gặp.'
+        );
     }
 
     /**

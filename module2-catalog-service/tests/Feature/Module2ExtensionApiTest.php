@@ -249,7 +249,7 @@ class Module2ExtensionApiTest extends TestCase
         $this->asAdmin()
             ->getJson('/api/v1/admin/faqs?is_active=0')
             ->assertOk()
-            ->assertJsonCount(1, 'data');
+            ->assertJsonCount(1, 'data.data');
     }
 
     public function test_faq_support_type_must_belong_to_department(): void
