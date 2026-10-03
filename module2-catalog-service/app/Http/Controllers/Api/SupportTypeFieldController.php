@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use App\Models\SupportType;
 use App\Models\SupportTypeField;
 use Illuminate\Http\JsonResponse;
@@ -29,9 +30,8 @@ class SupportTypeFieldController extends Controller
             $query->where('is_active', $filters['is_active']);
         }
 
-        return response()->json([
-            'data' => $query->get(),
-        ]);
+        return ApiResponse::success($query->get());
+
     }
 
     /**
@@ -49,10 +49,8 @@ class SupportTypeFieldController extends Controller
 
         $field = $supportType->fields()->create($data);
 
-        return response()->json([
-            'message' => 'Thêm trường biểu mẫu thành công.',
-            'data' => $field,
-        ], 201);
+        return ApiResponse::success($field, 'Thêm trường biểu mẫu thành công.', 201);
+
     }
 
     /**
@@ -64,9 +62,13 @@ class SupportTypeFieldController extends Controller
     ): JsonResponse {
         $this->ensureBelongsToType($supportType, $field);
 
-        return response()->json([
-            'data' => $field,
-        ]);
+        return ApiResponse::success(
+            $field->fresh(),
+            $field->is_active
+                ? 'Đã bật trường biểu mẫu.'
+                : 'Đã tắt trường biểu mẫu.'
+        );
+
     }
 
     /**
@@ -87,10 +89,8 @@ class SupportTypeFieldController extends Controller
 
         $field->update($data);
 
-        return response()->json([
-            'message' => 'Cập nhật trường biểu mẫu thành công.',
-            'data' => $field->fresh(),
-        ]);
+        return ApiResponse::success($field->fresh(), 'Cập nhật trường biểu mẫu thành công.');
+
     }
 
     /**
@@ -109,12 +109,8 @@ class SupportTypeFieldController extends Controller
 
         $field->update($data);
 
-        return response()->json([
-            'message' => $field->is_active
-                ? 'Đã bật trường biểu mẫu.'
-                : 'Đã tắt trường biểu mẫu.',
-            'data' => $field->fresh(),
-        ]);
+        return ApiResponse::success($field->fresh(), 'Cập nhật trường biểu mẫu thành công.');
+
     }
 
     /**
