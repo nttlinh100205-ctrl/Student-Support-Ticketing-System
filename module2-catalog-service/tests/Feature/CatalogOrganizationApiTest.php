@@ -190,15 +190,21 @@ class CatalogOrganizationApiTest extends TestCase
             'X-User-Id' => '2',
             'X-User-Role' => 'student',
         ])->getJson('/api/v1/admin/departments')
-            ->assertStatus(403);
+            ->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Bạn không có quyền truy cập chức năng này.',
+            ]);
     }
 
     public function test_request_without_auth_headers_is_rejected(): void
     {
         $this->getJson('/api/v1/admin/departments')
-            ->assertStatus(401);
+            ->assertStatus(401)
+            ->assertJson(['success' => false]);
 
         $this->getJson('/api/v1/catalog/departments')
-            ->assertStatus(401);
+            ->assertStatus(401)
+            ->assertJson(['success' => false]);
     }
 }

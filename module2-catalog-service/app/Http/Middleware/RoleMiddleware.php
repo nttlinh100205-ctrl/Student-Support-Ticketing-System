@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Contracts\AuthContext;
+use App\Http\Responses\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,9 +27,7 @@ class RoleMiddleware
         $roles = array_map('strtolower', $roles);
 
         if (! in_array($this->auth->role(), $roles, true)) {
-            return response()->json([
-                'message' => 'Bạn không có quyền truy cập chức năng này.',
-            ], 403);
+            return ApiResponse::error('Bạn không có quyền truy cập chức năng này.', 403);
         }
 
         return $next($request);

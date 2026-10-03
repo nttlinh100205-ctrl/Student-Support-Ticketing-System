@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Responses\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,9 +17,7 @@ class FakeAuthMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->hasHeader('X-User-Id') || ! $request->hasHeader('X-User-Role')) {
-            return response()->json([
-                'message' => 'Thiếu thông tin xác thực (X-User-Id / X-User-Role).',
-            ], 401);
+            return ApiResponse::error('Thiếu thông tin xác thực (X-User-Id / X-User-Role).', 401);
         }
 
         return $next($request);
