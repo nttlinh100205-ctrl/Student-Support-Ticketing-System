@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SupportTypeResource;
+use App\Http\Responses\ApiResponse;
 use App\Models\SupportDepartment;
 use App\Models\SupportFaq;
 use App\Models\SupportType;
@@ -36,7 +37,7 @@ class CatalogController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return response()->json($departments);
+        return ApiResponse::success($departments);
     }
 
     /**
@@ -89,7 +90,7 @@ class CatalogController extends Controller
                 ->resolve($request);
         });
 
-        return response()->json($paginator);
+        return ApiResponse::success($paginator);
     }
 
     /**
@@ -115,14 +116,9 @@ class CatalogController extends Controller
                 'sort_order',
             ]);
 
-        return response()->json([
-            'data' => [
-                'support_type' => (
-                    new SupportTypeResource($supportType)
-                )->resolve($request),
-
-                'fields' => $fields,
-            ],
+        return ApiResponse::success([
+            'support_type' => (new SupportTypeResource($supportType))->resolve($request),
+            'fields' => $fields,
         ]);
     }
 
@@ -161,7 +157,7 @@ class CatalogController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return response()->json($faqs);
+        return ApiResponse::success($faqs);
     }
 
     /**
@@ -205,7 +201,7 @@ class CatalogController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return response()->json($faqs);
+        return ApiResponse::success($faqs);
     }
 
     /**
@@ -266,14 +262,11 @@ class CatalogController extends Controller
             $values[$field->field_key] = $value;
         }
 
-        return response()->json([
-            'message' => 'Thông tin biểu mẫu hợp lệ.',
-            'data' => [
-                'support_type_id' => $supportType->id,
-                'sla_days' => $supportType->sla_days,
-                'values' => $values,
-            ],
-        ]);
+        return ApiResponse::success([
+            'support_type_id' => $supportType->id,
+            'sla_days' => $supportType->sla_days,
+            'values' => $values,
+        ], 'Thông tin biểu mẫu hợp lệ.');
     }
 
     /**

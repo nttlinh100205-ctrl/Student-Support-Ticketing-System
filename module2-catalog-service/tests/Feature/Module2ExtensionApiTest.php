@@ -224,7 +224,7 @@ class Module2ExtensionApiTest extends TestCase
         $this->asStudent()
             ->getJson('/api/v1/catalog/support-types')
             ->assertOk()
-            ->assertJsonCount(0, 'data');
+            ->assertJsonCount(0, 'data.data');
     }
 
     /* ---------- FAQ ---------- */
@@ -291,7 +291,7 @@ class Module2ExtensionApiTest extends TestCase
         $this->asStudent()
             ->getJson("/api/v1/catalog/support-types/{$this->supportType->id}/faqs")
             ->assertOk()
-            ->assertJsonCount(2, 'data')
+            ->assertJsonCount(2, 'data.data')
             ->assertJsonMissing(['question' => 'Riêng phúc khảo'])
             ->assertJsonMissing(['question' => 'Đã ẩn']);
 
@@ -299,7 +299,7 @@ class Module2ExtensionApiTest extends TestCase
         $this->asStudent()
             ->getJson("/api/v1/catalog/departments/{$this->department->id}/faqs")
             ->assertOk()
-            ->assertJsonCount(3, 'data');
+            ->assertJsonCount(3, 'data.data');
     }
 
     /* ---------- Cán bộ theo phòng ban ---------- */
