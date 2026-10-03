@@ -9,45 +9,32 @@ use App\Http\Requests\UpdateSupportTypeFieldRequest;
 use App\Http\Responses\ApiResponse;
 use App\Models\SupportType;
 use App\Models\SupportTypeField;
+use App\Services\SupportTypeFieldService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SupportTypeFieldController extends Controller
 {
+    public function __construct(private SupportTypeFieldService $fields) {}
+
     /**
      * Danh sách trường của một loại hỗ trợ.
      */
-    public function index(
-        Request $request,
-        SupportType $supportType
-    ): JsonResponse {
+    public function index(Request $request, SupportType $supportType): JsonResponse
+    {
         $filters = $request->validate([
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $query = $supportType->fields();
-
-        if (isset($filters['is_active'])) {
-            $query->where('is_active', $filters['is_active']);
-        }
-
-        return ApiResponse::success($query->get());
+        return ApiResponse::success($this->fields->list($supportType, $filters));
     }
 
     /**
      * Thêm trường vào biểu mẫu.
      */
-    public function store(
-        StoreSupportTypeFieldRequest $request,
-        SupportType $supportType
-    ): JsonResponse {
-        $data = $request->fieldData();
-
-        $data['is_required'] = $data['is_required'] ?? false;
-        $data['is_active'] = $data['is_active'] ?? true;
-        $data['sort_order'] = $data['sort_order'] ?? 0;
-
-        $field = $supportType->fields()->create($data);
+    public function store(StoreSupportTypeFieldRequest $request, SupportType $supportType): JsonResponse
+    {
+        $field = $this->fields->create($supportType, $request->fieldData());
 
         return ApiResponse::success($field, 'Thêm trường biểu mẫu thành công.', 201);
     }
@@ -55,11 +42,9 @@ class SupportTypeFieldController extends Controller
     /**
      * Xem chi tiết trường.
      */
-    public function show(
-        SupportType $supportType,
-        SupportTypeField $field
-    ): JsonResponse {
-        $this->ensureBelongsToType($supportType, $field);
+    public function show(SupportType $supportType, SupportTypeField $field): JsonResponse
+    {
+        $this->fields->ensureBelongsToType($supportType, $field);
 
         return ApiResponse::success($field);
     }
@@ -72,11 +57,11 @@ class SupportTypeFieldController extends Controller
         SupportType $supportType,
         SupportTypeField $field
     ): JsonResponse {
-        $this->ensureBelongsToType($supportType, $field);
+        $this->fields->ensureBelongsToType($supportType, $field);
 
-        $field->update($request->fieldData());
+        $field = $this->fields->update($field, $request->fieldData());
 
-        return ApiResponse::success($field->fresh(), 'Cập nhật trường biểu mẫu thành công.');
+        return ApiResponse::success($field, 'Cập nhật trường biểu mẫu thành công.');
     }
 
     /**
@@ -87,29 +72,13 @@ class SupportTypeFieldController extends Controller
         SupportType $supportType,
         SupportTypeField $field
     ): JsonResponse {
-        $this->ensureBelongsToType($supportType, $field);
+        $this->fields->ensureBelongsToType($supportType, $field);
 
-        $field->update($request->validated());
+        $field = $this->fields->updateStatus($field, $request->boolean('is_active'));
 
         return ApiResponse::success(
-            $field->fresh(),
-            $field->is_active
-                ? 'Đã bật trường biểu mẫu.'
-                : 'Đã tắt trường biểu mẫu.'
-        );
-    }
-
-    /**
-     * Không cho truy cập trường thuộc loại hỗ trợ khác.
-     */
-    private function ensureBelongsToType(
-        SupportType $supportType,
-        SupportTypeField $field
-    ): void {
-        abort_unless(
-            (int) $field->support_type_id === (int) $supportType->id,
-            404,
-            'Không tìm thấy trường trong loại hỗ trợ này.'
+            $field,
+            $field->is_active ? 'Đã bật trường biểu mẫu.' : 'Đã tắt trường biểu mẫu.'
         );
     }
 }
