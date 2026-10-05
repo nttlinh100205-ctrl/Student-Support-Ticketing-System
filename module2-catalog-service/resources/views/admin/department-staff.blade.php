@@ -157,14 +157,14 @@
         return items;
     }
     async function loadDepartments() {
-        const list = await loadAllPages('/api/v1/admin/departments');
+        const list = await loadAllPages('/api/departments');
         el('departmentSelect').replaceChildren(new Option('-- Chọn phòng ban --', ''));
         list.forEach(item => el('departmentSelect').appendChild(new Option(
             `${item.code} - ${item.name}${item.is_active ? '' : ' (Ngừng hoạt động)'}`, String(item.id)
         )));
     }
     async function loadUsers() {
-        const list = await loadAllPages('/api/v1/admin/staff-candidates');
+        const list = await loadAllPages('/api/staff-candidates');
         users = list.filter(user => user.role !== 'admin');
         const select = el('userSelect'), previous = select.value;
         select.replaceChildren(new Option('-- Chọn tài khoản --', ''));
@@ -245,7 +245,7 @@
         el('pageInfo').textContent = 'Đang tải...';
         try {
             const params = new URLSearchParams({ page: String(targetPage), ...filters });
-            const result = paginator(await api(`/api/v1/admin/departments/${department}/staff?${params}`));
+            const result = paginator(await api(`/api/departments/${department}/staff?${params}`));
             if (currentRequest !== requestId) return;
             lastPage = Number(result.last_page) || 1;
             if (targetPage > lastPage) return await loadStaff(lastPage);
@@ -287,7 +287,7 @@
         button.disabled = true;
         button.textContent = 'Đang lưu...';
         try {
-            const result = await api(`/api/v1/admin/departments/${departmentId}/staff/${userId}`, {
+            const result = await api(`/api/departments/${departmentId}/staff/${userId}`, {
                 method: 'PUT', body: JSON.stringify({ role: el('roleSelect').value })
             });
             notify(result.message || 'Gán cán bộ thành công.');

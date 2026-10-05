@@ -168,7 +168,7 @@
     async function loadTypes() {
         const current = ++typeRequest;
         const department = el('departmentSelect').value;
-        const url = '/api/v1/catalog/support-types' + (department ? `?department_id=${department}` : '');
+        const url = '/api/catalog/support-types' + (department ? `?department_id=${department}` : '');
         el('typeList').replaceChildren();
         try {
             const list = await loadAllPages(url);
@@ -257,7 +257,7 @@
         notify('');
 
         try {
-            const result = await api(`/api/v1/catalog/support-types/${item.id}/form`);
+            const result = await api(`/api/catalog/support-types/${item.id}/form`);
             if (currentType !== item) return;
 
             const type = result.data.support_type;
@@ -276,7 +276,7 @@
             notify(error.message, true);
         }
 
-        loadFaqs(`/api/v1/catalog/support-types/${item.id}/faqs`, `Câu hỏi thường gặp: ${item.name}`);
+        loadFaqs(`/api/catalog/support-types/${item.id}/faqs`, `Câu hỏi thường gặp: ${item.name}`);
     }
 
     async function checkValues() {
@@ -299,7 +299,7 @@
         el('checkResult').className = 'text-sm text-slate-500';
 
         try {
-            await api(`/api/v1/catalog/support-types/${currentType.id}/validate`, { method: 'POST', body });
+            await api(`/api/catalog/support-types/${currentType.id}/validate`, { method: 'POST', body });
             el('checkResult').textContent = 'Thông tin đã đầy đủ. Bạn có thể gửi yêu cầu.';
             el('checkResult').className = 'text-sm text-emerald-700';
         } catch (error) {
@@ -360,7 +360,7 @@
 
         if (select.value) {
             const name = select.options[select.selectedIndex].textContent;
-            loadFaqs(`/api/v1/catalog/departments/${select.value}/faqs`, `Câu hỏi thường gặp: ${name}`);
+            loadFaqs(`/api/catalog/departments/${select.value}/faqs`, `Câu hỏi thường gặp: ${name}`);
         } else {
             ++faqRequest;
             el('faqTitle').textContent = 'Câu hỏi thường gặp';
@@ -373,7 +373,7 @@
 
     (async () => {
         try {
-            const departments = await loadAllPages('/api/v1/catalog/departments');
+            const departments = await loadAllPages('/api/catalog/departments');
             departments.forEach(item => el('departmentSelect').appendChild(new Option(item.name, String(item.id))));
             await loadTypes();
         } catch (error) {

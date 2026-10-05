@@ -57,12 +57,12 @@ Service ném `ValidationException` khi sai nghiệp vụ, Controller bắt lại
 
 | Method | URL | Mô tả |
 |---|---|---|
-| GET | `/api/v1/catalog/departments` | Phòng ban đang hoạt động |
-| GET | `/api/v1/catalog/support-types?department_id=` | Loại hỗ trợ đang hoạt động (kèm `sla_days`) |
-| GET | `/api/v1/catalog/support-types/{id}/form` | Thông tin loại + `sla_days` + các trường biểu mẫu |
-| POST | `/api/v1/catalog/support-types/{id}/validate` | Kiểm tra `values[field_key]` theo biểu mẫu: 200 nếu hợp lệ, 422 kèm lỗi theo tên trường |
-| GET | `/api/v1/catalog/support-types/{id}/faqs` | FAQ chung của phòng + FAQ riêng của loại |
-| GET | `/api/v1/catalog/departments/{id}/faqs` | FAQ theo phòng ban |
+| GET | `/api/catalog/departments` | Phòng ban đang hoạt động |
+| GET | `/api/catalog/support-types?department_id=` | Loại hỗ trợ đang hoạt động (kèm `sla_days`) |
+| GET | `/api/catalog/support-types/{id}/form` | Thông tin loại + `sla_days` + các trường biểu mẫu |
+| POST | `/api/catalog/support-types/{id}/validate` | Kiểm tra `values[field_key]` theo biểu mẫu: 200 nếu hợp lệ, 422 kèm lỗi theo tên trường |
+| GET | `/api/catalog/support-types/{id}/faqs` | FAQ chung của phòng + FAQ riêng của loại |
+| GET | `/api/catalog/departments/{id}/faqs` | FAQ theo phòng ban |
 
 Module 3 nên gọi `.../validate` trước khi lưu yêu cầu. Trường kiểu `file` nhận tệp tải lên hoặc tên / mã tệp đã lưu ở Module 3.
 Hợp lệ thì `data` gồm `support_type_id`, `sla_days`, `values` (chỉ giữ các trường có trong biểu mẫu).
@@ -70,11 +70,11 @@ Hợp lệ thì `data` gồm `support_type_id`, `sla_days`, `values` (chỉ gi�
 
 ## API quản trị (`role:admin`)
 
-- Phòng ban: `GET|POST /api/v1/admin/departments`, `GET|PUT|DELETE /api/v1/admin/departments/{id}`
-- Cán bộ: `GET /api/v1/admin/departments/{id}/staff`, `PUT /api/v1/admin/departments/{id}/staff/{userId}` (`role`: `STAFF` | `DEPARTMENT_HEAD`), `GET /api/v1/admin/staff-candidates`
-- Loại hỗ trợ: `GET|POST /api/v1/admin/support-types`, `GET|PUT|DELETE /api/v1/admin/support-types/{id}` (có `sla_days`)
-- Biểu mẫu: `GET|POST /api/v1/admin/support-types/{id}/fields`, `GET|PUT /.../fields/{fieldId}`, `PUT /.../fields/{fieldId}/status`
-- FAQ: `GET|POST /api/v1/admin/faqs`, `GET|PUT /api/v1/admin/faqs/{id}`, `PUT /api/v1/admin/faqs/{id}/status`
+- Phòng ban: `GET|POST /api/departments`, `GET|PUT|DELETE /api/departments/{id}`
+- Cán bộ: `GET /api/departments/{id}/staff`, `PUT /api/departments/{id}/staff/{userId}` (`role`: `STAFF` | `DEPARTMENT_HEAD`), `GET /api/staff-candidates`
+- Loại hỗ trợ: `GET|POST /api/support-types`, `GET|PUT|DELETE /api/support-types/{id}` (có `sla_days`)
+- Biểu mẫu: `GET|POST /api/support-types/{id}/fields`, `GET|PUT /.../fields/{fieldId}`, `PUT /.../fields/{fieldId}/status`
+- FAQ: `GET|POST /api/faqs`, `GET|PUT /api/faqs/{id}`, `PUT /api/faqs/{id}/status`
 
 Không xóa được phòng ban còn tài khoản / loại hỗ trợ, hoặc loại hỗ trợ đã có yêu cầu (trả `409`).
 Bảng `requests` của Module 3 chỉ được kiểm tra khi hai service dùng chung database.

@@ -71,17 +71,17 @@ class Module2ExtensionApiTest extends TestCase
         ];
 
         $this->asAdmin()
-            ->putJson("/api/v1/admin/support-types/{$this->supportType->id}", $payload + ['sla_days' => 7])
+            ->putJson("/api/support-types/{$this->supportType->id}", $payload + ['sla_days' => 7])
             ->assertOk()
             ->assertJsonPath('data.sla_days', 7);
 
         $this->asAdmin()
-            ->putJson("/api/v1/admin/support-types/{$this->supportType->id}", $payload + ['sla_days' => null])
+            ->putJson("/api/support-types/{$this->supportType->id}", $payload + ['sla_days' => null])
             ->assertOk()
             ->assertJsonPath('data.sla_days', null);
 
         $this->asAdmin()
-            ->postJson('/api/v1/admin/support-types', [
+            ->postJson('/api/support-types', [
                 'name' => 'Phúc khảo',
                 'code' => 'PK',
                 'department_id' => $this->department->id,
@@ -94,7 +94,7 @@ class Module2ExtensionApiTest extends TestCase
     public function test_sla_days_must_be_between_1_and_365(): void
     {
         $this->asAdmin()
-            ->putJson("/api/v1/admin/support-types/{$this->supportType->id}", [
+            ->putJson("/api/support-types/{$this->supportType->id}", [
                 'name' => 'Xin bảng điểm',
                 'code' => 'BD',
                 'department_id' => $this->department->id,
@@ -107,7 +107,7 @@ class Module2ExtensionApiTest extends TestCase
     public function test_catalog_returns_sla_for_module_3(): void
     {
         $this->asStudent()
-            ->getJson("/api/v1/catalog/support-types/{$this->supportType->id}/form")
+            ->getJson("/api/catalog/support-types/{$this->supportType->id}/form")
             ->assertOk()
             ->assertJsonPath('data.support_type.sla_days', 3);
     }
@@ -116,7 +116,7 @@ class Module2ExtensionApiTest extends TestCase
 
     public function test_admin_can_manage_form_fields(): void
     {
-        $base = "/api/v1/admin/support-types/{$this->supportType->id}/fields";
+        $base = "/api/support-types/{$this->supportType->id}/fields";
 
         $fieldId = $this->asAdmin()
             ->postJson($base, [
@@ -162,7 +162,7 @@ class Module2ExtensionApiTest extends TestCase
 
         // Trường đã tắt không xuất hiện trong biểu mẫu của sinh viên.
         $this->asStudent()
-            ->getJson("/api/v1/catalog/support-types/{$this->supportType->id}/form")
+            ->getJson("/api/catalog/support-types/{$this->supportType->id}/form")
             ->assertOk()
             ->assertJsonCount(0, 'data.fields');
     }
@@ -183,7 +183,7 @@ class Module2ExtensionApiTest extends TestCase
         ]);
 
         $this->asAdmin()
-            ->getJson("/api/v1/admin/support-types/{$this->supportType->id}/fields/{$field->id}")
+            ->getJson("/api/support-types/{$this->supportType->id}/fields/{$field->id}")
             ->assertNotFound();
     }
 
@@ -194,7 +194,7 @@ class Module2ExtensionApiTest extends TestCase
         $this->addField(['field_key' => 'semester', 'label' => 'Học kỳ', 'field_type' => 'select', 'options' => ['Học kỳ 1', 'Học kỳ 2']]);
         $this->addField(['field_key' => 'proof', 'label' => 'Giấy xác nhận', 'field_type' => 'file', 'is_required' => true]);
 
-        $url = "/api/v1/catalog/support-types/{$this->supportType->id}/validate";
+        $url = "/api/catalog/support-types/{$this->supportType->id}/validate";
 
         $this->asStudent()
             ->postJson($url, ['values' => ['copies' => 'abc', 'semester' => 'Học kỳ 9']])
@@ -231,11 +231,11 @@ class Module2ExtensionApiTest extends TestCase
         $this->supportType->update(['is_active' => false]);
 
         $this->asStudent()
-            ->getJson("/api/v1/catalog/support-types/{$this->supportType->id}/form")
+            ->getJson("/api/catalog/support-types/{$this->supportType->id}/form")
             ->assertNotFound();
 
         $this->asStudent()
-            ->getJson('/api/v1/catalog/support-types')
+            ->getJson('/api/catalog/support-types')
             ->assertOk()
             ->assertJsonCount(0, 'data.data');
     }
@@ -245,7 +245,7 @@ class Module2ExtensionApiTest extends TestCase
     public function test_admin_can_manage_faqs(): void
     {
         $faqId = $this->asAdmin()
-            ->postJson('/api/v1/admin/faqs', [
+            ->postJson('/api/faqs', [
                 'department_id' => $this->department->id,
                 'support_type_id' => $this->supportType->id,
                 'question' => 'Bao lâu thì nhận được bảng điểm?',
@@ -256,7 +256,7 @@ class Module2ExtensionApiTest extends TestCase
 
         // Sửa FAQ: bỏ chọn loại hỗ trợ thì thành FAQ chung của phòng ban.
         $this->asAdmin()
-            ->putJson("/api/v1/admin/faqs/{$faqId}", [
+            ->putJson("/api/faqs/{$faqId}", [
                 'department_id' => $this->department->id,
                 'question' => 'Bao lâu thì nhận được bảng điểm?',
                 'answer' => 'Khoảng 5 ngày làm việc.',
@@ -266,12 +266,12 @@ class Module2ExtensionApiTest extends TestCase
             ->assertJsonPath('data.support_type_id', null);
 
         $this->asAdmin()
-            ->putJson("/api/v1/admin/faqs/{$faqId}/status", ['is_active' => false])
+            ->putJson("/api/faqs/{$faqId}/status", ['is_active' => false])
             ->assertOk()
             ->assertJsonPath('data.is_active', false);
 
         $this->asAdmin()
-            ->getJson('/api/v1/admin/faqs?is_active=0')
+            ->getJson('/api/faqs?is_active=0')
             ->assertOk()
             ->assertJsonCount(1, 'data.data');
     }
@@ -281,7 +281,7 @@ class Module2ExtensionApiTest extends TestCase
         $other = SupportDepartment::create(['name' => 'Phòng CTSV', 'code' => 'CTSV', 'is_active' => true]);
 
         $this->asAdmin()
-            ->postJson('/api/v1/admin/faqs', [
+            ->postJson('/api/faqs', [
                 'department_id' => $other->id,
                 'support_type_id' => $this->supportType->id,
                 'question' => 'Câu hỏi',
@@ -313,7 +313,7 @@ class Module2ExtensionApiTest extends TestCase
 
         // Theo loại: FAQ chung của phòng + FAQ riêng của loại đó.
         $this->asStudent()
-            ->getJson("/api/v1/catalog/support-types/{$this->supportType->id}/faqs")
+            ->getJson("/api/catalog/support-types/{$this->supportType->id}/faqs")
             ->assertOk()
             ->assertJsonCount(2, 'data.data')
             ->assertJsonMissing(['question' => 'Riêng phúc khảo'])
@@ -321,7 +321,7 @@ class Module2ExtensionApiTest extends TestCase
 
         // Theo phòng ban: tất cả FAQ đang hiển thị.
         $this->asStudent()
-            ->getJson("/api/v1/catalog/departments/{$this->department->id}/faqs")
+            ->getJson("/api/catalog/departments/{$this->department->id}/faqs")
             ->assertOk()
             ->assertJsonCount(3, 'data.data');
     }
@@ -333,7 +333,7 @@ class Module2ExtensionApiTest extends TestCase
         $user = User::factory()->create(['role' => 'student', 'status' => 'ACTIVE']);
 
         $this->asAdmin()
-            ->putJson("/api/v1/admin/departments/{$this->department->id}/staff/{$user->id}", [
+            ->putJson("/api/departments/{$this->department->id}/staff/{$user->id}", [
                 'role' => 'staff',
             ])
             ->assertOk()
@@ -346,7 +346,7 @@ class Module2ExtensionApiTest extends TestCase
         ]);
 
         $this->asAdmin()
-            ->getJson("/api/v1/admin/departments/{$this->department->id}/staff")
+            ->getJson("/api/departments/{$this->department->id}/staff")
             ->assertOk()
             ->assertJsonCount(1, 'data.data');
 
@@ -358,7 +358,7 @@ class Module2ExtensionApiTest extends TestCase
         $this->department->update(['is_active' => false]);
 
         $this->asAdmin()
-            ->putJson("/api/v1/admin/departments/{$this->department->id}/staff/{$user->id}", [
+            ->putJson("/api/departments/{$this->department->id}/staff/{$user->id}", [
                 'role' => 'staff',
             ])
             ->assertStatus(409);
@@ -369,13 +369,13 @@ class Module2ExtensionApiTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin', 'status' => 'ACTIVE']);
 
         $this->asAdmin()
-            ->putJson("/api/v1/admin/departments/{$this->department->id}/staff/{$admin->id}", [
+            ->putJson("/api/departments/{$this->department->id}/staff/{$admin->id}", [
                 'role' => 'staff',
             ])
             ->assertStatus(409);
 
         $this->asAdmin()
-            ->getJson('/api/v1/admin/staff-candidates')
+            ->getJson('/api/staff-candidates')
             ->assertOk()
             ->assertJsonCount(0, 'data.data');
     }

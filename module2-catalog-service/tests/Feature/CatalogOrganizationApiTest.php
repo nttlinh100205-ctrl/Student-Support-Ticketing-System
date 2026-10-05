@@ -46,7 +46,7 @@ class CatalogOrganizationApiTest extends TestCase
         $this->loginAsAdmin();
 
         // 1. Tạo phòng ban
-        $departmentResponse = $this->postJson('/api/v1/admin/departments', [
+        $departmentResponse = $this->postJson('/api/departments', [
             'name' => 'Phòng Đào Tạo',
             'code' => 'DT',
             'description' => 'Phụ trách đào tạo',
@@ -60,12 +60,12 @@ class CatalogOrganizationApiTest extends TestCase
         $departmentId = $departmentResponse->json('data.id');
 
         // 2. Xem phòng ban
-        $this->getJson("/api/v1/admin/departments/{$departmentId}")
+        $this->getJson("/api/departments/{$departmentId}")
             ->assertOk()
             ->assertJsonPath('data.name', 'Phòng Đào Tạo');
 
         // 3. Cập nhật phòng ban
-        $this->putJson("/api/v1/admin/departments/{$departmentId}", [
+        $this->putJson("/api/departments/{$departmentId}", [
             'name' => 'Phòng Đào tạo mới',
             'code' => 'DT',
             'description' => 'Đã cập nhật',
@@ -75,7 +75,7 @@ class CatalogOrganizationApiTest extends TestCase
             ->assertJsonPath('data.name', 'Phòng Đào tạo mới');
 
         // 4. Tạo loại hỗ trợ
-        $supportTypeResponse = $this->postJson('/api/v1/admin/support-types', [
+        $supportTypeResponse = $this->postJson('/api/support-types', [
             'name' => 'Đăng ký học phần',
             'code' => 'DKHP',
             'description' => 'Hỗ trợ đăng ký học phần',
@@ -90,7 +90,7 @@ class CatalogOrganizationApiTest extends TestCase
         $supportTypeId = $supportTypeResponse->json('data.id');
 
         // 5. Cập nhật loại hỗ trợ
-        $this->putJson("/api/v1/admin/support-types/{$supportTypeId}", [
+        $this->putJson("/api/support-types/{$supportTypeId}", [
             'name' => 'Đăng ký và điều chỉnh học phần',
             'code' => 'DKHP',
             'description' => 'Đã cập nhật',
@@ -101,13 +101,13 @@ class CatalogOrganizationApiTest extends TestCase
             ->assertJsonPath('data.name', 'Đăng ký và điều chỉnh học phần');
 
         // 6. Xóa loại hỗ trợ trước
-        $this->deleteJson("/api/v1/admin/support-types/{$supportTypeId}")
+        $this->deleteJson("/api/support-types/{$supportTypeId}")
             ->assertOk();
 
         $this->assertDatabaseMissing('support_types', ['id' => $supportTypeId]);
 
         // 7. Sau đó mới xóa phòng ban
-        $this->deleteJson("/api/v1/admin/departments/{$departmentId}")
+        $this->deleteJson("/api/departments/{$departmentId}")
             ->assertOk();
 
         $this->assertDatabaseMissing('support_departments', ['id' => $departmentId]);
@@ -132,7 +132,7 @@ class CatalogOrganizationApiTest extends TestCase
 
         $this->createRequestRow($department->id, $supportType->id);
 
-        $this->deleteJson("/api/v1/admin/support-types/{$supportType->id}")
+        $this->deleteJson("/api/support-types/{$supportType->id}")
             ->assertStatus(409)
             ->assertJsonFragment([
                 'message' => 'Không thể xóa loại hỗ trợ vì đã có yêu cầu sử dụng loại hỗ trợ này.',
@@ -158,7 +158,7 @@ class CatalogOrganizationApiTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->deleteJson("/api/v1/admin/departments/{$department->id}")
+        $this->deleteJson("/api/departments/{$department->id}")
             ->assertStatus(409);
 
         $this->assertDatabaseHas('support_departments', ['id' => $department->id]);
@@ -178,7 +178,7 @@ class CatalogOrganizationApiTest extends TestCase
         // để không bị chặn ở rule "còn loại hỗ trợ".
         $this->createRequestRow($department->id, 999);
 
-        $this->deleteJson("/api/v1/admin/departments/{$department->id}")
+        $this->deleteJson("/api/departments/{$department->id}")
             ->assertStatus(409);
 
         $this->assertDatabaseHas('support_departments', ['id' => $department->id]);
@@ -189,7 +189,7 @@ class CatalogOrganizationApiTest extends TestCase
         $this->withHeaders([
             'X-User-Id' => '2',
             'X-User-Role' => 'student',
-        ])->getJson('/api/v1/admin/departments')
+        ])->getJson('/api/departments')
             ->assertStatus(403)
             ->assertJson([
                 'success' => false,
@@ -199,11 +199,11 @@ class CatalogOrganizationApiTest extends TestCase
 
     public function test_request_without_auth_headers_is_rejected(): void
     {
-        $this->getJson('/api/v1/admin/departments')
+        $this->getJson('/api/departments')
             ->assertStatus(401)
             ->assertJson(['success' => false]);
 
-        $this->getJson('/api/v1/catalog/departments')
+        $this->getJson('/api/catalog/departments')
             ->assertStatus(401)
             ->assertJson(['success' => false]);
     }

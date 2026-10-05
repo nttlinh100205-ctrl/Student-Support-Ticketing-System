@@ -188,7 +188,7 @@
 <script>
 (() => {
     const el = id => document.getElementById(id);
-    const typeApi = '/api/v1/admin/support-types';
+    const typeApi = '/api/support-types';
 
     const typeNames = {
         text: 'Văn bản ngắn',

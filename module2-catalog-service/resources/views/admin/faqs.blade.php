@@ -190,7 +190,7 @@
 <script>
 (() => {
     const el = id => document.getElementById(id);
-    const apiUrl = '/api/v1/admin/faqs';
+    const apiUrl = '/api/faqs';
 
     let departments = [];
     let supportTypes = [];
@@ -544,8 +544,8 @@
         }
 
         // Cập nhật danh mục trước khi điền dữ liệu sửa.
-        departments = await loadAllPages('/api/v1/admin/departments');
-        supportTypes = await loadAllPages('/api/v1/admin/support-types');
+        departments = await loadAllPages('/api/departments');
+        supportTypes = await loadAllPages('/api/support-types');
 
         const oldDepartmentFilter = el('departmentFilter').value;
         const oldTypeFilter = el('typeFilter').value;
@@ -725,8 +725,8 @@
                 return;
             }
 
-            departments = await loadAllPages('/api/v1/admin/departments');
-            supportTypes = await loadAllPages('/api/v1/admin/support-types');
+            departments = await loadAllPages('/api/departments');
+            supportTypes = await loadAllPages('/api/support-types');
 
             fillDepartments();
             fillTypes('supportTypeId', '');

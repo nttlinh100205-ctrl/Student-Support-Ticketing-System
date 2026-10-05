@@ -24,7 +24,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth.fake', 'role:admin'])
-    ->prefix('v1/admin')
     ->group(function () {
 
         // Phòng ban
@@ -73,7 +72,7 @@ Route::middleware(['auth.fake', 'role:admin'])
 |
 */
 Route::middleware('auth.fake')
-    ->prefix('v1/catalog')
+    ->prefix('catalog')
     ->group(function () {
         Route::get('/departments', [CatalogController::class, 'departments']);
         Route::get('/departments/{department}/faqs', [CatalogController::class, 'departmentFaqs']);

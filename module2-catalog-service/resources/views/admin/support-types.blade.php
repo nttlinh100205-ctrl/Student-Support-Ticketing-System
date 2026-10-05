@@ -194,8 +194,8 @@
 <script>
 (() => {
     const el = id => document.getElementById(id);
-    const apiUrl = '/api/v1/admin/support-types';
-    const departmentApiUrl = '/api/v1/admin/departments';
+    const apiUrl = '/api/support-types';
+    const departmentApiUrl = '/api/departments';
 
     let currentPage = 1;
     let lastPage = 1;

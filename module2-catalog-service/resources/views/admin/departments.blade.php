@@ -112,7 +112,7 @@
 <script>
 (() => {
     const el = id => document.getElementById(id);
-    const apiUrl = '/api/v1/admin/departments';
+    const apiUrl = '/api/departments';
 
     let currentPage = 1;
     let lastPage = 1;
