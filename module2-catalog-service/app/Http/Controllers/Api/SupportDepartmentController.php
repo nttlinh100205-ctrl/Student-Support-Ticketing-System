@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
@@ -71,7 +72,7 @@ class SupportDepartmentController extends Controller
     {
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
-            'role' => ['nullable', Rule::in(['STAFF', 'DEPARTMENT_HEAD'])],
+            'role' => ['nullable', Rule::in(UserRole::staffValues())],
             'status' => ['nullable', Rule::in(['ACTIVE', 'LOCKED'])],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);

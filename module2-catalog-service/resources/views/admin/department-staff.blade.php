@@ -33,7 +33,7 @@
             <form id="filterForm" class="grid gap-3 sm:grid-cols-2">
     <input id="staffSearch" maxlength="100" aria-label="Tìm cán bộ" placeholder="Tìm tên hoặc email" class="border rounded-lg p-2 min-w-0">
     <select id="staffRole" aria-label="Lọc vai trò" class="border rounded-lg p-2">
-        <option value="">Tất cả vai trò</option><option value="STAFF">Cán bộ</option><option value="DEPARTMENT_HEAD">Trưởng phòng</option>
+        <option value="">Tất cả vai trò</option><option value="staff">Cán bộ</option><option value="department_head">Trưởng phòng</option>
     </select>
     <select id="staffStatus" aria-label="Lọc trạng thái" class="border rounded-lg p-2">
         <option value="">Tất cả trạng thái</option><option value="ACTIVE">Hoạt động</option><option value="LOCKED">Bị khóa</option>
@@ -84,10 +84,10 @@
                 <select
                     id="roleSelect"
                     class="w-full border rounded-lg p-2">
-                    <option value="STAFF">
+                    <option value="staff">
                         Cán bộ
                     </option>
-                    <option value="DEPARTMENT_HEAD">
+                    <option value="department_head">
                         Trưởng phòng
                     </option>
                 </select>
@@ -165,7 +165,7 @@
     }
     async function loadUsers() {
         const list = await loadAllPages('/api/v1/admin/staff-candidates');
-        users = list.filter(user => user.role !== 'ADMIN');
+        users = list.filter(user => user.role !== 'admin');
         const select = el('userSelect'), previous = select.value;
         select.replaceChildren(new Option('-- Chọn tài khoản --', ''));
         users.forEach(user => {
@@ -205,7 +205,7 @@
             email.className = 'text-xs text-slate-500 mt-1';
             identity.append(name, email);
             row.appendChild(identity);
-            [user.role === 'DEPARTMENT_HEAD' ? 'Trưởng phòng' : 'Cán bộ',
+            [user.role === 'department_head' ? 'Trưởng phòng' : 'Cán bộ',
                 ({ ACTIVE: 'Hoạt động', LOCKED: 'Bị khóa' })[user.status] || user.status
             ].forEach(text => {
                 const cell = document.createElement('td');
@@ -278,7 +278,7 @@
     el('nextPage').addEventListener('click', () => loadStaff(page + 1));
     el('userSelect').addEventListener('change', () => {
         const user = users.find(item => String(item.id) === el('userSelect').value);
-        el('roleSelect').value = user?.role === 'DEPARTMENT_HEAD' ? 'DEPARTMENT_HEAD' : 'STAFF';
+        el('roleSelect').value = user?.role === 'department_head' ? 'department_head' : 'staff';
     });
     el('assignButton').addEventListener('click', async () => {
         const userId = el('userSelect').value, departmentId = el('departmentSelect').value;

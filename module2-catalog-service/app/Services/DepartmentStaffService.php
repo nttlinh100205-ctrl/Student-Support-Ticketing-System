@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use App\Models\SupportDepartment;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -12,7 +13,7 @@ use Illuminate\Validation\ValidationException;
  * Gán / chuyển cán bộ giữa các phòng ban.
  *
  * Tài khoản do Module 1 quản lý; Module 2 chỉ đổi phòng ban
- * và vai trò cán bộ (STAFF / DEPARTMENT_HEAD) trong phòng ban.
+ * và vai trò cán bộ (staff / department_head) trong phòng ban.
  */
 class DepartmentStaffService
 {
@@ -24,7 +25,7 @@ class DepartmentStaffService
         $query = User::query()
             ->select(['id', 'name', 'email', 'role', 'status', 'department_id'])
             ->with('department:id,name,code,is_active')
-            ->where('role', '!=', 'ADMIN');
+            ->where('role', '!=', UserRole::Admin->value);
 
         $search = trim($filters['search'] ?? '');
 
@@ -54,7 +55,7 @@ class DepartmentStaffService
             throw new AuthorizationException('Không thể tự thay đổi phòng ban của chính mình.');
         }
 
-        if ($user->role === 'ADMIN') {
+        if ($user->role === UserRole::Admin->value) {
             throw ValidationException::withMessages(['user' => 'Không thể gán tài khoản ADMIN vào phòng ban.']);
         }
 

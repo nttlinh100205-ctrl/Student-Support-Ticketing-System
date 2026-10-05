@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use App\Models\SupportDepartment;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
@@ -70,7 +71,7 @@ class DepartmentService
     {
         $query = $department->users()
             ->select(['id', 'name', 'email', 'role', 'status', 'department_id'])
-            ->whereIn('role', ['STAFF', 'DEPARTMENT_HEAD']);
+            ->whereIn('role', UserRole::staffValues());
 
         $search = trim($filters['search'] ?? '');
 

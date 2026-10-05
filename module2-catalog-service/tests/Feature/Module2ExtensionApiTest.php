@@ -330,18 +330,18 @@ class Module2ExtensionApiTest extends TestCase
 
     public function test_admin_can_assign_staff_to_department(): void
     {
-        $user = User::factory()->create(['role' => 'STUDENT', 'status' => 'ACTIVE']);
+        $user = User::factory()->create(['role' => 'student', 'status' => 'ACTIVE']);
 
         $this->asAdmin()
             ->putJson("/api/v1/admin/departments/{$this->department->id}/staff/{$user->id}", [
-                'role' => 'STAFF',
+                'role' => 'staff',
             ])
             ->assertOk()
             ->assertJsonPath('data.department_id', $this->department->id);
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
-            'role' => 'STAFF',
+            'role' => 'staff',
             'department_id' => $this->department->id,
         ]);
 
@@ -354,23 +354,23 @@ class Module2ExtensionApiTest extends TestCase
 
     public function test_cannot_assign_staff_to_inactive_department(): void
     {
-        $user = User::factory()->create(['role' => 'STUDENT', 'status' => 'ACTIVE']);
+        $user = User::factory()->create(['role' => 'student', 'status' => 'ACTIVE']);
         $this->department->update(['is_active' => false]);
 
         $this->asAdmin()
             ->putJson("/api/v1/admin/departments/{$this->department->id}/staff/{$user->id}", [
-                'role' => 'STAFF',
+                'role' => 'staff',
             ])
             ->assertStatus(409);
     }
 
     public function test_admin_account_cannot_be_assigned(): void
     {
-        $admin = User::factory()->create(['role' => 'ADMIN', 'status' => 'ACTIVE']);
+        $admin = User::factory()->create(['role' => 'admin', 'status' => 'ACTIVE']);
 
         $this->asAdmin()
             ->putJson("/api/v1/admin/departments/{$this->department->id}/staff/{$admin->id}", [
-                'role' => 'STAFF',
+                'role' => 'staff',
             ])
             ->assertStatus(409);
 

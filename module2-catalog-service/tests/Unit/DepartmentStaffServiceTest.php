@@ -28,52 +28,52 @@ class DepartmentStaffServiceTest extends TestCase
 
     public function test_assign_moves_user_into_department(): void
     {
-        $user = User::factory()->create(['role' => 'STUDENT']);
+        $user = User::factory()->create(['role' => 'student']);
 
-        $assigned = $this->service->assign(999, $this->department, $user, 'DEPARTMENT_HEAD');
+        $assigned = $this->service->assign(999, $this->department, $user, 'department_head');
 
-        $this->assertSame('DEPARTMENT_HEAD', $assigned->role);
+        $this->assertSame('department_head', $assigned->role);
         $this->assertSame($this->department->id, (int) $assigned->department_id);
         $this->assertTrue($assigned->relationLoaded('department'));
     }
 
     public function test_cannot_assign_yourself(): void
     {
-        $user = User::factory()->create(['role' => 'STAFF']);
+        $user = User::factory()->create(['role' => 'staff']);
 
         $this->expectException(AuthorizationException::class);
 
-        $this->service->assign($user->id, $this->department, $user, 'STAFF');
+        $this->service->assign($user->id, $this->department, $user, 'staff');
     }
 
     public function test_cannot_assign_admin_account(): void
     {
-        $admin = User::factory()->create(['role' => 'ADMIN']);
+        $admin = User::factory()->create(['role' => 'admin']);
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Không thể gán tài khoản ADMIN vào phòng ban.');
 
-        $this->service->assign(999, $this->department, $admin, 'STAFF');
+        $this->service->assign(999, $this->department, $admin, 'staff');
     }
 
     public function test_can_keep_current_inactive_department_but_not_move_into_it(): void
     {
         $this->department->update(['is_active' => false]);
-        $member = User::factory()->create(['role' => 'STAFF', 'department_id' => $this->department->id]);
-        $outsider = User::factory()->create(['role' => 'STUDENT']);
+        $member = User::factory()->create(['role' => 'staff', 'department_id' => $this->department->id]);
+        $outsider = User::factory()->create(['role' => 'student']);
 
         // Cán bộ đang thuộc phòng (đã ngừng hoạt động) vẫn được đổi vai trò tại chỗ.
-        $this->assertSame('DEPARTMENT_HEAD', $this->service->assign(999, $this->department, $member, 'DEPARTMENT_HEAD')->role);
+        $this->assertSame('department_head', $this->service->assign(999, $this->department, $member, 'department_head')->role);
 
         $this->expectException(ValidationException::class);
 
-        $this->service->assign(999, $this->department, $outsider, 'STAFF');
+        $this->service->assign(999, $this->department, $outsider, 'staff');
     }
 
     public function test_candidates_exclude_admin(): void
     {
-        User::factory()->create(['role' => 'ADMIN']);
-        User::factory()->create(['role' => 'STUDENT']);
+        User::factory()->create(['role' => 'admin']);
+        User::factory()->create(['role' => 'student']);
 
         $this->assertSame(1, $this->service->paginateCandidates([])->total());
     }

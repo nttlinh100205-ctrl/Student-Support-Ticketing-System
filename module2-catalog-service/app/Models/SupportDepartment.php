@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -34,7 +35,7 @@ class SupportDepartment extends Model
     public function staff()
     {
         return $this->hasMany(User::class, 'department_id')
-            ->where('role', 'STAFF');
+            ->where('role', UserRole::Staff->value);
     }
 
     /**
@@ -43,7 +44,7 @@ class SupportDepartment extends Model
     public function heads()
     {
         return $this->hasMany(User::class, 'department_id')
-            ->where('role', 'DEPARTMENT_HEAD');
+            ->where('role', UserRole::DepartmentHead->value);
     }
 
     public function supportTypes()
