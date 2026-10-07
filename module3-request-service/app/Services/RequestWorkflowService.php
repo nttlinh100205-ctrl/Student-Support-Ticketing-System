@@ -24,8 +24,8 @@ class RequestWorkflowService
         'received' => ['in_progress', 'cancelled'],
         'in_progress' => ['waiting_info', 'resolved', 'cancelled'],
         'waiting_info' => ['in_progress', 'cancelled'],
-        'resolved' => ['closed', 'in_progress'], // SV xác nhận đóng | SV yêu cầu xử lý lại
-        'closed' => ['in_progress'],
+        'resolved' => ['closed', 'in_progress'], // staff đóng sau phản hồi | SV yêu cầu xử lý lại
+        'closed' => ['in_progress'], // SV yêu cầu mở lại để staff tiếp tục
         'cancelled' => [],
     ];
 
@@ -96,8 +96,8 @@ class RequestWorkflowService
      * Đổi trạng thái theo state machine.
      * - Phải đã gán cán bộ trước khi chuyển (trừ cancelled).
      * - resolved = cán bộ xử lý xong, chờ SV phản hồi.
-     * - resolved → closed: SV xác nhận đã xong.
-     * - resolved → in_progress: SV báo chưa xong, cán bộ xử lý tiếp.
+    * - resolved → closed: cán bộ đóng sau khi sinh viên phản hồi.
+    * - resolved/closed → in_progress: sinh viên yêu cầu xử lý tiếp.
      */
     public function changeStatus(SupportRequest $request, string $toStatus, int $changedBy, ?string $note = null): SupportRequest
     {
@@ -107,6 +107,14 @@ class RequestWorkflowService
         if (! in_array($toStatus, $allowed, true)) {
             throw ValidationException::withMessages([
                 'status' => "Không thể chuyển từ '{$from}' sang '{$toStatus}'.",
+            ]);
+        }
+
+        if ($from === RequestStatus::Resolved->value
+            && $toStatus === RequestStatus::Closed->value
+            && ! $request->hasStudentReplySinceResolution()) {
+            throw ValidationException::withMessages([
+                'status' => 'Chỉ có thể đóng yêu cầu sau khi sinh viên đã phản hồi kết quả xử lý.',
             ]);
         }
 
@@ -148,23 +156,34 @@ class RequestWorkflowService
    
     public function assign(SupportRequest $request, int $staffId, int $changedBy): SupportRequest
     {
-        if (in_array($request->status->value, ['closed', 'cancelled'], true)) {
-            throw ValidationException::withMessages([
-                'status' => 'Không thể gán cán bộ cho yêu cầu đã đóng hoặc đã hủy.',
-            ]);
-        }
+        return DB::transaction(function () use ($request, $staffId, $changedBy) {
+            if (in_array($request->status->value, ['closed', 'cancelled'], true)) {
+                throw ValidationException::withMessages([
+                    'status' => 'Không thể gán cán bộ cho yêu cầu đã đóng hoặc đã hủy.',
+                ]);
+            }
 
-        if (! in_array($staffId, config("master_data.staff_by_department.{$request->department_id}", []), true)) {
-            throw ValidationException::withMessages([
-                'assigned_to' => 'Cán bộ được chọn không thuộc phòng ban đang xử lý yêu cầu.',
-            ]);
-        }
+            if (! in_array($staffId, config("master_data.staff_by_department.{$request->department_id}", []), true)) {
+                throw ValidationException::withMessages([
+                    'assigned_to' => 'Cán bộ được chọn không thuộc phòng ban đang xử lý yêu cầu.',
+                ]);
+            }
 
-        $request->assigned_to = $staffId;
-        $request->assigned_at = now();
-        $request->save();
+            $request->assigned_to = $staffId;
+            $request->assigned_at = now();
+            $request->save();
 
-        return $request;
+            $status = $request->status->value;
+            $this->logHistory(
+                $request,
+                $status,
+                $status,
+                $changedBy,
+                "Gán cán bộ xử lý #{$staffId}.",
+            );
+
+            return $request->fresh();
+        });
     }
 
     public function transfer(SupportRequest $request, int $departmentId, int $supportTypeId, int $changedBy): SupportRequest
@@ -257,6 +276,66 @@ class RequestWorkflowService
             ->first()['id'];
     }
 
+    public function assignOverdueUnassigned(bool $dryRun = false): int
+    {
+        $cutoff = now()->subDay();
+        $excludedStatuses = config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled']);
+        $assignedCount = 0;
+
+        SupportRequest::query()
+            ->whereNull('assigned_to')
+            ->whereNotNull('sla_deadline_at')
+            ->where('sla_deadline_at', '<=', $cutoff)
+            ->whereNotIn('status', $excludedStatuses)
+            ->chunkById(200, function ($tickets) use ($cutoff, $excludedStatuses, $dryRun, &$assignedCount) {
+                foreach ($tickets as $ticket) {
+                    $assigned = DB::transaction(function () use ($ticket, $cutoff, $excludedStatuses, $dryRun) {
+                        $lockedTicket = SupportRequest::query()
+                            ->lockForUpdate()
+                            ->find($ticket->id);
+
+                        if (! $lockedTicket
+                            || $lockedTicket->assigned_to !== null
+                            || ! $lockedTicket->sla_deadline_at
+                            || $lockedTicket->sla_deadline_at->gt($cutoff)
+                            || in_array($lockedTicket->status->value, $excludedStatuses, true)) {
+                            return false;
+                        }
+
+                        $staffId = $this->selectStaffForDepartment($lockedTicket->department_id);
+                        if ($staffId === null) {
+                            return false;
+                        }
+
+                        if ($dryRun) {
+                            return true;
+                        }
+
+                        $status = $lockedTicket->status->value;
+                        $lockedTicket->assigned_to = $staffId;
+                        $lockedTicket->assigned_at = now();
+                        $lockedTicket->save();
+
+                        $this->logHistory(
+                            $lockedTicket,
+                            $status,
+                            $status,
+                            null,
+                            "Tự động phân công cán bộ #{$staffId} do ticket quá hạn SLA hơn 24 giờ.",
+                        );
+
+                        return true;
+                    });
+
+                    if ($assigned) {
+                        $assignedCount++;
+                    }
+                }
+            });
+
+        return $assignedCount;
+    }
+
    
     public function cancel(SupportRequest $request, int $changedBy, ?string $reason = null, bool $asStudent = false): SupportRequest
     {
@@ -321,7 +400,7 @@ class RequestWorkflowService
         $request->delete();
     }
 
-    protected function logHistory(SupportRequest $request, ?string $from, string $to, int $changedBy, ?string $note): void
+    protected function logHistory(SupportRequest $request, ?string $from, string $to, ?int $changedBy, ?string $note): void
     {
         RequestStatusHistory::create([
             'request_id' => $request->id,

@@ -142,6 +142,10 @@ class RequestController extends Controller
     public function updateStatus(UpdateStatusRequest $request, SupportRequest $supportRequest)
     {
         $role = $this->auth->role();
+        if (! $this->canView($supportRequest)) {
+            return ApiResponse::error('Bạn không có quyền đổi trạng thái yêu cầu này.', 403);
+        }
+
         $toStatus = $request->validated('status');
         $isOwner = $role === 'student' && $supportRequest->student_id === $this->auth->userId();
 
@@ -149,24 +153,15 @@ class RequestController extends Controller
             if (! $isOwner) {
                 return ApiResponse::error('Bạn không có quyền đổi trạng thái yêu cầu này.', 403);
             }
-            // SV chỉ phản hồi khi đang chờ (resolved)
-            if ($supportRequest->status->value !== 'resolved'
-                || ! in_array($toStatus, ['closed', 'in_progress'], true)) {
+            if (! in_array($supportRequest->status->value, ['resolved', 'closed'], true)
+                || $toStatus !== 'in_progress') {
                 return ApiResponse::error(
-                    'Sinh viên chỉ được xác nhận đóng hoặc yêu cầu xử lý lại khi yêu cầu đang chờ phản hồi.',
+                    'Sinh viên chỉ được yêu cầu xử lý lại khi yêu cầu đã xử lý xong hoặc đã đóng.',
                     403
                 );
             }
-        } elseif (! in_array($role, ['staff', 'department_head', 'admin'], true)) {
+        } elseif (! in_array($role, ['staff', 'admin'], true)) {
             return ApiResponse::error('Bạn không có quyền đổi trạng thái yêu cầu.', 403);
-        } else {
-            // Staff không tự đóng — chờ SV phản hồi (head/admin vẫn được đóng)
-            if ($toStatus === 'closed' && $role === 'staff') {
-                return ApiResponse::error(
-                    'Cán bộ không tự đóng yêu cầu. Hãy đánh dấu "Chờ phản hồi SV"; sinh viên hoặc trưởng phòng sẽ xác nhận đóng.',
-                    403
-                );
-            }
         }
 
         try {
@@ -189,6 +184,9 @@ class RequestController extends Controller
         if (! in_array($this->auth->role(), ['department_head', 'admin'], true)) {
             return ApiResponse::error('Chỉ trưởng phòng/admin được gán cán bộ xử lý.', 403);
         }
+        if (! $this->canView($supportRequest)) {
+            return ApiResponse::error('Bạn không có quyền gán cán bộ cho yêu cầu này.', 403);
+        }
 
         try {
             $updated = $this->workflow->assign(
@@ -206,9 +204,8 @@ class RequestController extends Controller
     public function transfer(Request $request, SupportRequest $supportRequest)
     {
         $role = $this->auth->role();
-        if (! in_array($role, ['department_head', 'admin'], true)
-            || ($role === 'department_head' && $supportRequest->department_id !== $this->auth->departmentId())) {
-            return ApiResponse::error('Bạn không có quyền chuyển yêu cầu này.', 403);
+        if ($role !== 'admin') {
+            return ApiResponse::error('Chỉ admin được chuyển yêu cầu sang phòng ban khác.', 403);
         }
 
         $data = $request->validate([

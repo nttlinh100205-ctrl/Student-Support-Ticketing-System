@@ -13,11 +13,11 @@ class UpdateRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'department_id' => 'required|integer',
-            'support_type_id' => 'required|integer',
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'priority' => 'nullable|in:low,normal,high,urgent',
+            'department_id' => 'prohibited',
+            'support_type_id' => 'prohibited',
+            'priority' => 'prohibited',
+            'title' => 'required|string|min:10|max:255',
+            'content' => 'required|string|min:20',
         ];
     }
 
@@ -25,9 +25,12 @@ class UpdateRequestRequest extends FormRequest
     {
         return [
             'title.required' => 'Vui lòng nhập tiêu đề yêu cầu.',
+            'title.min' => 'Tiêu đề phải có ít nhất 10 ký tự.',
             'content.required' => 'Vui lòng nhập nội dung yêu cầu.',
-            'department_id.required' => 'Vui lòng chọn phòng ban.',
-            'support_type_id.required' => 'Vui lòng chọn loại hỗ trợ.',
+            'content.min' => 'Nội dung phải có ít nhất 20 ký tự.',
+            'department_id.prohibited' => 'Không thể đổi phòng ban khi cập nhật yêu cầu.',
+            'support_type_id.prohibited' => 'Không thể đổi loại hỗ trợ khi cập nhật yêu cầu.',
+            'priority.prohibited' => 'Không thể đổi mức ưu tiên khi cập nhật yêu cầu.',
         ];
     }
 }

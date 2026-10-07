@@ -33,7 +33,7 @@ class SlaService
      *
      * @return array{warned: int, breached: int}
      */
-    public function checkAll(): array
+    public function checkAll(bool $dryRun = false): array
     {
         $now = Carbon::now();
         $excludedStatuses = config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled']);
@@ -45,9 +45,9 @@ class SlaService
         SupportRequest::whereNotIn('status', $excludedStatuses)
             ->whereNotNull('sla_deadline_at')
             ->where('sla_flag', '!=', SlaFlag::Breached->value) // đã breached thì không cần quét lại
-            ->chunkById(200, function ($tickets) use ($now, $warningPercent, &$counters) {
+            ->chunkById(200, function ($tickets) use ($now, $warningPercent, $dryRun, &$counters) {
                 foreach ($tickets as $ticket) {
-                    $this->evaluateTicket($ticket, $now, $warningPercent, $counters);
+                    $this->evaluateTicket($ticket, $now, $warningPercent, $dryRun, $counters);
                 }
             });
 
@@ -61,6 +61,7 @@ class SlaService
         SupportRequest $ticket,
         Carbon $now,
         float $warningPercent,
+        bool $dryRun,
         array &$counters,
     ): void {
         $deadline = $ticket->sla_deadline_at;
@@ -68,16 +69,18 @@ class SlaService
         // --- ĐÃ QUÁ HẠN ---
         if ($now->greaterThanOrEqualTo($deadline)) {
             if ($ticket->sla_flag !== SlaFlag::Breached) {
-                $ticket->sla_flag = SlaFlag::Breached->value;
-                $ticket->save();
-
-                $this->recordNotification($ticket, 'breached');
                 $counters['breached']++;
 
-                Log::channel('stack')->warning('[SLA BREACHED] Ticket #' . $ticket->code . ' đã quá hạn SLA.', [
-                    'ticket_id' => $ticket->id,
-                    'deadline'  => $deadline->toDateTimeString(),
-                ]);
+                if (! $dryRun) {
+                    $ticket->sla_flag = SlaFlag::Breached->value;
+                    $ticket->save();
+                    $this->recordNotification($ticket, 'breached');
+
+                    Log::channel('stack')->warning('[SLA BREACHED] Ticket #' . $ticket->code . ' đã quá hạn SLA.', [
+                        'ticket_id' => $ticket->id,
+                        'deadline'  => $deadline->toDateTimeString(),
+                    ]);
+                }
             }
             return;
         }
@@ -89,17 +92,19 @@ class SlaService
 
         if ($totalSecs > 0 && ($elapsed / $totalSecs) >= $warningPercent) {
             if ($ticket->sla_flag !== SlaFlag::Warning) {
-                $ticket->sla_flag = SlaFlag::Warning->value;
-                $ticket->save();
-
-                $this->recordNotification($ticket, 'warning');
                 $counters['warned']++;
 
-                Log::channel('stack')->info('[SLA WARNING] Ticket #' . $ticket->code . ' sắp quá hạn SLA.', [
-                    'ticket_id'  => $ticket->id,
-                    'deadline'   => $deadline->toDateTimeString(),
-                    'elapsed_%'  => round(($elapsed / $totalSecs) * 100, 1),
-                ]);
+                if (! $dryRun) {
+                    $ticket->sla_flag = SlaFlag::Warning->value;
+                    $ticket->save();
+                    $this->recordNotification($ticket, 'warning');
+
+                    Log::channel('stack')->info('[SLA WARNING] Ticket #' . $ticket->code . ' sắp quá hạn SLA.', [
+                        'ticket_id'  => $ticket->id,
+                        'deadline'   => $deadline->toDateTimeString(),
+                        'elapsed_%'  => round(($elapsed / $totalSecs) * 100, 1),
+                    ]);
+                }
             }
         }
     }

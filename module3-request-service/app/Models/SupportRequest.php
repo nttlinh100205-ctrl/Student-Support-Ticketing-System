@@ -77,6 +77,16 @@ class SupportRequest extends Model
         return $this->hasMany(TicketComment::class, 'request_id');
     }
 
+    public function hasStudentReplySinceResolution(): bool
+    {
+        return $this->resolved_at !== null
+            && $this->comments()
+                ->where('user_role', 'student')
+                ->where('is_internal', false)
+                ->where('created_at', '>=', $this->resolved_at)
+                ->exists();
+    }
+
     /*
     |--------------------------------------------------------------------------
     | SLA Helper Methods

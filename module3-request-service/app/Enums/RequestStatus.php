@@ -23,7 +23,7 @@ enum RequestStatus: string
             self::Received => 'Đã tiếp nhận',
             self::InProgress => 'Đang xử lý',
             self::WaitingInfo => 'Chờ bổ sung',
-            self::Resolved => 'Đã xử lý xong',
+            self::Resolved => 'Chờ sinh viên phản hồi',
             self::Closed => 'Đã đóng',
             self::Cancelled => 'Đã hủy',
         };

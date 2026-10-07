@@ -375,6 +375,10 @@ class RequestWebController extends Controller
     public function updateStatus(Request $request, SupportRequest $supportRequest)
     {
         $user = $this->currentUser();
+        if (! $this->canView($supportRequest, $user)) {
+            return back()->with('error', 'Bạn không có quyền đổi trạng thái yêu cầu này.');
+        }
+
         $data = $request->validate([
             'status' => 'required|in:new,received,in_progress,waiting_info,resolved,closed,cancelled',
             'note' => 'nullable|string|max:1000',
@@ -390,13 +394,11 @@ class RequestWebController extends Controller
             if (! $isOwner) {
                 return back()->with('error', 'Bạn không có quyền đổi trạng thái yêu cầu này.');
             }
-            if ($statusVal !== 'resolved' || ! in_array($toStatus, ['closed', 'in_progress'], true)) {
-                return back()->with('error', 'Sinh viên chỉ được xác nhận đóng hoặc yêu cầu xử lý lại khi đang chờ phản hồi.');
+            if (! in_array($statusVal, ['resolved', 'closed'], true) || $toStatus !== 'in_progress') {
+                return back()->with('error', 'Sinh viên chỉ được yêu cầu xử lý lại khi yêu cầu đã xử lý xong hoặc đã đóng.');
             }
-        } elseif (! in_array($user['role'], ['staff', 'department_head', 'admin'], true)) {
+        } elseif (! in_array($user['role'], ['staff', 'admin'], true)) {
             return back()->with('error', 'Bạn không có quyền đổi trạng thái yêu cầu.');
-        } elseif ($toStatus === 'closed' && $user['role'] === 'staff') {
-            return back()->with('error', 'Cán bộ không tự đóng. Đánh dấu chờ phản hồi SV; sinh viên hoặc trưởng phòng sẽ xác nhận.');
         }
 
         try {
@@ -419,6 +421,9 @@ class RequestWebController extends Controller
         if (! in_array($user['role'], ['department_head', 'admin'], true)) {
             return back()->with('error', 'Chỉ trưởng phòng/admin được gán cán bộ xử lý.');
         }
+        if (! $this->canView($supportRequest, $user)) {
+            return back()->with('error', 'Bạn không có quyền gán cán bộ cho yêu cầu này.');
+        }
 
         $data = $request->validate([
             'assigned_to' => 'required|integer',
@@ -436,9 +441,8 @@ class RequestWebController extends Controller
     public function transfer(Request $request, SupportRequest $supportRequest)
     {
         $user = $this->currentUser();
-        if (! in_array($user['role'], ['department_head', 'admin'], true)
-            || ($user['role'] === 'department_head' && $supportRequest->department_id !== $user['department_id'])) {
-            return back()->with('error', 'Bạn không có quyền chuyển yêu cầu này.');
+        if ($user['role'] !== 'admin') {
+            return back()->with('error', 'Chỉ admin được chuyển yêu cầu sang phòng ban khác.');
         }
 
         $data = $request->validate([

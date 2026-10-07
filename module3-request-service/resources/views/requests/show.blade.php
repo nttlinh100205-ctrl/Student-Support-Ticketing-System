@@ -28,26 +28,27 @@
     $priorityVal = $request->priority instanceof \App\Enums\RequestPriority ? $request->priority->value : $request->priority;
     $slaFlag = $request->sla_flag instanceof \App\Enums\SlaFlag ? $request->sla_flag->value : $request->sla_flag;
     $allowedNext = $transitions[$statusVal] ?? [];
-    // Staff không tự đóng — chờ SV; cũng không tự gửi lại in_progress từ resolved (chỉ SV)
+    $hasStudentReply = $request->hasStudentReplySinceResolution();
     if ($user['role'] === 'staff') {
-        $allowedNext = array_values(array_filter($allowedNext, fn ($s) => ! in_array($s, ['closed', 'in_progress'], true) || $statusVal !== 'resolved'));
-        if ($statusVal === 'resolved') {
-            $allowedNext = []; // chỉ chờ SV
-        }
+        $allowedNext = $statusVal === 'resolved' && $hasStudentReply
+            ? ['closed']
+            : array_values(array_filter($allowedNext, fn ($s) => $s !== 'closed'));
     }
-    // Head/admin khi resolved: có thể đóng giúp SV, không tự "xử lý lại"
-    if (in_array($user['role'], ['department_head', 'admin'], true) && $statusVal === 'resolved') {
-        $allowedNext = array_values(array_filter($allowedNext, fn ($s) => $s === 'closed'));
+    if ($statusVal === 'resolved' && $user['role'] === 'admin') {
+        $allowedNext = $hasStudentReply ? ['closed'] : [];
+    }
+    if ($user['role'] === 'department_head') {
+        $allowedNext = [];
     }
     $isTerminal = in_array($statusVal, ['closed', 'cancelled'], true);
-    $canReopen = $statusVal === 'closed' && in_array($user['role'], ['staff', 'department_head', 'admin'], true);
-    $canChangeStatus = in_array($user['role'], ['staff', 'department_head', 'admin'], true);
+    $isStudentOwner = $user['role'] === 'student' && $request->student_id === $user['id'];
+    $canReopen = $statusVal === 'closed' && ($isStudentOwner || $user['role'] === 'admin');
+    $canStudentRework = $statusVal === 'resolved' && $isStudentOwner;
+    $canChangeStatus = in_array($user['role'], ['staff', 'admin'], true);
     $canAssign = in_array($user['role'], ['department_head', 'admin'], true);
+    $canTransfer = $user['role'] === 'admin';
     $needsAssign = $canChangeStatus && $request->assigned_to === null && ! $isTerminal;
-    // SV phản hồi khi resolved
-    $canStudentFeedback = $user['role'] === 'student'
-        && $request->student_id === $user['id']
-        && $statusVal === 'resolved';
+    $canStudentReply = $isStudentOwner && in_array($statusVal, ['waiting_info', 'resolved'], true);
     // Student chỉ hủy khi new/received; admin theo TRANSITIONS
     $canCancel = $user['role'] === 'admin'
         || ($user['role'] === 'student'
@@ -133,7 +134,18 @@
         @method('PUT')
         <button type="submit" name="status" value="in_progress"
                 class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-800 hover:bg-blue-100">
-            Mở lại yêu cầu
+            {{ $isStudentOwner ? 'Yêu cầu xử lý lại' : 'Mở lại yêu cầu' }}
+        </button>
+    </form>
+@endif
+
+@if($canStudentRework)
+    <form method="POST" action="{{ route('requests.update-status', $request) }}" class="mb-5">
+        @csrf
+        @method('PUT')
+        <button type="submit" name="status" value="in_progress"
+                class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 hover:bg-amber-100">
+            Yêu cầu xử lý lại
         </button>
     </form>
 @endif
@@ -223,33 +235,9 @@
                 </div>
             @endif
 
-            @if($statusVal === 'resolved' && $user['role'] === 'staff')
+            @if($statusVal === 'resolved' && $user['role'] === 'staff' && ! $hasStudentReply)
                 <div class="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
-                    Đã gửi cho sinh viên phản hồi. Chờ sinh viên xác nhận đóng hoặc yêu cầu xử lý lại.
-                </div>
-            @endif
-
-            {{-- Student feedback khi resolved --}}
-            @if($canStudentFeedback)
-                <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-3">
-                    <p class="text-sm font-semibold text-emerald-900">Phản hồi kết quả xử lý</p>
-                    <p class="text-sm text-emerald-800">Cán bộ đã đánh dấu xử lý xong. Bạn xác nhận đã được giải quyết chưa?</p>
-                    <form method="POST" action="{{ route('requests.update-status', $request) }}" class="space-y-3">
-                        @csrf
-                        @method('PUT')
-                        <textarea name="note" rows="2" placeholder="Góp ý (tùy chọn)..."
-                                  class="w-full border border-emerald-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none bg-white"></textarea>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="submit" name="status" value="closed"
-                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition">
-                                Đã xử lý xong — Đóng yêu cầu
-                            </button>
-                            <button type="submit" name="status" value="in_progress"
-                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 transition">
-                                Chưa xong — Yêu cầu xử lý lại
-                            </button>
-                        </div>
-                    </form>
+                    Đã gửi kết quả xử lý. Chờ sinh viên phản hồi trước khi đóng yêu cầu.
                 </div>
             @endif
 
@@ -279,7 +267,7 @@
                 </div>
             @endif
 
-            @if($canAssign)
+            @if($canTransfer)
                 <div class="pt-4 border-t border-slate-100">
                     <p class="text-sm font-medium text-slate-700 mb-2">Chuyển phòng ban</p>
                     <form method="POST" action="{{ route('requests.transfer', $request) }}" class="space-y-2">
@@ -310,7 +298,7 @@
 
             {{-- Assign — mock staff --}}
             @if($canAssign)
-                <div class="{{ $canChangeStatus || $canStudentFeedback ? 'pt-4 border-t border-slate-100' : '' }}">
+                <div class="{{ $canChangeStatus ? 'pt-4 border-t border-slate-100' : '' }}">
                     <p class="text-sm font-medium text-slate-700 mb-2">Gán cán bộ xử lý @if($needsAssign)<span class="text-amber-600 font-normal">(bắt buộc trước)</span>@endif</p>
                     <p class="text-xs text-slate-400 mb-2">Module 1 chưa sẵn sàng — dùng danh sách cán bộ giả để test</p>
                     <form method="POST" action="{{ route('requests.assign', $request) }}" class="flex gap-2">
@@ -402,7 +390,7 @@
                         </div>
                         <p class="text-xs text-slate-500 mt-1">
                             {{ \Carbon\Carbon::parse($h->created_at)->format('d/m/Y H:i') }}
-                            · bởi user #{{ $h->changed_by }}
+                            · {{ $h->changed_by === null ? 'bởi hệ thống' : 'bởi user #'.$h->changed_by }}
                         </p>
                         @if($h->note)
                             <p class="text-sm text-slate-600 mt-1 bg-slate-50 rounded px-2 py-1">{{ $h->note }}</p>
@@ -414,15 +402,16 @@
     </div>
 </div>
 
+@if($statusVal === 'waiting_info' && $user['role'] === 'student' && $request->student_id === $user['id'])
+    <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        Cán bộ đang chờ bạn bổ sung thông tin. Vui lòng liên hệ trực tiếp phòng ban phụ trách hoặc theo dõi các ghi chú phản hồi từ cán bộ trong lịch sử trạng thái.
+    </div>
+@endif
+
 {{-- ═══════════════════════════════════════════════════════════════════ --}}
-{{-- Comment Thread (Trao đổi)                                         --}}
+{{-- Comment Thread --}}
 {{-- ═══════════════════════════════════════════════════════════════════ --}}
 <div class="mt-5 bg-white rounded-xl border border-slate-200 p-6">
-    @if($statusVal === 'waiting_info' && $user['role'] === 'student' && $request->student_id === $user['id'])
-        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Cán bộ đang chờ bạn bổ sung thông tin. Hãy gửi nội dung hoặc tài liệu cần thiết tại đây; yêu cầu sẽ tự chuyển lại sang đang xử lý.
-        </div>
-    @endif
     <div class="flex items-center justify-between mb-5">
         <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
@@ -434,18 +423,16 @@
     </div>
 
     {{-- Form nhập comment --}}
-    @if(!$isTerminal)
+    @if(!$isTerminal && ($user['role'] !== 'student' || $canStudentReply))
     <form method="POST" action="{{ route('requests.comments.store', $request) }}" enctype="multipart/form-data" class="mb-6">
         @csrf
         <div class="flex gap-3">
             {{-- Avatar --}}
             <div class="shrink-0">
                 <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold
-                    {{ $user['role'] === 'student'
-                        ? 'bg-blue-100 text-blue-700'
-                        : ($user['role'] === 'admin'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-emerald-100 text-emerald-700') }}">
+                    {{ $user['role'] === 'admin'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-emerald-100 text-emerald-700' }}">
                     {{ mb_substr($user['full_name'], 0, 1) }}
                 </div>
             </div>
@@ -495,7 +482,11 @@
     </form>
     @else
     <div class="mb-6 rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-500">
-        Yêu cầu đã {{ $statusVal === 'closed' ? 'đóng' : 'hủy' }} — không thể thêm bình luận mới.
+        @if($isTerminal)
+            Yêu cầu đã {{ $statusVal === 'closed' ? 'đóng' : 'hủy' }} — không thể thêm trao đổi mới.
+        @else
+            Bạn có thể phản hồi khi yêu cầu đang chờ bổ sung hoặc chờ xác nhận kết quả.
+        @endif
     </div>
     @endif
 

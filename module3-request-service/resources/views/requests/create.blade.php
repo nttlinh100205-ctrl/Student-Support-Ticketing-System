@@ -56,10 +56,12 @@
                 Loại hỗ trợ <span class="text-rose-500">*</span>
             </label>
             <select name="support_type_id" required id="support_type_id"
+                    @disabled(!old('department_id', $copyRequest?->department_id))
                     class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">-- Chọn loại hỗ trợ --</option>
+                <option value="">{{ old('department_id', $copyRequest?->department_id) ? '-- Chọn loại hỗ trợ --' : '-- Chọn phòng ban trước --' }}</option>
                 @foreach($supportTypes as $id => $type)
                     <option value="{{ $id }}" data-dept="{{ $type['department_id'] }}"
+                            data-template="{{ $type['content_template'] ?? '' }}"
                             @selected(old('support_type_id', $copyRequest?->support_type_id) == $id)>
                         {{ $type['name'] }}
                     </option>
@@ -80,7 +82,7 @@
             <label class="block text-sm font-medium text-slate-700 mb-1.5">
                 Nội dung chi tiết <span class="text-rose-500">*</span>
             </label>
-            <textarea name="content" required rows="5" placeholder="Mô tả rõ nhu cầu hỗ trợ của bạn..."
+            <textarea name="content" required rows="5" placeholder="Chọn loại hỗ trợ để xem gợi ý nội dung..."
                       class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">{{ old('content', $copyRequest?->content) }}</textarea>
         </div>
 
@@ -131,12 +133,18 @@
 function filterSupportTypes() {
     const deptId = document.getElementById('department_id').value;
     const select = document.getElementById('support_type_id');
+    const previousType = select.value;
+    select.disabled = !deptId;
+    select.options[0].textContent = deptId ? '-- Chọn loại hỗ trợ --' : '-- Chọn phòng ban trước --';
     Array.from(select.options).forEach((opt, i) => {
         if (i === 0) return;
-        const show = !deptId || opt.dataset.dept === deptId;
+        const show = Boolean(deptId) && opt.dataset.dept === deptId;
         opt.hidden = !show;
         if (!show && opt.selected) opt.selected = false;
     });
+    if (select.value !== previousType) {
+        document.querySelector('textarea[name="content"]').value = '';
+    }
     // Phòng CSVC (id=6) → hiện upload ảnh
     const block = document.getElementById('attachments_block');
     const input = document.getElementById('attachments');
@@ -148,7 +156,22 @@ function filterSupportTypes() {
         input.required = false;
         input.value = '';
     }
+    updateContentTemplate();
 }
+
+function updateContentTemplate() {
+    const select = document.getElementById('support_type_id');
+    const template = select.selectedOptions[0]?.dataset.template || '';
+    const textarea = document.querySelector('textarea[name="content"]');
+
+    textarea.placeholder = template || 'Chọn loại hỗ trợ để xem gợi ý nội dung...';
+}
+
+document.getElementById('support_type_id').addEventListener('change', () => {
+    const textarea = document.querySelector('textarea[name="content"]');
+    textarea.value = '';
+    updateContentTemplate();
+});
 document.addEventListener('DOMContentLoaded', filterSupportTypes);
 </script>
 @endsection

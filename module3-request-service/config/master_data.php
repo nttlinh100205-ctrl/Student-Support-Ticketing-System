@@ -13,16 +13,56 @@ return [
 
    
     'support_types' => [
-        1 => ['name' => 'Xác nhận sinh viên', 'department_id' => 1],
-        2 => ['name' => 'Xin bảng điểm', 'department_id' => 1],
-        3 => ['name' => 'Hỗ trợ học bổng', 'department_id' => 2],
-        4 => ['name' => 'Tư vấn tâm lý', 'department_id' => 5],
-        5 => ['name' => 'Hỗ trợ học phí / vay vốn', 'department_id' => 3],
-        6 => ['name' => 'Mượn tài liệu / phòng học', 'department_id' => 4],
-        7 => ['name' => 'Khiếu nại / phản ánh', 'department_id' => 2],
-        8 => ['name' => 'Báo hỏng thiết bị / phòng học', 'department_id' => 6],
-        9 => ['name' => 'Sửa chữa cơ sở vật chất', 'department_id' => 6],
-        10 => ['name' => 'Vệ sinh / an toàn khuôn viên', 'department_id' => 6],
+        1 => [
+            'name' => 'Xác nhận sinh viên',
+            'department_id' => 1,
+            'content_template' => 'Em cần giấy xác nhận đang là sinh viên để [mục đích]. Mã số sinh viên: [mã số]. Vui lòng hướng dẫn thủ tục và thời gian nhận giấy.',
+        ],
+        2 => [
+            'name' => 'Xin bảng điểm',
+            'department_id' => 1,
+            'content_template' => 'Em cần xin bảng điểm [học kỳ/năm học] để [mục đích]. Mã số sinh viên: [mã số]. Vui lòng hướng dẫn thủ tục và thời gian nhận.',
+        ],
+        3 => [
+            'name' => 'Hỗ trợ học bổng',
+            'department_id' => 2,
+            'content_template' => 'Em cần tư vấn về học bổng [tên chương trình/kỳ]. Mã số sinh viên: [mã số]. Vui lòng cho em biết điều kiện, hồ sơ cần chuẩn bị và hạn nộp.',
+        ],
+        4 => [
+            'name' => 'Tư vấn tâm lý',
+            'department_id' => 5,
+            'content_template' => 'Em muốn được tư vấn về [nội dung em muốn chia sẻ]. Thời gian phù hợp để liên hệ: [thời gian]. Mong thông tin được trao đổi riêng tư.',
+        ],
+        5 => [
+            'name' => 'Hỗ trợ học phí / vay vốn',
+            'department_id' => 3,
+            'content_template' => 'Em cần hỗ trợ về [học phí/vay vốn] trong [học kỳ/năm học]. Mã số sinh viên: [mã số]. Vui lòng hướng dẫn hồ sơ và thời hạn cần lưu ý.',
+        ],
+        6 => [
+            'name' => 'Mượn tài liệu / phòng học',
+            'department_id' => 4,
+            'content_template' => 'Em muốn đăng ký mượn [tài liệu/phòng học] vào [ngày, giờ]. Mã số sinh viên: [mã số]. Vui lòng kiểm tra tình trạng và hướng dẫn đăng ký.',
+        ],
+        7 => [
+            'name' => 'Khiếu nại / phản ánh',
+            'department_id' => 2,
+            'content_template' => 'Em xin phản ánh về [sự việc] xảy ra tại [địa điểm] vào [thời gian]. Nội dung cụ thể: [mô tả ngắn]. Mong phòng kiểm tra và hướng dẫn xử lý.',
+        ],
+        8 => [
+            'name' => 'Báo hỏng thiết bị / phòng học',
+            'department_id' => 6,
+            'content_template' => 'Thiết bị [tên thiết bị] tại [phòng/vị trí] gặp lỗi [mô tả lỗi], phát hiện lúc [thời gian]. Em gửi kèm ảnh để phòng kiểm tra và hỗ trợ sửa chữa.',
+        ],
+        9 => [
+            'name' => 'Sửa chữa cơ sở vật chất',
+            'department_id' => 6,
+            'content_template' => 'Cơ sở vật chất tại [tòa nhà/phòng/vị trí] cần sửa chữa: [mô tả tình trạng]. Tình trạng được phát hiện lúc [thời gian]. Em gửi kèm ảnh minh họa.',
+        ],
+        10 => [
+            'name' => 'Vệ sinh / an toàn khuôn viên',
+            'department_id' => 6,
+            'content_template' => 'Em muốn báo về vấn đề [vệ sinh/an toàn] tại [địa điểm], xảy ra lúc [thời gian]. Mô tả ngắn: [chi tiết]. Em gửi kèm ảnh nếu cần thiết.',
+        ],
     ],
 
     'staff_by_department' => [

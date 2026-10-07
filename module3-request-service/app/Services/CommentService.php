@@ -42,10 +42,9 @@ class CommentService
         string $userRole,
         array $files = [],
     ): TicketComment {
-        // SV không được gửi comment nội bộ
-        if (($data['is_internal'] ?? false) && $userRole === 'student') {
+        if ($userRole === 'student' && ! in_array($ticket->status->value, ['waiting_info', 'resolved'], true)) {
             throw ValidationException::withMessages([
-                'is_internal' => ['Sinh viên không được gửi bình luận nội bộ.'],
+                'body' => ['Sinh viên chỉ có thể phản hồi khi yêu cầu đang chờ bổ sung hoặc chờ xác nhận kết quả.'],
             ]);
         }
 
@@ -64,7 +63,7 @@ class CommentService
                 'user_name'   => $userName,
                 'user_role'   => $userRole,
                 'body'        => $data['body'],
-                'is_internal' => $data['is_internal'] ?? false,
+                'is_internal' => $userRole === 'student' ? false : ($data['is_internal'] ?? false),
             ]);
 
             // Upload & tạo bản ghi attachment trên disk local/private
