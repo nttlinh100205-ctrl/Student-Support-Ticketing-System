@@ -5,6 +5,16 @@ Dự án được xây dựng theo kiến trúc **Microservices**, tổ chức v
 
 ---
 
+## 📚 Tài Liệu Chuẩn Hóa Dự Án (Bắt buộc đọc)
+
+| Tài liệu | Mô tả | Ai cần đọc |
+| :--- | :--- | :--- |
+| 📖 **[API_CONTRACT.md](API_CONTRACT.md)** | **Bản thỏa thuận API Contract chung:** Bức tranh tổng thể, JWT payload (7 field), format response `ApiResponse`, quy ước đặt tên endpoint, mock data, status code. | Tất cả thành viên |
+| 📐 **[CODING_CONVENTIONS.md](CODING_CONVENTIONS.md)** | **Quy chuẩn lập trình:** Naming convention, Controller mỏng (~15 dòng) - Service dày, Form Request, Comment/Docblock, Laravel Pint, Conventional Commits. | Tất cả thành viên |
+| 🚀 **[CONTRIBUTING.md](CONTRIBUTING.md)** | **Hướng dẫn quy trình sửa code:** Các bước từ kéo code `main`, tạo nhánh, code, chạy `./vendor/bin/pint` & `php artisan test`, commit đến mở Pull Request. | Thành viên khi bắt đầu code |
+
+---
+
 ## 🏛 Kiến trúc Hệ thống (Microservices Architecture)
 
 ```text
