@@ -1,0 +1,7 @@
+[
+  { "id": 1, "name": "Phòng Đào tạo", "code": "PDT" },
+  { "id": 2, "name": "Phòng Kế hoạch - Tài chính", "code": "PKHTC" },
+  { "id": 3, "name": "Phòng Công tác Sinh viên", "code": "PCTSV" },
+  { "id": 4, "name": "Phòng Quản lý Khoa học", "code": "PQLKH" },
+  { "id": 5, "name": "Trung tâm Khảo thí", "code": "TTKT" }
+]

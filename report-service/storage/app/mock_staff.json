@@ -1,0 +1,9 @@
+[
+  { "id": 101, "name": "Phạm Văn Đức", "department_id": 1, "email": "duc.pv@university.edu.vn", "role": "staff" },
+  { "id": 102, "name": "Trần Thị Mai", "department_id": 1, "email": "mai.tt@university.edu.vn", "role": "staff" },
+  { "id": 103, "name": "Nguyễn Hoàng Nam", "department_id": 2, "email": "nam.nh@university.edu.vn", "role": "staff" },
+  { "id": 104, "name": "Lê Thị Hương", "department_id": 3, "email": "huong.lt@university.edu.vn", "role": "department_head" },
+  { "id": 105, "name": "Vũ Hải Yến", "department_id": 3, "email": "yen.vh@university.edu.vn", "role": "staff" },
+  { "id": 106, "name": "Đặng Tiến Dũng", "department_id": 4, "email": "dung.dt@university.edu.vn", "role": "staff" },
+  { "id": 107, "name": "Bùi Quốc Huy", "department_id": 5, "email": "huy.bq@university.edu.vn", "role": "staff" }
+]

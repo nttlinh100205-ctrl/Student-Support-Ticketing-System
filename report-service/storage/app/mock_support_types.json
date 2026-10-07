@@ -1,0 +1,8 @@
+[
+  { "id": 1, "department_id": 3, "name": "Cấp lại thẻ sinh viên", "sla_hours": 24 },
+  { "id": 2, "department_id": 3, "name": "Xin xác nhận sinh viên", "sla_hours": 48 },
+  { "id": 3, "department_id": 1, "name": "Đăng ký học phần bổ sung", "sla_hours": 72 },
+  { "id": 4, "department_id": 2, "name": "Xác nhận nộp học phí", "sla_hours": 24 },
+  { "id": 5, "department_id": 5, "name": "Phúc khảo bài thi", "sla_hours": 120 },
+  { "id": 6, "department_id": 4, "name": "Giới thiệu thực tập tốt nghiệp", "sla_hours": 48 }
+]
