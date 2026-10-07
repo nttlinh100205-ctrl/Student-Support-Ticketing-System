@@ -1,0 +1,23 @@
+# Global Git Ignore for Monorepo
+.env
+.env.backup
+.env.production
+*.log
+.phpunit.result.cache
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Dependencies in submodules
+*/vendor/
+*/node_modules/
+*/public/hot
+*/public/storage
+*/storage/*.key
+*/storage/logs/*.log
+*/storage/framework/cache/data/*
+*/storage/framework/sessions/*
+*/storage/framework/views/*
