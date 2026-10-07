@@ -18,28 +18,19 @@ Dự án được xây dựng theo kiến trúc **Microservices**, tổ chức v
 ## 🏛 Kiến trúc Hệ thống (Microservices Architecture)
 
 ```text
-┌────────────────────────────────────────────────────────────────────────┐
-│               HỆ THỐNG HỖ TRỢ SINH VIÊN (MONOREPO)                     │
-└──────────────────────────────────┬─────────────────────────────────────┘
-                                   │
-      ┌────────────────────────────┼────────────────────────────┐
-      ▼                            ▼                            ▼
-┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
-│     Module 1     │      │     Module 2     │      │     Module 3     │
-│  Account Service │      │  Catalog Service │      │  Request Service │
-│ (Xác thực & User)│      │(Danh mục, PB, SLA│      │(Quản lý Ticket,  │
-│                  │      │  biểu mẫu, FAQ)  │      │  State Machine)  │
-└────────┬─────────┘      └────────┬─────────┘      └────────┬─────────┘
-         │                         │                         │
-         └─────────────────────────┼─────────────────────────┘
-                                   │
-                                   ▼
-                        ┌──────────────────┐
-                        │     Module 5     │
-                        │  Report Service  │
-                        │(Báo cáo, SLA KPI,│
-                        │  Dashboard, PDF) │
-                        └──────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                          HỆ THỐNG HỖ TRỢ SINH VIÊN (MONOREPO)                          │
+└──────────────────────────────────────────┬─────────────────────────────────────────────┘
+                                           │
+      ┌──────────────────┬─────────────────┼──────────────────┬──────────────────┐
+      ▼                  ▼                 ▼                  ▼                  ▼
+┌─────────────┐    ┌─────────────┐   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  Module 1   │    │  Module 2   │   │  Module 3   │    │  Module 4   │    │  Module 5   │
+│Account Serv.│    │Catalog Serv.│   │Request Serv.│    │Discussions  │    │Report Serv. │
+│   :8001     │    │   :8002     │   │   :8003     │    │   :8004     │    │   :8005     │
+│(Xác thực,   │    │(Danh mục,PB,│   │(Vòng đời    │    │(Diễn đàn,   │    │(Thống kê,   │
+│ User, Role) │    │ biểu mẫu,SLA│   │ Ticket, SLA)│    │ tài liệu SV)│    │ CSAT, PDF)  │
+└─────────────┘    └─────────────┘   └─────────────┘    └─────────────┘    └─────────────┘
 ```
 
 ---
@@ -48,9 +39,10 @@ Dự án được xây dựng theo kiến trúc **Microservices**, tổ chức v
 
 | Service | Thư mục | Cổng (Port) | Chức năng chính |
 | :--- | :--- | :--- | :--- |
-| **Module 1 – Account & Auth** | `module1-account-service/` | `:8001` | Xác thực người dùng (Auth), quản lý tài khoản, phân quyền sinh viên, cán bộ và quản trị viên. |
+| **Module 1 – Account & Auth** | `module1-account-service/` | `:8001` | Xác thực người dùng (Auth/JWT), quản lý tài khoản, phân quyền sinh viên, cán bộ và quản trị viên. |
 | **Module 2 – Catalog Service** | `module2-catalog-service/` | `:8002` | Quản lý phòng ban, loại hỗ trợ, cán bộ theo phòng, quy định thời hạn SLA (`sla_days`), biểu mẫu động và FAQ. |
 | **Module 3 – Request Service** | `module3-request-service/` | `:8003` | Quản lý toàn bộ vòng đời Ticket: tiếp nhận, máy trạng thái 7 bước, tự động phân công cán bộ, quét SLA, trao đổi & tệp đính kèm, đánh giá hài lòng. |
+| **Module 4 – Discussions & Docs** | `module4-discussions-and-documents/` | `:8004` | Diễn đàn trao đổi sinh viên, đăng tin bài thông báo, chia sẻ và quản lý tài liệu học tập. |
 | **Module 5 – Report Service** | `report-service/` | `:8005` | Thống kê số liệu, đo lường hiệu suất SLA, xếp hạng cán bộ/phòng ban, khảo sát CSAT, Dashboard biểu đồ trực quan, xuất báo cáo Excel/PDF. |
 
 ---
@@ -93,6 +85,15 @@ cp .env.example .env && php artisan key:generate
 php artisan migrate --seed
 npm install && npm run build
 php artisan serve --port=8003
+```
+
+#### Khởi chạy Module 4 (Discussions & Documents Service):
+```bash
+cd module4-discussions-and-documents
+composer install
+cp .env.example .env && php artisan key:generate
+php artisan migrate --seed
+php artisan serve --port=8004
 ```
 
 #### Khởi chạy Module 5 (Report Service):
