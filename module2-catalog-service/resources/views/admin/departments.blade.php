@@ -11,7 +11,7 @@
 
     <p id="message" role="status" class="text-sm"></p>
 
-    <div id="catalogContent" hidden class="space-y-6">
+    <div id="catalogContent" hidden class="catalog-grid space-y-6">
         <form id="departmentForm"
               class="bg-white rounded-xl border p-5 space-y-4">
             <h2 id="formTitle" class="font-semibold">Thêm phòng ban</h2>
@@ -132,14 +132,14 @@
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-                ...DemoAuth.headers(),
+                ...CatalogAuth.headers(),
             },
         });
 
         const data = await response.json();
 
         if (response.status === 401) {
-            throw new Error('Chưa xác thực. Hãy chọn vai trò ở thanh bên.');
+            throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         }
 
         if (response.status === 403) {
@@ -348,7 +348,7 @@
     async function init() {
         try {
 
-            if (DemoAuth.user().role !== 'admin') {
+            if (CatalogAuth.user().role !== 'admin') {
                 notify('Trang này chỉ dành cho ADMIN.', true);
                 return;
             }

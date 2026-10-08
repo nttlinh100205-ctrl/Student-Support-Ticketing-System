@@ -241,13 +241,13 @@
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-                ...DemoAuth.headers(),
+                ...CatalogAuth.headers(),
                 ...(options.headers || {})
             }
         });
 
         if (response.status === 401) {
-            throw new Error('Chưa xác thực. Hãy chọn vai trò ở thanh bên.');
+            throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         }
 
         if (response.status === 403) {
@@ -630,7 +630,7 @@
             notify('Đang tải dữ liệu...');
 
 
-            if (DemoAuth.user().role !== 'admin') {
+            if (CatalogAuth.user().role !== 'admin') {
                 notify('Trang này chỉ dành cho ADMIN.', true);
                 return;
             }

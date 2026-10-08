@@ -61,25 +61,21 @@
         }
     </style>
     <script>
-        /**
-         * Xác thực giả cho Module 2 (giống Module 3):
-         * mỗi request API gửi kèm X-User-Id / X-User-Role.
-         * Khi Module 1 có JWT thật, chỉ cần sửa headers() để gửi token.
-         */
-        window.DemoAuth = {
-            users: [],
+        // Identity supplied by the authenticated account session.
+        window.CatalogAuth = {
             user: () => window.AccountUser || {},
             headers: () => window.AccountHeaders(),
         };
     </script>
+<link rel="stylesheet" href="/css/suite.css">
 </head>
 
-<body class="bg-slate-100/80 text-slate-800 antialiased min-h-screen">
+<body class="suite-ui bg-slate-100/80 text-slate-800 antialiased min-h-screen">
 @include('partials.account')
 
-<div class="min-h-screen flex">
+<div class="suite-shell min-h-screen flex">
     {{-- SIDEBAR --}}
-    <aside class="w-60 bg-white border-r border-slate-200/80 flex flex-col shrink-0 shadow-soft">
+    <aside class="suite-sidebar w-60 bg-white border-r border-slate-200/80 flex flex-col shrink-0 shadow-soft">
 
         {{-- Logo --}}
         <div class="p-5 border-b border-slate-100">
@@ -93,7 +89,7 @@
                         Hỗ trợ Sinh viên
                     </h1>
                     <p class="text-[11px] text-slate-400 font-medium">
-                        Catalog Service
+                        DANH MỤC & TỔ CHỨC
                     </p>
                 </div>
             </div>
@@ -144,17 +140,11 @@
             </div>
         </nav>
 
-        {{-- ĐỔI VAI TRÒ DEMO (thay cho đăng nhập của Module 1) --}}
-        <div class="p-3 border-t border-slate-100 bg-slate-50/50">
-            <p class="px-2 mb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Đổi vai trò (test)
-            </p>
-            <div id="demoUserList" class="space-y-0.5"></div>
-        </div>
+        <div class="suite-sidebar-footer"><strong>Danh mục & tổ chức</strong>Chuẩn hóa thông tin để mỗi yêu cầu được chuyển đến đúng nơi.</div>
     </aside>
 
     {{-- NỘI DUNG TRANG --}}
-    <main class="flex-1 min-w-0 overflow-auto">
+    <main class="suite-main catalog-main flex-1 min-w-0 overflow-auto">
         <div class="max-w-6xl mx-auto p-6 md:p-8">
             @if(session('success'))
                 <div class="mb-5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 px-4 py-3 text-sm flex items-center gap-2 shadow-sm">
@@ -201,38 +191,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const current = DemoAuth.user();
+    const current = CatalogAuth.user();
 
     if (current.role === 'admin') {
         document.getElementById('adminCatalogMenu').classList.remove('hidden');
     }
 
-    const list = document.getElementById('demoUserList');
-
-    DemoAuth.users.forEach(item => {
-        const active = item.id === current.id;
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'w-full text-left px-3 py-2 rounded-lg text-sm transition flex items-center gap-2 '
-            + (active
-                ? 'bg-white text-brand-700 font-medium shadow-sm ring-1 ring-brand-100'
-                : 'text-slate-600 hover:bg-white/80');
-
-        const avatar = document.createElement('span');
-        avatar.className = 'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 '
-            + (active ? 'bg-brand-100 text-brand-700' : 'bg-slate-200 text-slate-500');
-        avatar.textContent = item.full_name.charAt(0);
-
-        const text = document.createElement('span');
-        text.className = 'min-w-0 flex-1';
-        text.innerHTML = '<span class="block truncate text-[13px]"></span><span class="text-[10px] text-slate-400"></span>';
-        text.children[0].textContent = item.full_name;
-        text.children[1].textContent = item.role === 'admin' ? 'Admin' : 'Sinh viên';
-
-        button.append(avatar, text);
-        button.addEventListener('click', () => DemoAuth.select(item.id));
-        list.appendChild(button);
-    });
 });
 </script>
 </body>
