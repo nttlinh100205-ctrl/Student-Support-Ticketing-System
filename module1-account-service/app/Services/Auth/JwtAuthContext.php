@@ -13,35 +13,39 @@ class JwtAuthContext implements AuthContext
         private readonly JwtVerifier $jwtVerifier
     ) {}
 
-    public function setToken(string $token): void
-    {
-        $this->claims = $this->jwtVerifier->verify($token);
-    }
-
-    private function claims(): array
-    {
-        if ($this->claims === null) {
-            throw new RuntimeException(
-                'Chua xac thuc JWT.'
+    public function setToken(
+        string $token
+    ): void {
+        $this->claims =
+            $this->jwtVerifier->verify(
+                $token
             );
-        }
-
-        return $this->claims;
     }
 
     public function userId(): int
     {
-        return (int) $this->claims()['sub'];
+        return (int)
+            $this->claims()['sub'];
+    }
+
+    public function authVersion(): int
+    {
+        return (int)
+            $this->claims()['ver'];
     }
 
     public function role(): string
     {
-        return (string) $this->claims()['role'];
+        return (string)
+            $this->claims()['role'];
     }
 
     public function departmentId(): ?int
     {
-        $departmentId = $this->claims()['department_id'];
+        $departmentId =
+            $this->claims()[
+                'department_id'
+            ];
 
         return $departmentId !== null
             ? (int) $departmentId
@@ -55,6 +59,19 @@ class JwtAuthContext implements AuthContext
 
     public function fullName(): ?string
     {
-        return $this->claims()['full_name'];
+        return $this->claims()[
+            'full_name'
+        ];
+    }
+
+    private function claims(): array
+    {
+        if ($this->claims === null) {
+            throw new RuntimeException(
+                'Chua xac thuc JWT.'
+            );
+        }
+
+        return $this->claims;
     }
 }

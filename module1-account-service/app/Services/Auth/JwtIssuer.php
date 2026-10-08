@@ -19,6 +19,7 @@ class JwtIssuer
 
         $payload = [
             'sub' => (int) $user->id,
+            'ver' => (int) $user->auth_version,
             'role' => strtolower($user->role),
             'department_id' => $user->department_id !== null
                 ? (int) $user->department_id
@@ -30,14 +31,21 @@ class JwtIssuer
         ];
 
         $encodedHeader = $this->base64UrlEncode(
-            json_encode($header, JSON_UNESCAPED_SLASHES)
+            json_encode(
+                $header,
+                JSON_UNESCAPED_SLASHES
+            )
         );
 
         $encodedPayload = $this->base64UrlEncode(
-            json_encode($payload, JSON_UNESCAPED_SLASHES)
+            json_encode(
+                $payload,
+                JSON_UNESCAPED_SLASHES
+            )
         );
 
-        $signingInput = $encodedHeader.'.'.$encodedPayload;
+        $signingInput =
+            $encodedHeader.'.'.$encodedPayload;
 
         $privateKeyPath = base_path(
             config('jwt.private_key_path')
@@ -49,9 +57,12 @@ class JwtIssuer
             );
         }
 
-        $privateKey = openssl_pkey_get_private(
-            file_get_contents($privateKeyPath)
-        );
+        $privateKey =
+            openssl_pkey_get_private(
+                file_get_contents(
+                    $privateKeyPath
+                )
+            );
 
         if ($privateKey === false) {
             throw new RuntimeException(
@@ -72,13 +83,21 @@ class JwtIssuer
             );
         }
 
-        return $signingInput.'.'.$this->base64UrlEncode($signature);
+        return $signingInput.'.'.
+            $this->base64UrlEncode(
+                $signature
+            );
     }
 
-    private function base64UrlEncode(string $value): string
-    {
+    private function base64UrlEncode(
+        string $value
+    ): string {
         return rtrim(
-            strtr(base64_encode($value), '+/', '-_'),
+            strtr(
+                base64_encode($value),
+                '+/',
+                '-_'
+            ),
             '='
         );
     }

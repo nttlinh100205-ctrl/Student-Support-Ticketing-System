@@ -24,6 +24,7 @@ class User extends Authenticatable
         'phone',
         'avatar',
         'must_change_password',
+        'auth_version',
         'role',
         'status',
         'department_id',
@@ -50,6 +51,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'must_change_password' => 'boolean',
+            'auth_version' => 'integer',
         ];
     }
 }

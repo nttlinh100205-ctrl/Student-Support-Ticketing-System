@@ -14,13 +14,8 @@ use Illuminate\Support\Facades\Route;
  */
 
 /**
- * Dang ky, dang nhap va khoi phuc mat khau.
+ * Dang ky, dang nhap, refresh token va khoi phuc mat khau.
  * Khong can JWT.
- *
- * POST /api/auth/register
- * POST /api/auth/login
- * POST /api/auth/forgot-password
- * POST /api/auth/reset-password
  */
 Route::prefix('auth')->group(function () {
     Route::post('/register', [
@@ -31,6 +26,11 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [
         AuthController::class,
         'login',
+    ]);
+
+    Route::post('/refresh', [
+        AuthController::class,
+        'refresh',
     ]);
 
     Route::post('/forgot-password', [
@@ -45,64 +45,48 @@ Route::prefix('auth')->group(function () {
 });
 
 /**
+ * Dang xuat tat ca thiet bi.
+ * Bat buoc JWT hop le.
+ */
+Route::middleware('jwt.auth')
+    ->prefix('auth')
+    ->group(function () {
+        Route::post('/logout-all', [
+            AuthController::class,
+            'logoutAll',
+        ]);
+    });
+
+/**
  * ============================================================
  * HO SO CA NHAN
  * ============================================================
  *
- * Tat ca endpoint ben duoi deu can JWT hop le.
+ * PUT /api/profile/password duoc phep khi
+ * must_change_password = true.
  *
- * PUT /api/profile/password:
- * Duoc phep su dung ke ca khi tai khoan dang bi bat buoc
- * doi mat khau lan dau.
- *
- * Cac endpoint con lai:
- * Chi duoc truy cap sau khi must_change_password = false.
+ * Cac route con lai bat buoc da doi mat khau.
  */
 Route::middleware('jwt.auth')
     ->prefix('profile')
     ->group(function () {
-
-        /**
-         * Doi mat khau.
-         *
-         * KHONG gan middleware password.changed cho route nay,
-         * vi nguoi dung phai truy cap duoc route nay de hoan thanh
-         * viec doi mat khau bat buoc.
-         */
         Route::put('/password', [
             ProfileController::class,
             'updatePassword',
         ]);
 
-        /**
-         * Cac chuc nang ho so binh thuong.
-         * Bat buoc da doi mat khau lan dau.
-         */
         Route::middleware('password.changed')
             ->group(function () {
-
-                /**
-                 * GET /api/profile
-                 * Xem ho so.
-                 */
                 Route::get('/', [
                     ProfileController::class,
                     'show',
                 ]);
 
-                /**
-                 * PUT /api/profile
-                 * Cap nhat ho so.
-                 */
                 Route::put('/', [
                     ProfileController::class,
                     'update',
                 ]);
 
-                /**
-                 * POST /api/profile/avatar
-                 * Cap nhat anh dai dien.
-                 */
                 Route::post('/avatar', [
                     ProfileController::class,
                     'updateAvatar',
@@ -114,16 +98,6 @@ Route::middleware('jwt.auth')
  * ============================================================
  * QUAN LY TAI KHOAN - ADMIN
  * ============================================================
- *
- * Bat buoc:
- * - JWT hop le
- * - Da doi mat khau bat buoc
- * - Role ADMIN
- *
- * GET /api/users
- * GET /api/users/{user}
- * PUT /api/users/{user}/role
- * PUT /api/users/{user}/status
  */
 Route::middleware([
     'jwt.auth',
@@ -132,7 +106,6 @@ Route::middleware([
 ])
     ->prefix('users')
     ->group(function () {
-
         Route::get('/', [
             AdminUserController::class,
             'index',
@@ -156,45 +129,16 @@ Route::middleware([
 
 /**
  * ============================================================
- * MODULE REQUEST / HỖ TRỢ SINH VIÊN
+ * MODULE REQUEST / HO TRO SINH VIEN
  * ============================================================
  *
- * Sử dụng Sanctum để xác thực tài khoản thật.
- *
- * User thật được lấy từ:
- * Authorization: Bearer <token>
- *
- * AuthContext sẽ lấy:
- * - user_id
- * - role
- * - department_id
- * - email
- * - full_name
- *
- * Role:
- * - student
- * - staff
- * - department_head
- * - admin
+ * Su dung Sanctum de xac thuc tai khoan.
  */
 Route::middleware('auth:sanctum')
     ->prefix('requests')
     ->group(function () {
-
         /**
-         * GET /api/requests
-         *
-         * Student:
-         *   chỉ thấy request của mình
-         *
-         * Staff:
-         *   chỉ thấy request được giao cho mình
-         *
-         * Department Head:
-         *   thấy request thuộc phòng mình
-         *
-         * Admin:
-         *   thấy tất cả
+         * Danh sach request.
          */
         Route::get('/', [
             RequestController::class,
@@ -202,9 +146,7 @@ Route::middleware('auth:sanctum')
         ]);
 
         /**
-         * POST /api/requests
-         *
-         * Chỉ STUDENT được tạo request.
+         * Tao request.
          */
         Route::post('/', [
             RequestController::class,
@@ -212,12 +154,7 @@ Route::middleware('auth:sanctum')
         ]);
 
         /**
-         * GET /api/requests/{supportRequest}
-         *
-         * Xem chi tiết request.
-         *
-         * Quyền truy cập chi tiết sẽ được kiểm tra
-         * trong RequestController.
+         * Xem chi tiet request.
          */
         Route::get('/{supportRequest}', [
             RequestController::class,
@@ -225,10 +162,7 @@ Route::middleware('auth:sanctum')
         ]);
 
         /**
-         * PUT /api/requests/{supportRequest}/status
-         *
-         * Staff / Department Head / Admin được xử lý
-         * trạng thái theo quyền nghiệp vụ.
+         * Cap nhat trang thai.
          */
         Route::put('/{supportRequest}/status', [
             RequestController::class,
@@ -236,9 +170,7 @@ Route::middleware('auth:sanctum')
         ]);
 
         /**
-         * PUT /api/requests/{supportRequest}/assign
-         *
-         * Department Head / Admin được phân công STAFF.
+         * Phan cong request.
          */
         Route::put('/{supportRequest}/assign', [
             RequestController::class,
@@ -246,13 +178,7 @@ Route::middleware('auth:sanctum')
         ]);
 
         /**
-         * PUT /api/requests/{supportRequest}/cancel
-         *
-         * Student:
-         *   chỉ được hủy request của chính mình
-         *
-         * Admin:
-         *   được hủy request.
+         * Huy request.
          */
         Route::put('/{supportRequest}/cancel', [
             RequestController::class,
@@ -260,9 +186,7 @@ Route::middleware('auth:sanctum')
         ]);
 
         /**
-         * GET /api/requests/{supportRequest}/history
-         *
-         * Xem lịch sử thay đổi trạng thái.
+         * Lich su request.
          */
         Route::get('/{supportRequest}/history', [
             RequestController::class,

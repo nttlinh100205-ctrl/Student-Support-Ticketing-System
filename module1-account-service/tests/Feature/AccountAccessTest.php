@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\RefreshToken;
 use App\Models\User;
 use App\Services\Auth\JwtVerifier;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -51,6 +52,7 @@ class AccountAccessTest extends TestCase
 
         $this->assertSame([
             'sub',
+            'ver',
             'role',
             'department_id',
             'email',
@@ -60,6 +62,7 @@ class AccountAccessTest extends TestCase
         ], array_keys($claims));
 
         $this->assertSame(1, $claims['sub']);
+        $this->assertSame(1, $claims['ver']);
         $this->assertSame('admin', $claims['role']);
         $this->assertNull($claims['department_id']);
         $this->assertSame('admin@university.edu.vn', $claims['email']);
@@ -915,5 +918,354 @@ class AccountAccessTest extends TestCase
                 'data.must_change_password',
                 false
             );
+    }
+
+    public function test_login_returns_refresh_token(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Refresh Token',
+            'email' => 'refresh.login@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000400',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath(
+                'data.expires_in',
+                3600
+            );
+
+        $accessToken = $response->json(
+            'data.token'
+        );
+
+        $refreshToken = $response->json(
+            'data.refresh_token'
+        );
+
+        $this->assertNotEmpty(
+            $accessToken
+        );
+
+        $this->assertNotEmpty(
+            $refreshToken
+        );
+
+        $this->assertDatabaseHas(
+            'refresh_tokens',
+            [
+                'user_id' => $user->id,
+                'token_hash' => hash(
+                    'sha256',
+                    $refreshToken
+                ),
+                'revoked_at' => null,
+            ]
+        );
+    }
+
+    public function test_refresh_token_is_rotated_and_old_token_cannot_be_reused(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Rotate Refresh',
+            'email' => 'rotate.refresh@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000401',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $loginResponse = $this->postJson(
+            '/api/auth/login',
+            [
+                'email' => $user->email,
+                'password' => 'password123',
+            ]
+        );
+
+        $oldRefreshToken =
+            $loginResponse->json(
+                'data.refresh_token'
+            );
+
+        $refreshResponse = $this->postJson(
+            '/api/auth/refresh',
+            [
+                'refresh_token' => $oldRefreshToken,
+            ]
+        );
+
+        $refreshResponse
+            ->assertStatus(200)
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'message',
+                'Lam moi token thanh cong.'
+            );
+
+        $newAccessToken =
+            $refreshResponse->json(
+                'data.token'
+            );
+
+        $newRefreshToken =
+            $refreshResponse->json(
+                'data.refresh_token'
+            );
+
+        $this->assertNotEmpty(
+            $newAccessToken
+        );
+
+        $this->assertNotEmpty(
+            $newRefreshToken
+        );
+
+        $this->assertNotSame(
+            $oldRefreshToken,
+            $newRefreshToken
+        );
+
+        $oldTokenRecord =
+            RefreshToken::query()
+                ->where(
+                    'token_hash',
+                    hash(
+                        'sha256',
+                        $oldRefreshToken
+                    )
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $oldTokenRecord
+        );
+
+        $this->assertNotNull(
+            $oldTokenRecord->revoked_at
+        );
+
+        $this->assertDatabaseHas(
+            'refresh_tokens',
+            [
+                'user_id' => $user->id,
+                'token_hash' => hash(
+                    'sha256',
+                    $newRefreshToken
+                ),
+                'revoked_at' => null,
+            ]
+        );
+
+        /*
+         * Refresh token cu khong duoc dung lai.
+         */
+        $reuseResponse = $this->postJson(
+            '/api/auth/refresh',
+            [
+                'refresh_token' => $oldRefreshToken,
+            ]
+        );
+
+        $reuseResponse
+            ->assertStatus(401)
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'message',
+                'Refresh token khong hop le hoac da het han.'
+            );
+
+        /*
+         * Access token moi van hoat dong.
+         */
+        $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$newAccessToken
+            )
+            ->getJson('/api/profile')
+            ->assertStatus(200)
+            ->assertJsonPath(
+                'success',
+                true
+            );
+    }
+
+    public function test_logout_all_invalidates_all_access_and_refresh_tokens(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Logout All',
+            'email' => 'logout.all@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000402',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        /*
+         * Gia lap thiet bi thu nhat.
+         */
+        $deviceOneLogin = $this->postJson(
+            '/api/auth/login',
+            [
+                'email' => $user->email,
+                'password' => 'password123',
+            ]
+        );
+
+        $accessTokenOne =
+            $deviceOneLogin->json(
+                'data.token'
+            );
+
+        $refreshTokenOne =
+            $deviceOneLogin->json(
+                'data.refresh_token'
+            );
+
+        /*
+         * Gia lap thiet bi thu hai.
+         */
+        $deviceTwoLogin = $this->postJson(
+            '/api/auth/login',
+            [
+                'email' => $user->email,
+                'password' => 'password123',
+            ]
+        );
+
+        $accessTokenTwo =
+            $deviceTwoLogin->json(
+                'data.token'
+            );
+
+        $refreshTokenTwo =
+            $deviceTwoLogin->json(
+                'data.refresh_token'
+            );
+
+        /*
+         * Logout tat ca thiet bi tu thiet bi 1.
+         */
+        $logoutResponse = $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$accessTokenOne
+            )
+            ->postJson(
+                '/api/auth/logout-all'
+            );
+
+        $logoutResponse
+            ->assertStatus(200)
+            ->assertJsonPath(
+                'success',
+                true
+            )
+            ->assertJsonPath(
+                'message',
+                'Dang xuat tat ca thiet bi thanh cong.'
+            );
+
+        /*
+         * auth_version phai tang tu 1 len 2.
+         */
+        $this->assertSame(
+            2,
+            $user->fresh()->auth_version
+        );
+
+        /*
+         * Access token thiet bi 1 bi vo hieu hoa.
+         */
+        $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$accessTokenOne
+            )
+            ->getJson('/api/profile')
+            ->assertStatus(401)
+            ->assertJsonPath(
+                'message',
+                'Phien dang nhap da het hieu luc.'
+            );
+
+        /*
+         * Access token thiet bi 2 cung bi vo hieu hoa.
+         */
+        $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$accessTokenTwo
+            )
+            ->getJson('/api/profile')
+            ->assertStatus(401)
+            ->assertJsonPath(
+                'message',
+                'Phien dang nhap da het hieu luc.'
+            );
+
+        /*
+         * Refresh token cua thiet bi 1 khong con dung duoc.
+         */
+        $this
+            ->postJson(
+                '/api/auth/refresh',
+                [
+                    'refresh_token' => $refreshTokenOne,
+                ]
+            )
+            ->assertStatus(401)
+            ->assertJsonPath(
+                'success',
+                false
+            );
+
+        /*
+         * Refresh token cua thiet bi 2 cung khong con dung duoc.
+         */
+        $this
+            ->postJson(
+                '/api/auth/refresh',
+                [
+                    'refresh_token' => $refreshTokenTwo,
+                ]
+            )
+            ->assertStatus(401)
+            ->assertJsonPath(
+                'success',
+                false
+            );
+
+        $this->assertSame(
+            0,
+            RefreshToken::query()
+                ->where(
+                    'user_id',
+                    $user->id
+                )
+                ->whereNull(
+                    'revoked_at'
+                )
+                ->count()
+        );
     }
 }

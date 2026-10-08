@@ -158,21 +158,29 @@ document
                     return;
                 }
 
-                const token =
-                    result.data.token;
+const token =
+    result.data.token;
 
-                const user =
-                    result.data.user;
+const refreshToken =
+    result.data.refresh_token;
 
-                localStorage.setItem(
-                    'access_token',
-                    token
-                );
+const user =
+    result.data.user;
 
-                localStorage.setItem(
-                    'current_user',
-                    JSON.stringify(user)
-                );
+localStorage.setItem(
+    'access_token',
+    token
+);
+
+localStorage.setItem(
+    'refresh_token',
+    refreshToken
+);
+
+localStorage.setItem(
+    'current_user',
+    JSON.stringify(user)
+);
 
                 message.className =
                     'message success';

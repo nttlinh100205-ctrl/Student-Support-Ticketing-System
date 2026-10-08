@@ -178,7 +178,13 @@
             <a href="/profile">
                 Hồ sơ
             </a>
-
+<button
+    id="logoutAllButton"
+    class="btn-danger"
+    type="button"
+>
+    Đăng xuất tất cả thiết bị
+</button>
             <button
                 id="logoutButton"
                 class="btn-danger"
@@ -1254,7 +1260,87 @@ document
             }
         }
     );
+/*
+|--------------------------------------------------------------------------
+| Đăng xuất tất cả thiết bị
+|--------------------------------------------------------------------------
+*/
+document
+    .getElementById('logoutAllButton')
+    .addEventListener(
+        'click',
+        async function () {
 
+            const confirmed =
+                confirm(
+                    'Bạn có chắc muốn đăng xuất tất cả thiết bị?'
+                );
+
+            if (!confirmed) {
+                return;
+            }
+
+            const button =
+                document.getElementById(
+                    'logoutAllButton'
+                );
+
+            button.disabled = true;
+
+            try {
+
+                const response =
+                    await fetch(
+                        '/api/auth/logout-all',
+                        {
+                            method: 'POST',
+
+                            headers: {
+                                'Accept':
+                                    'application/json',
+
+                                'Authorization':
+                                    'Bearer ' + token
+                            }
+                        }
+                    );
+
+                const result =
+                    await response.json();
+
+                if (!response.ok) {
+
+                    alert(
+                        result.message ||
+                        'Đăng xuất tất cả thiết bị thất bại.'
+                    );
+
+                    return;
+                }
+
+                localStorage.clear();
+
+                alert(
+                    'Đăng xuất tất cả thiết bị thành công.'
+                );
+
+                window.location.href =
+                    '/login';
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert(
+                    'Không thể kết nối đến máy chủ.'
+                );
+
+            } finally {
+
+                button.disabled = false;
+            }
+        }
+    );
 
 /*
 |--------------------------------------------------------------------------
@@ -1270,7 +1356,9 @@ document
             localStorage.removeItem(
                 'access_token'
             );
-
+localStorage.removeItem(
+    'refresh_token'
+);
             localStorage.removeItem(
                 'current_user'
             );
