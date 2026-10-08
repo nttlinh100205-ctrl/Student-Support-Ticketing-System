@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RequestController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,15 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [
         AuthController::class,
         'login',
+    ]);
+    Route::post('/forgot-password', [
+        PasswordResetController::class,
+        'forgot',
+    ]);
+
+    Route::post('/reset-password', [
+        PasswordResetController::class,
+        'reset',
     ]);
 });
 
@@ -91,8 +101,6 @@ Route::middleware(['jwt.auth', 'role:admin'])
         ]);
     });
 
-
-
 /**
  * ============================================================
  * MODULE REQUEST / HỖ TRỢ SINH VIÊN
@@ -115,7 +123,6 @@ Route::middleware(['jwt.auth', 'role:admin'])
  * - staff
  * - department_head
  * - admin
- *
  */
 Route::middleware('auth:sanctum')
     ->prefix('requests')
@@ -138,7 +145,7 @@ Route::middleware('auth:sanctum')
          */
         Route::get('/', [
             RequestController::class,
-            'index'
+            'index',
         ]);
 
         /**
@@ -148,7 +155,7 @@ Route::middleware('auth:sanctum')
          */
         Route::post('/', [
             RequestController::class,
-            'store'
+            'store',
         ]);
 
         /**
@@ -161,7 +168,7 @@ Route::middleware('auth:sanctum')
          */
         Route::get('/{supportRequest}', [
             RequestController::class,
-            'show'
+            'show',
         ]);
 
         /**
@@ -172,7 +179,7 @@ Route::middleware('auth:sanctum')
          */
         Route::put('/{supportRequest}/status', [
             RequestController::class,
-            'updateStatus'
+            'updateStatus',
         ]);
 
         /**
@@ -182,7 +189,7 @@ Route::middleware('auth:sanctum')
          */
         Route::put('/{supportRequest}/assign', [
             RequestController::class,
-            'assign'
+            'assign',
         ]);
 
         /**
@@ -196,7 +203,7 @@ Route::middleware('auth:sanctum')
          */
         Route::put('/{supportRequest}/cancel', [
             RequestController::class,
-            'cancel'
+            'cancel',
         ]);
 
         /**
@@ -206,6 +213,6 @@ Route::middleware('auth:sanctum')
          */
         Route::get('/{supportRequest}/history', [
             RequestController::class,
-            'history'
+            'history',
         ]);
     });

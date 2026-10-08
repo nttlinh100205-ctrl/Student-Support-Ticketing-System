@@ -52,7 +52,11 @@
                     required
                 >
             </div>
-
+            <p style="text-align: right; margin-top: -5px;">
+                <a href="/forgot-password">
+                    Quên mật khẩu?
+                </a>
+            </p>
             <button
                 type="submit"
                 class="btn-primary"

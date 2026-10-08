@@ -4,7 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\Auth\JwtVerifier;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
 class AccountAccessTest extends TestCase
@@ -418,5 +422,103 @@ class AccountAccessTest extends TestCase
             'role' => 'admin',
             'status' => 'ACTIVE',
         ]);
+    }
+
+    public function test_forgot_password_creates_reset_notification(): void
+    {
+        Notification::fake();
+
+        $user = User::create([
+            'full_name' => 'Sinh Vien Quen Mat Khau',
+            'email' => 'forgot.test@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000100',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $response = $this->postJson('/api/auth/forgot-password', [
+            'email' => $user->email,
+        ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath(
+                'message',
+                'Nếu email tồn tại, liên kết đặt lại mật khẩu đã được gửi.'
+            );
+
+        Notification::assertSentTo(
+            $user,
+            ResetPassword::class
+        );
+    }
+
+    public function test_user_can_reset_password_with_valid_token(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Reset Mat Khau',
+            'email' => 'reset.test@university.edu.vn',
+            'password' => 'oldpassword123',
+            'phone' => '0900000101',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $token = Password::broker()
+            ->createToken($user);
+
+        $response = $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email,
+            'token' => $token,
+            'password' => 'NewPassword@123',
+            'password_confirmation' => 'NewPassword@123',
+        ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath(
+                'message',
+                'Đặt lại mật khẩu thành công.'
+            );
+
+        $this->assertTrue(
+            Hash::check(
+                'NewPassword@123',
+                $user->fresh()->password
+            )
+        );
+    }
+
+    public function test_reset_password_rejects_invalid_token(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Token Sai',
+            'email' => 'invalid.token@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000102',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $response = $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email,
+            'token' => 'invalid-token',
+            'password' => 'NewPassword@123',
+            'password_confirmation' => 'NewPassword@123',
+        ]);
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath(
+                'message',
+                'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.'
+            );
     }
 }
