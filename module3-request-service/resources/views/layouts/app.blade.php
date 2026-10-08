@@ -76,13 +76,14 @@
             background: #94A3B8;
         }
     </style>
+<link rel="stylesheet" href="/css/suite.css">
 </head>
-<body class="bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col">
+<body class="suite-ui bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col">
 @include('partials.account')
-    <div class="min-h-screen flex flex-col md:flex-row flex-1">
+    <div class="suite-shell min-h-screen flex flex-col md:flex-row flex-1">
         
         {{-- Sidebar Cổng Thông Tin Trường Học (Xanh - Trắng) --}}
-        <aside class="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col shrink-0 shadow-subtle z-20">
+        <aside class="suite-sidebar w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col shrink-0 shadow-subtle z-20">
             {{-- Brand Logo & University Title --}}
             <div class="p-5 border-b border-slate-100 bg-gradient-to-b from-blue-50/50 to-white">
                 <a href="{{ route('requests.index') }}" class="flex items-center gap-3 group">
@@ -145,95 +146,14 @@
                     <span>Xuất báo cáo Excel</span>
                 </a>
 
-                <div class="pt-3">
-                    <p class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                        Trợ giúp & Quy định
-                    </p>
-                    <div class="px-3 py-2 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-500 space-y-1">
-                        <p class="font-semibold text-slate-700 flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            Hotline Một Cửa
-                        </p>
-                        <p>ĐT: (028) 38.354.409</p>
-                        <p>Email: hotrosinhvien@edu.vn</p>
-                    </div>
-                </div>
             </nav>
 
-            @if(config('account.fake'))
-            {{-- Role switcher mô phỏng phân quyền trường học --}}
-            <div class="p-3.5 border-t border-slate-200 bg-slate-50">
-                <div class="flex items-center justify-between px-2 mb-2">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-mono">
-                        Tài khoản mô phỏng
-                    </p>
-                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary-100 text-primary-700">TEST</span>
-                </div>
-
-                <form method="POST" action="{{ route('requests.switch-role') }}" class="grid grid-cols-2 gap-1.5 md:block md:space-y-1">
-                    @csrf
-                    @foreach($demoUsers ?? [] as $u)
-                        <button type="submit" name="user_id" value="{{ $u['id'] }}"
-                                class="w-full text-left px-2.5 py-2 rounded-xl text-xs transition-all duration-150 flex items-center gap-2.5
-                                       {{ ($user['id'] ?? 0) === $u['id']
-                                            ? 'bg-white text-primary-800 font-bold shadow-xs border border-primary-300 ring-2 ring-primary-100'
-                                            : 'text-slate-600 hover:bg-white hover:text-slate-900 border border-transparent' }}">
-                            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0
-                                {{ ($user['id'] ?? 0) === $u['id'] ? 'bg-primary-700 text-white' : 'bg-slate-200 text-slate-700' }}">
-                                {{ mb_substr($u['full_name'], 0, 1) }}
-                            </span>
-                            <span class="min-w-0 flex-1">
-                                <span class="block truncate font-medium text-slate-800">{{ $u['full_name'] }}</span>
-                                <span class="block text-[10px] text-slate-500">
-                                    {{ match($u['role']) {
-                                        'student' => 'Sinh viên',
-                                        'staff' => 'Cán bộ xử lý',
-                                        'department_head' => 'Trưởng phòng',
-                                        'admin' => 'Quản trị viên',
-                                        default => $u['role'],
-                                    } }}
-                                </span>
-                            </span>
-                        </button>
-                    @endforeach
-                </form>
-            </div>
-        @endif
+            <div class="suite-sidebar-footer"><strong>Theo dõi đến khi hoàn tất</strong>Thông tin yêu cầu, trao đổi và lịch sử xử lý trong cùng một không gian.</div>
         </aside>
 
         {{-- Main Content Area --}}
-        <main class="min-w-0 flex-1 overflow-auto bg-slate-50">
-            {{-- Top Educational Header Bar --}}
-            <header class="bg-white border-b border-slate-200 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 shadow-subtle">
-                <div class="flex items-center gap-3">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
-                        <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-                        Học kỳ I · Năm học 2026 - 2027
-                    </span>
-                    <span class="hidden sm:inline text-xs text-slate-400">|</span>
-                    <span class="hidden sm:inline text-xs font-medium text-slate-500">Cổng Dịch Vụ Tiếp Nhận Trực Tuyến</span>
-                </div>
-
-                <div class="flex items-center gap-3">
-                    <div class="text-right">
-                        <p class="text-xs font-bold text-slate-900 leading-tight">{{ $user['full_name'] ?? 'Người dùng' }}</p>
-                        <p class="text-[10px] text-primary-600 font-semibold uppercase tracking-wider">
-                            {{ match($user['role'] ?? '') {
-                                'student' => 'Sinh viên',
-                                'staff' => 'Cán bộ hỗ trợ',
-                                'department_head' => 'Trưởng phòng ban',
-                                'admin' => 'Quản trị viên',
-                                default => $user['role'] ?? '',
-                            } }}
-                        </p>
-                    </div>
-                    <div class="w-8 h-8 rounded-full bg-primary-700 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                        {{ mb_substr($user['full_name'] ?? 'U', 0, 1) }}
-                    </div>
-                </div>
-            </header>
-
-            <div class="max-w-6xl mx-auto p-4 sm:p-6 md:p-8">
+        <main class="suite-main min-w-0 flex-1 overflow-auto bg-slate-50">
+<div class="max-w-6xl mx-auto p-4 sm:p-6 md:p-8">
                 {{-- Flash Messages --}}
                 @if(session('success'))
                     <div class="mb-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 text-sm flex items-center gap-3 shadow-subtle">
