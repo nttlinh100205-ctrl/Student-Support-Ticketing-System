@@ -13,6 +13,13 @@
 
 <div class="auth-container">
 
+    <section class="auth-story">
+        <span class="brand-label">STUDENT SUPPORT</span>
+        <h2>Kết nối hôm nay.<br>Hỗ trợ mỗi ngày.</h2>
+        <p>Một không gian chung để sinh viên gửi yêu cầu, phòng ban phối hợp và mọi vấn đề được theo dõi đến cùng.</p>
+        <div class="steps">01 &nbsp; Đăng nhập bằng tài khoản của bạn<br>02 &nbsp; Gửi yêu cầu đến đúng phòng ban<br>03 &nbsp; Theo dõi phản hồi và kết quả</div>
+    </section>
+
     <div class="auth-card">
 
         <h1>Student Support</h1>
@@ -34,6 +41,7 @@
                 <input
                     type="email"
                     id="email"
+                    autocomplete="username"
                     placeholder="Nhập email"
                     required
                 >
@@ -49,6 +57,7 @@
                 <input
                     type="password"
                     id="password"
+                    autocomplete="current-password"
                     placeholder="Nhập mật khẩu"
                     required
                 >

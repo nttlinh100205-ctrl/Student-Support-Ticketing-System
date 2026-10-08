@@ -106,6 +106,9 @@
 
             {{-- Main Navigation --}}
             <nav class="flex-1 p-3.5 space-y-1">
+                @if(!config('account.fake'))
+                <a href="{{ rtrim(config('account.url'), '/') }}" class="block px-3.5 py-2.5 rounded-xl text-sm font-semibold text-primary-700 bg-primary-50 mb-3">← Không gian làm việc</a>
+                @endif
                 <p class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
                     Nghiệp vụ chính
                 </p>
@@ -118,7 +121,7 @@
                     <svg class="w-4 h-4 text-primary-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                     </svg>
-                    <span>Danh sách yêu cầu</span>
+                    <span>{{ match($user['role'] ?? '') { 'student' => 'Yêu cầu của tôi', 'staff' => 'Việc được giao', 'department_head' => 'Yêu cầu của phòng', default => 'Toàn bộ yêu cầu' } }}</span>
                 </a>
 
                 @if(($user['role'] ?? '') === 'student')
