@@ -15,3 +15,70 @@ body.suite-ui{margin:0}.suite-ui *{box-sizing:border-box}.suite-ui .suite-header
 .suite-ui .uni-hero h2{color:#fff!important}.uni-account-menu .suite-avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-size:13px;font-weight:700;flex-shrink:0}.suite-ui .uni-hero .uni-eyebrow{color:#bfdbfe!important}
 
 .uni-rating-criteria{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0;color:var(--uni-muted)}
+
+/* Giao diện dễ đọc: icon có ngữ nghĩa, nền sáng và cỡ chữ thống nhất. */
+body.suite-ui{font-size:16px;line-height:1.65;background:var(--uni-bg)}
+.system-sidebar{background:#fff;color:#183456;border-right:1px solid #dce7f5}
+.system-menu-heading{color:#5b7193;font-size:11px;letter-spacing:.8px}
+.system-sidebar nav a,.system-sidebar summary{color:#344b69;font-size:16px}
+.system-sidebar summary{gap:12px;padding:13px 10px;font-weight:700}
+.system-sidebar summary:hover,.system-sidebar a:hover{background:#eff6ff;color:#174bb5}
+.system-menu-group[open]>summary{color:#163b8b}
+.system-sidebar a[aria-current=page]{background:#e8f1ff;color:#164eb3;border-left:4px solid #3b82f6}
+.system-group-icon,.system-overview>span{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:#e6efff;color:#2454cf;flex-shrink:0}
+.system-menu-group[data-group=catalog] .system-group-icon{background:#e0f2fe;color:#0369a1}
+.system-menu-group[data-group=requests] .system-group-icon{background:#ffedd5;color:#c2410c}
+.system-menu-group[data-group=news] .system-group-icon{background:#dcfce7;color:#15803d}
+.system-menu-group[data-group=reports] .system-group-icon{background:#ede9fe;color:#6d28d9}
+.system-menu-group[data-group=accounts] .system-group-icon{background:#ffe4e6;color:#be123c}
+.uni-nav-icon{width:23px;height:23px;display:block;flex-shrink:0}
+.system-submenu{border-left-color:#d5e2f4;margin-left:28px;padding-left:9px}
+.system-submenu a{display:flex;align-items:center;gap:9px;font-size:14px!important;padding:10px 8px;line-height:1.5}
+.system-submenu .uni-nav-icon{width:18px;height:18px;color:#627faa}
+.system-menu-footer{border-top-color:#dce7f5;color:#183456}
+.system-menu-footer small{font-size:12px;color:#627391}
+.system-menu-footer button{border-color:#cad9ed;color:#315782}
+.system-menu-footer strong{font-size:14px}.system-menu-close{color:#315782}
+.system-user-avatar{background:#e0ebff;color:#2150a4;border-color:#c6d9fb}
+.uni-collapse{color:#315782!important}.system-chevron{color:#6e86a5}
+.uni-page-heading h1{font-size:30px}.uni-page-heading p,.uni-card-heading p{font-size:15px}
+.uni-card-heading h2{font-size:20px}.uni-table{font-size:15px}.uni-table th{font-size:12px}
+.uni-stat>div{font-size:15px}.uni-stat>strong{font-size:34px}.uni-stat small{font-size:13px}
+.uni-button{font-size:15px;padding:12px 19px}.uni-badge{font-size:13px;padding:6px 11px}
+.uni-hero p{font-size:15px}.uni-hero h2{font-size:26px}.uni-global-search input{font-size:14px}
+.suite-ui .text-xs{font-size:14px;line-height:1.5}.suite-ui .text-sm{font-size:16px;line-height:1.6}
+.suite-ui .uni-form label{font-size:15px}.suite-ui .uni-form input,.suite-ui .uni-form select,.suite-ui .uni-form textarea{font-size:16px}
+.suite-ui .action h3{font-size:17px}.suite-ui .action p{font-size:14px}
+.suite-ui .action-icon{background:#e7f0ff;color:#1d4ed8;width:46px;height:46px;display:grid;place-items:center;border-radius:13px}
+.uni-latest-news{margin:0 0 28px;background:linear-gradient(125deg,#edf5ff,#f0fdf9);border:1px solid #d5e6fa;border-radius:20px;padding:26px}
+.uni-news-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}
+.uni-news-heading h2{font-size:28px!important;color:#183f86!important;margin:4px 0!important}
+.uni-news-heading p{font-size:15px;color:#4f6687;margin:0}
+.uni-news-kicker{display:flex;align-items:center;gap:9px;color:#1765c1;font-size:13px;font-weight:750;letter-spacing:.6px}
+.uni-news-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.uni-news-card{display:flex;flex-direction:column;text-align:left;padding:22px;border:1px solid #dce7f5;border-radius:15px;background:var(--uni-card);box-shadow:0 5px 20px #123e7808;min-width:0}
+.uni-news-card:first-child{border-top:4px solid #3b82f6}.uni-news-card:nth-child(2){border-top:4px solid #14b8a6}.uni-news-card:nth-child(3){border-top:4px solid #f59e0b}
+.uni-news-card h3{font-size:19px!important;line-height:1.5!important;color:var(--uni-text)!important;margin:12px 0!important}
+.uni-news-card p{font-size:15px;color:var(--uni-muted);line-height:1.7;margin:0 0 20px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.uni-news-meta{font-size:13px;color:#527296}.uni-news-card button{margin-top:auto;align-self:flex-start}
+.uni-news-message{grid-column:1/-1;font-size:16px;color:var(--uni-text);padding:15px}
+.uni-news-dialog{max-width:720px;width:calc(100% - 32px);border:1px solid var(--uni-border);border-radius:18px;padding:28px;background:var(--uni-card);color:var(--uni-text);max-height:85vh;overflow:auto}
+.uni-news-dialog::backdrop{background:#102a4b99}.uni-news-dialog header{display:flex;align-items:flex-start;gap:20px;justify-content:space-between}
+.uni-news-dialog h2{font-size:25px;line-height:1.4}.uni-news-dialog header button{font-size:26px;border:0;background:transparent;color:inherit;cursor:pointer}
+.uni-news-body{white-space:pre-wrap;font-size:17px;line-height:1.85;overflow-wrap:anywhere}
+html[data-theme=dark] .system-sidebar{background:#192b44;border-color:#334760}
+html[data-theme=dark] .system-sidebar a,html[data-theme=dark] .system-sidebar summary,html[data-theme=dark] .system-menu-footer{color:#dceaff}
+html[data-theme=dark] .system-sidebar a[aria-current=page]{background:#254568}
+html[data-theme=dark] .system-sidebar a:hover,html[data-theme=dark] .system-sidebar summary:hover{background:#223b5b}
+html[data-theme=dark] .uni-latest-news{background:linear-gradient(125deg,#192f50,#173537);border-color:#334e69}
+html[data-theme=dark] .uni-news-heading h2{color:#dceaff!important}
+html[data-theme=dark] .uni-news-heading p,html[data-theme=dark] .uni-news-meta{color:#acc4e5}
+@media(max-width:1100px){.uni-news-grid{grid-template-columns:1fr 1fr}.uni-news-card:last-child{grid-column:1/-1}}
+@media(max-width:700px){.uni-latest-news{padding:18px}.uni-news-heading{align-items:flex-start;flex-direction:column}.uni-news-grid{grid-template-columns:1fr}.uni-news-heading h2{font-size:24px!important}.uni-news-card{padding:18px}.uni-page-heading h1{font-size:26px}}
+
+.suite-ui .action:nth-child(3n+2) .action-icon{background:#dcfce7;color:#15803d}
+.suite-ui .action:nth-child(3n) .action-icon{background:#ffedd5;color:#c2410c}
+.suite-ui .welcome h1{font-size:30px}.suite-ui .welcome p,.suite-ui .hero p{font-size:16px}
+.suite-ui .metric>span{font-size:16px}.suite-ui .metric small{font-size:14px}
+@media(min-width:901px){html[data-sidebar=collapsed] .system-overview>span{width:36px;height:36px}.system-sidebar .system-overview{font-size:16px}}
+@media(max-width:700px){.suite-ui .welcome h1{font-size:26px}.uni-stat>div{font-size:14px}.uni-stat small{font-size:12px}}
