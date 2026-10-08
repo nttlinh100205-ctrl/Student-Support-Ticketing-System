@@ -10,6 +10,7 @@ use App\Models\CommentAttachment;
 use App\Models\SupportRequest;
 use App\Models\TicketComment;
 use App\Services\CommentService;
+use App\Services\RequestInbox;
 use App\Services\RequestWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -22,6 +23,7 @@ class RequestWebController extends Controller
     public function __construct(
         protected RequestWorkflowService $workflow,
         protected CommentService $commentService,
+        protected RequestInbox $inbox,
     ) {}
 
     /** Lấy user giả từ session (mặc định student). */
@@ -76,6 +78,8 @@ class RequestWebController extends Controller
             'staffNames' => $this->staffNames(),
             'allUsers' => $this->allUsers(),
             'slaStats' => $slaStats,
+            'queueLabels' => $this->inbox->labels($user),
+            'queueCounts' => $this->inbox->counts($user),
         ]);
     }
 
@@ -208,17 +212,15 @@ class RequestWebController extends Controller
 
     protected function buildFilteredQuery(Request $request, array $user)
     {
-        $query = SupportRequest::query()
-            ->orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 WHEN 'low' THEN 4 ELSE 5 END")
-            ->latest();
-
-        if ($user['role'] === 'student') {
-            $query->where('student_id', $user['id']);
-        } elseif ($user['role'] === 'staff') {
-            $query->where('assigned_to', $user['id']);
-        } elseif ($user['role'] === 'department_head') {
-            $query->where('department_id', $user['department_id']);
-        }
+        $query = $this->inbox->scoped($user);
+        $this->inbox->apply($query, (string) $request->query('queue', 'all'), $user);
+        match ($request->query('sort', 'priority')) {
+            'newest' => $query->orderByDesc('created_at'),
+            'oldest' => $query->orderBy('created_at'),
+            'deadline' => $query->orderByRaw('sla_deadline_at IS NULL')->orderBy('sla_deadline_at'),
+            default => $query->orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 WHEN 'low' THEN 4 ELSE 5 END"),
+        };
+        $query->orderByDesc('id');
 
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));

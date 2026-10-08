@@ -71,6 +71,7 @@
 @endphp
 
 <div class="space-y-6">
+    @include('requests.partials.next-step')
     {{-- Breadcrumb / Back --}}
     <div class="flex items-center justify-between flex-wrap gap-4">
         <a href="{{ route('requests.index') }}"
@@ -210,7 +211,7 @@
         <section class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-7 shadow-subtle" aria-labelledby="request-rating-title">
             <div class="flex items-center gap-2 mb-2">
                 <span class="text-amber-400 text-xl">★</span>
-                <h3 id="request-rating-title" class="text-lg font-bold text-slate-900">Đánh giá chất lượng phục vụ (CSAT)</h3>
+                <h3 id="request-rating-title" tabindex="-1" class="text-lg font-bold text-slate-900">Đánh giá chất lượng phục vụ (CSAT)</h3>
             </div>
             @if($canRate)
                 <p class="text-xs text-slate-500 mb-4">Hồ sơ đã hoàn tất. Đánh giá của sinh viên giúp nâng cao chất lượng dịch vụ của các phòng ban trong trường.</p>
@@ -334,7 +335,7 @@
                         <form method="POST" action="{{ route('requests.update-status', $request) }}" class="space-y-3">
                             @csrf
                             @method('PUT')
-                            <textarea name="note" rows="2" placeholder="Ghi chú nội dung tiến độ cập nhật (tùy chọn)..."
+                            <textarea id="workflow-note" name="note" rows="2" placeholder="Ghi chú nội dung tiến độ cập nhật (tùy chọn)..."
                                       class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition resize-none"></textarea>
                             <div class="flex flex-wrap gap-2.5">
                                 @foreach($allowedNext as $next)
@@ -406,7 +407,7 @@
                             @csrf
                             @method('PUT')
                             <div class="relative flex-1">
-                                <select name="assigned_to" required
+                                <select id="assignment-staff" name="assigned_to" required
                                         class="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 font-medium pr-10">
                                     <option value="">-- Chọn cán bộ phụ trách --</option>
                                     @foreach($demoUsers as $staff)
@@ -749,5 +750,5 @@ function filterTransferSupportTypes() {
     });
 }
 </script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
 @endsection

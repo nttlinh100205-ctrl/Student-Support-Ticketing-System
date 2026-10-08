@@ -53,7 +53,7 @@
     $isHeadOrAdmin = in_array($user['role'], ['admin', 'department_head'], true);
     $hasActiveFilter = !empty($search) || !empty($statusFilter) || !empty($priorityFilter)
         || !empty($slaFlagFilter) || !empty($departmentFilter) || !empty($assignedToFilter)
-        || !empty($fromFilter) || !empty($toFilter);
+        || !empty($fromFilter) || !empty($toFilter) || request()->filled('queue') || request()->filled('sort');
 @endphp
 
 {{-- Header Tiêu Đề & Nút Hành Động --}}
@@ -76,13 +76,13 @@
         </div>
         <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             @if($user['role'] === 'student')
-                Yêu Cầu Hỗ Trợ Của Tôi
+                Yêu cầu của tôi
             @elseif($user['role'] === 'staff')
-                Hồ Sơ Yêu Cầu Được Phân Công
+                Công việc của tôi
             @elseif($user['role'] === 'department_head')
-                Quản Lý Yêu Cầu Hỗ Trợ Phòng Ban
+                Yêu cầu của phòng ban
             @else
-                Tổng Quan & Quản Lý Yêu Cầu Hỗ Trợ Sinh Viên
+                Quản lý yêu cầu
             @endif
         </h2>
         <p class="text-sm text-slate-500 mt-1">
@@ -213,7 +213,7 @@
             </div>
             <div class="flex items-baseline gap-1.5">
                 <span class="text-2xl font-extrabold text-amber-500 leading-none">
-                    {{ $slaStats['avg_rating'] ?? '5.0' }}
+                    {{ $slaStats['avg_rating'] ?? '—' }}
                 </span>
                 <span class="text-xs text-slate-400 font-semibold">/ 5 sao</span>
             </div>
@@ -227,7 +227,20 @@
 
 {{-- KHUNG BỘ LỌC TÌM KIẾM (GIAO DIỆN XANH TRẮNG ĐẠI HỌC) --}}
 <div class="bg-white rounded-2xl border border-slate-200 shadow-subtle p-4 sm:p-5 mb-6">
+    <nav class="request-queues" aria-label="Nhóm công việc">
+        @foreach($queueLabels as $key => $label)
+            <a href="{{ route('requests.index', ['queue' => $key]) }}" @if(request('queue', 'all') === $key) aria-current="page" @endif>{{ $label }} <strong>{{ $queueCounts[$key] }}</strong></a>
+        @endforeach
+    </nav>
     <form method="GET">
+        <input type="hidden" name="queue" value="{{ request('queue', 'all') }}">
+        <div class="request-sort"><label for="inbox-sort">Sắp xếp theo</label><select id="inbox-sort" name="sort">
+            @foreach(['priority' => 'Ưu tiên cao trước', 'deadline' => 'Hạn xử lý gần nhất', 'newest' => 'Mới nhất', 'oldest' => 'Cũ nhất'] as $key => $label)
+                <option value="{{ $key }}" @selected(request('sort', 'priority') === $key)>{{ $label }}</option>
+            @endforeach
+        </select><span>Chọn nhóm việc hoặc kết hợp bộ lọc bên dưới.</span></div>
+        <details class="request-filter-panel" @if($search || $statusFilter || $priorityFilter || $slaFlagFilter || $departmentFilter || $assignedToFilter || $fromFilter || $toFilter) open @endif>
+        <summary>Tìm kiếm và lọc chi tiết <span>Mã yêu cầu, trạng thái, phòng ban, thời gian</span></summary>
         <div class="space-y-3">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
                 {{-- Tìm kiếm từ khóa --}}
@@ -328,6 +341,7 @@
                 </div>
             </div>
         </div>
+        </details>
     </form>
 </div>
 
@@ -350,7 +364,7 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm border-collapse">
+        <table id="request-list" class="w-full text-left text-sm border-collapse">
             <thead>
                 <tr class="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                     <th class="px-5 py-3.5">Mã hồ sơ</th>
@@ -374,7 +388,7 @@
                     @endphp
                     <tr class="transition-colors hover:bg-slate-50/80 {{ $sla === 'breached' ? 'bg-rose-50/30' : ($pr === 'urgent' ? 'bg-amber-50/20' : '') }}">
                         {{-- Mã hồ sơ --}}
-                        <td class="px-5 py-4 whitespace-nowrap">
+                        <td data-label="Mã yêu cầu" class="px-5 py-4 whitespace-nowrap">
                             <a href="{{ route('requests.show', $req) }}" class="font-mono font-bold text-primary-700 hover:text-primary-900 transition flex items-center gap-1.5">
                                 <span class="w-1.5 h-1.5 rounded-full bg-primary-600"></span>
                                 <span>{{ $req->code }}</span>
@@ -382,7 +396,7 @@
                         </td>
 
                         {{-- Tiêu đề & Loại hỗ trợ --}}
-                        <td class="px-5 py-4 max-w-xs">
+                        <td data-label="Nội dung" class="px-5 py-4 max-w-xs">
                             <a href="{{ route('requests.show', $req) }}" class="font-semibold text-slate-800 hover:text-primary-700 block truncate transition">
                                 {{ $req->title }}
                             </a>
@@ -392,12 +406,12 @@
                         </td>
 
                         {{-- Phòng ban --}}
-                        <td class="px-5 py-4 whitespace-nowrap text-xs text-slate-600 font-medium">
+                        <td data-label="Phòng ban" class="px-5 py-4 whitespace-nowrap text-xs text-slate-600 font-medium">
                             {{ $deptNames[$req->department_id] ?? 'Phòng #'.$req->department_id }}
                         </td>
 
                         {{-- Cán bộ phụ trách (Hiển thị TÊN đầy đủ) --}}
-                        <td class="px-5 py-4 whitespace-nowrap text-xs">
+                        <td data-label="Cán bộ phụ trách" class="px-5 py-4 whitespace-nowrap text-xs">
                             @if($req->assigned_to)
                                 <div class="inline-flex items-center gap-2" title="Mã cán bộ: #{{ $req->assigned_to }}">
                                     <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-[10px] font-bold shrink-0">
@@ -414,21 +428,21 @@
                         </td>
 
                         {{-- Trạng thái badge --}}
-                        <td class="px-5 py-4 whitespace-nowrap">
+                        <td data-label="Trạng thái" class="px-5 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border {{ $statusBadges[$st] ?? 'bg-slate-100 text-slate-700 border-slate-200' }}">
                                 {{ $statusLabels[$st] ?? $st }}
                             </span>
                         </td>
 
                         {{-- Mức ưu tiên --}}
-                        <td class="px-5 py-4 whitespace-nowrap">
+                        <td data-label="Ưu tiên" class="px-5 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border {{ $priorityBadges[$pr] ?? 'bg-slate-100 text-slate-600 border-slate-200' }}">
                                 {{ $priorityLabels[$pr] ?? $pr }}
                             </span>
                         </td>
 
                         {{-- Hạn xử lý SLA --}}
-                        <td class="px-5 py-4 whitespace-nowrap text-xs">
+                        <td data-label="Hạn xử lý" class="px-5 py-4 whitespace-nowrap text-xs">
                             @if($sla === 'breached')
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
                                     Quá hạn SLA
@@ -447,7 +461,7 @@
                         </td>
 
                         {{-- Đánh giá sao --}}
-                        <td class="px-5 py-4 whitespace-nowrap text-center text-xs">
+                        <td data-label="Đánh giá" class="px-5 py-4 whitespace-nowrap text-center text-xs">
                             @if($req->rating)
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200" title="{{ $req->rating_comment ?? '' }}">
                                     <span>★</span>
@@ -461,7 +475,7 @@
                         </td>
 
                         {{-- Nút xem chi tiết --}}
-                        <td class="px-5 py-4 whitespace-nowrap text-right">
+                        <td data-label="Thao tác" class="px-5 py-4 whitespace-nowrap text-right">
                             <a href="{{ route('requests.show', $req) }}"
                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-primary-600 hover:text-white transition">
                                 <span>Chi tiết</span>

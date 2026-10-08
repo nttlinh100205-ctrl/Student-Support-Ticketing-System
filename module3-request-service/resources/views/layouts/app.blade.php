@@ -77,6 +77,7 @@
         }
     </style>
 <link rel="stylesheet" href="/css/suite.css">
+<link rel="stylesheet" href="/css/requests.css">
 </head>
 <body class="suite-ui bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col">
 @include('partials.account')
@@ -138,6 +139,7 @@
                 </a>
                 @endif
 
+                @if(in_array($user['role'] ?? '', ['admin', 'department_head'], true))
                 <a href="{{ route('requests.export', request()->query()) }}"
                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-150 group">
                     <svg class="w-4 h-4 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,6 +147,7 @@
                     </svg>
                     <span>Xuất báo cáo Excel</span>
                 </a>
+                @endif
 
             </nav>
 

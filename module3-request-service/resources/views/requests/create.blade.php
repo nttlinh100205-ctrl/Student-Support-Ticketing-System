@@ -70,6 +70,7 @@
         </div>
     @endif
 
+    <aside class="request-help"><strong>Gửi đúng thông tin, nhận hỗ trợ nhanh hơn</strong><p>Chọn phòng ban và loại hỗ trợ, mô tả vấn đề cùng kết quả mong muốn. Bạn có thể đính kèm ảnh minh chứng và theo dõi phản hồi trong chi tiết yêu cầu.</p></aside>
     {{-- Main Form Card --}}
     <form method="POST" action="{{ route('requests.store') }}" enctype="multipart/form-data"
           class="bg-white rounded-2xl border border-slate-200 shadow-subtle p-6 sm:p-8 space-y-6">
@@ -108,7 +109,7 @@
                     <option value="">{{ old('department_id', $copyRequest?->department_id) ? '-- Chọn loại hỗ trợ --' : '-- Chọn phòng ban trước --' }}</option>
                     @foreach($supportTypes as $id => $type)
                         <option value="{{ $id }}" data-dept="{{ $type['department_id'] }}"
-                                data-template="{{ $type['content_template'] ?? '' }}"
+                                data-template="{{ $type['content_template'] ?? '' }}" data-description="{{ $type['description'] ?? '' }}" data-sla="{{ $type['sla_days'] ?? '' }}"
                                 @selected(old('support_type_id', $copyRequest?->support_type_id) == $id)>
                             {{ $type['name'] }}
                         </option>
@@ -120,12 +121,14 @@
             </div>
         </div>
 
+        <div id="support-guidance" class="request-help" hidden></div>
+        <button type="button" id="use-content-template" class="request-secondary" hidden>Điền mẫu nội dung</button>
         {{-- Title --}}
         <div>
             <label for="request_title" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
                 Tiêu đề yêu cầu <span class="text-rose-500">*</span>
             </label>
-            <input type="text" id="request_title" name="title" required maxlength="255" value="{{ old('title', $copyRequest?->title) }}"
+            <input type="text" id="request_title" name="title" required minlength="10" maxlength="255" value="{{ old('title', $copyRequest?->title) }}"
                    placeholder="VD: Xin giấy xác nhận sinh viên để vay vốn ngân hàng chính sách"
                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition shadow-sm font-medium placeholder:text-slate-400">
         </div>
@@ -138,7 +141,7 @@
                 </label>
                 <span class="text-[11px] text-slate-400 italic">Mẫu gợi ý theo loại hỗ trợ</span>
             </div>
-            <textarea id="request_content" name="content" required rows="6" placeholder="Chọn loại hỗ trợ để xem gợi ý nội dung..."
+            <textarea id="request_content" name="content" required minlength="20" rows="6" placeholder="Chọn loại hỗ trợ để xem gợi ý nội dung..."
                       class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition shadow-sm resize-none leading-relaxed placeholder:text-slate-400">{{ old('content', $copyRequest?->content) }}</textarea>
         </div>
 
@@ -158,11 +161,11 @@
         </div>
 
         {{-- Attachments block — hiện khi chọn CSVC (id=6) --}}
-        <div id="attachments_block" class="hidden rounded-xl border border-dashed border-slate-300 bg-slate-50/80 p-5 space-y-2">
+        <div id="attachments_block" class="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 p-5 space-y-2">
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                Ảnh hiện trường minh họa <span class="text-rose-500">*</span>
+                Ảnh minh chứng <span id="attachment-required" class="text-rose-500" hidden>*</span>
             </label>
-            <p class="text-xs text-slate-500">Phản ánh về Cơ sở vật chất yêu cầu đính kèm ảnh chụp hiện trạng (tối đa 5 ảnh, dung lượng mỗi ảnh ≤ 5MB: jpg, png, webp).</p>
+            <p class="text-xs text-slate-500">Đính kèm tối đa 5 ảnh, mỗi ảnh tối đa 5MB (jpg, png, webp, gif). Bắt buộc có ảnh đối với phản ánh cơ sở vật chất.</p>
             <input type="file" name="attachments[]" id="attachments" accept="image/jpeg,image/png,image/webp,image/gif" multiple
                    class="w-full text-sm text-slate-900 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:bg-primary-600 file:text-white file:font-bold file:text-xs hover:file:bg-primary-700 transition cursor-pointer">
         </div>
@@ -203,20 +206,11 @@ function filterSupportTypes() {
         opt.hidden = !show;
         if (!show && opt.selected) opt.selected = false;
     });
-    if (select.value !== previousType) {
-        document.querySelector('textarea[name="content"]').value = '';
-    }
     // Phòng CSVC lấy theo danh mục đang sử dụng.
     const block = document.getElementById('attachments_block');
     const input = document.getElementById('attachments');
-    if (deptId === String(@json(config('master_data.facilities_department_id', 6)))) {
-        block.classList.remove('hidden');
-        input.required = true;
-    } else {
-        block.classList.add('hidden');
-        input.required = false;
-        input.value = '';
-    }
+    input.required = deptId === String(@json(config('master_data.facilities_department_id', 6)));
+    document.getElementById('attachment-required').hidden = !input.required;
     updateContentTemplate();
 }
 
@@ -225,13 +219,25 @@ function updateContentTemplate() {
     const template = select.selectedOptions[0]?.dataset.template || '';
     const textarea = document.querySelector('textarea[name="content"]');
 
-    textarea.placeholder = template || 'Chọn loại hỗ trợ để xem gợi ý nội dung...';
+    textarea.placeholder = template || 'Mô tả vấn đề, thời gian xảy ra và kết quả bạn mong muốn (ít nhất 20 ký tự).';
+    document.getElementById('use-content-template').hidden = !template;
+    const guidance = document.getElementById('support-guidance');
+    const selected = select.selectedOptions[0];
+    guidance.textContent = [selected?.dataset.description, selected?.dataset.sla ? `Thời hạn xử lý theo danh mục: ${selected.dataset.sla} ngày kể từ khi gửi.` : ''].filter(Boolean).join(' ');
+    guidance.hidden = !guidance.textContent;
 }
 
-document.getElementById('support_type_id').addEventListener('change', () => {
-    const textarea = document.querySelector('textarea[name="content"]');
-    textarea.value = '';
-    updateContentTemplate();
+document.getElementById('support_type_id').addEventListener('change', updateContentTemplate);
+document.getElementById('use-content-template').addEventListener('click', () => {
+    const textarea = document.getElementById('request_content');
+    if (textarea.value.trim() && !confirm('Thay nội dung đang nhập bằng mẫu hướng dẫn?')) return;
+    textarea.value = document.getElementById('support_type_id').selectedOptions[0]?.dataset.template || '';
+    textarea.focus();
+});
+document.getElementById('attachments').addEventListener('change', (event) => {
+    const input = event.target;
+    input.setCustomValidity(input.files.length > 5 ? 'Chỉ được chọn tối đa 5 ảnh.' : [...input.files].some(file => file.size > 5 * 1024 * 1024) ? 'Mỗi ảnh phải nhỏ hơn hoặc bằng 5MB.' : '');
+    input.reportValidity();
 });
 document.addEventListener('DOMContentLoaded', filterSupportTypes);
 </script>
