@@ -12,6 +12,11 @@
         ], ''],
         ['requests', 'Yêu cầu hỗ trợ', [
             [$requestsBase.'/requests', 'Danh sách yêu cầu', ''],
+            [$requestsBase.'/kanban', 'Bảng công việc', 'admin department_head staff'],
+            [$requestsBase.'/team', 'Cán bộ & phân công', 'admin department_head'],
+            [$requestsBase.'/ratings', 'Đánh giá của sinh viên', 'admin department_head staff'],
+            [$requestsBase.'/admin/audit', 'Nhật ký xử lý', 'admin'],
+            [$requestsBase.'/admin/settings', 'Cấu hình xử lý', 'admin'],
             [$requestsBase.'/requests/create', 'Tạo yêu cầu mới', 'student'],
             [$requestsBase.'/requests?queue=waiting_info', 'Cần bổ sung thông tin', 'student'],
             [$requestsBase.'/requests?queue=resolved', 'Chờ xác nhận kết quả', 'student'],
@@ -34,7 +39,7 @@
 <aside id="system-sidebar" class="system-sidebar" data-role="{{ $suiteRole }}" data-service="{{ $suiteService }}" aria-label="Menu hệ thống" tabindex="-1">
     <div class="system-menu-heading"><span>KHÔNG GIAN LÀM VIỆC</span><button type="button" class="system-menu-close" aria-label="Đóng menu">×</button></div>
     <nav aria-label="Điều hướng chính">
-        <a class="system-overview" href="{{ $suiteAccountUrl }}/"><span aria-hidden="true">◈</span> Tổng quan</a>
+        <a class="system-overview" href="{{ $requestsBase }}/dashboard"><span aria-hidden="true">◈</span> Tổng quan</a>
         @foreach($groups as [$key, $label, $items, $roles])
             <details class="system-menu-group" data-group="{{ $key }}" data-roles="{{ $roles }}" @if($roles && !in_array($suiteRole, explode(' ', $roles), true)) hidden @endif @if($suiteService === $key) open @endif>
                 <summary><span class="system-group-icon" aria-hidden="true">{{ ['catalog' => '▦', 'requests' => '▤', 'news' => '▧', 'reports' => '▥', 'accounts' => '◉'][$key] }}</span>{{ $label }}<span class="system-chevron" aria-hidden="true">›</span></summary>
