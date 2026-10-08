@@ -29,6 +29,13 @@ class AccountIntegrationTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_root_login_return_path_is_a_single_slash(): void
+    {
+        $this->get('/')->assertRedirect(route('account.start'))
+            ->assertSessionHas('account_intended', '/');
+        Http::assertNothingSent();
+    }
+
     public function test_author_is_taken_from_verified_identity_not_posted_owner(): void
     {
         $this->student();
