@@ -16,7 +16,12 @@
         STAFF: {label:'Cán bộ',heading:'Công việc của bạn',description:'Tập trung xử lý yêu cầu được giao và hỗ trợ sinh viên.',hero:'Một phản hồi, thêm một vấn đề được giải quyết.',detail:'Xem yêu cầu được phân công, trao đổi với sinh viên và cập nhật tiến độ xử lý đến khi hoàn tất.',primary:'Xem việc được giao →',href:tickets,scope:'Yêu cầu được giao',actions:[action('Việc được giao','Xem chi tiết và cập nhật tiến độ xử lý.',tickets,'▣'),action('Đang xử lý','Tiếp tục các yêu cầu đang thực hiện.',tickets+'?status=in_progress','↗'),action('Chờ bổ sung thông tin','Theo dõi các trao đổi với sinh viên.',tickets+'?status=waiting_info','◇'),action('Báo cáo cá nhân','Theo dõi kết quả công việc của bạn.',url('reports'),'▥'),...common]}
     };
     async function api(href, options = {}) {
-        const response = await fetch(href, {...options, headers:{Accept:'application/json',Authorization:'Bearer '+token,...options.headers},signal:AbortSignal.timeout(20000)});
+        let response;
+        try {
+            response = await fetch(href, {...options, headers:{Accept:'application/json',Authorization:'Bearer '+token,...options.headers},signal:AbortSignal.timeout(30000)});
+        } catch (_) {
+            throw new Error('Dịch vụ yêu cầu chưa phản hồi. Kiểm tra module 3 ở cổng 8003 rồi bấm Làm mới.');
+        }
         if (response.status === 401) { localStorage.removeItem('access_token'); location.replace('/login'); throw new Error('Phiên đăng nhập hết hạn.'); }
         if (!response.ok) throw new Error(response.status === 403 ? 'Bạn không có quyền xem dữ liệu này.' : 'Chưa thể tải dữ liệu. Kiểm tra dịch vụ hỗ trợ rồi bấm Làm mới.');
         return response.json();
@@ -41,6 +46,15 @@
         try {
             const result = await api(url('requests','/api/requests?')+query);
             if (current !== generation) return;
+            const summary = result.summary;
+            if (summary) {
+                $('count-all').textContent=summary.total;
+                $('count-new').textContent=summary.statuses.new || 0;
+                $('count-progress').textContent=summary.statuses.in_progress || 0;
+                $('count-resolved').textContent=summary.statuses.resolved || 0;
+                $('stats-feedback').textContent='Số liệu chỉ bao gồm yêu cầu bạn được phép xem.';
+                $('stats-feedback').classList.remove('error');
+            }
             $('request-rows').replaceChildren();
             const items = result.data.slice(0,6);
             $('request-message').hidden = items.length > 0; $('request-table').hidden = !items.length;
@@ -54,14 +68,12 @@
                 const date=document.createElement('td');date.textContent=item.created_at?new Date(item.created_at).toLocaleDateString('vi-VN'):'—';
                 const go=document.createElement('td');const link=document.createElement('a');link.href=title.href;link.textContent='Chi tiết →';go.append(link);row.append(name,state,priority,date,go);$('request-rows').append(row);
             });
-        } catch(error) { if(current===generation) $('request-message').textContent=error.name==='TypeError'?'Không kết nối được dịch vụ yêu cầu. Hãy kiểm tra module 3 và thử lại.':error.message; }
-    }
-    async function loadCounts() {
-        // Sequential requests avoid flooding local PHP development servers.
-        for (const [id,status] of [['all',''],['new','new'],['progress','in_progress'],['resolved','resolved']]) {
-            try { const result=await api(url('requests','/api/requests?status=')+status);$('count-'+id).textContent=result.meta.total; }
-            catch { $('count-'+id).textContent='—'; }
-        }
+        } catch(error) { if(current===generation) {
+            $('request-message').textContent=error.message;
+            ['all','new','progress','resolved'].forEach(id=>$('count-'+id).textContent='—');
+            $('stats-feedback').textContent='Chưa tải được số liệu. Dấu — không phải số 0; hãy kiểm tra dịch vụ và bấm Làm mới.';
+            $('stats-feedback').classList.add('error');
+        } }
     }
     $('logout').addEventListener('click',async () => {
         try { const response=await fetch('/api/v1/auth/logout',{method:'POST',headers:{Accept:'application/json',Authorization:'Bearer '+token}});if(!response.ok&&response.status!==401)throw new Error();localStorage.removeItem('access_token');localStorage.removeItem('current_user');location.replace('/login'); }
@@ -69,7 +81,7 @@
     });
     $('search-form').addEventListener('submit',event=>{event.preventDefault();loadRequests();});
     $('status').addEventListener('change',loadRequests);
-    $('refresh').addEventListener('click',()=>{loadRequests();loadCounts();});
+    $('refresh').addEventListener('click',loadRequests);
     (async () => {
         if(!token){location.replace('/login');return;}
         try {
@@ -80,7 +92,7 @@
             $('hero-title').textContent=view.hero;$('hero-description').textContent=view.detail;$('hero-link').href=view.href;
             $('primary-action').textContent=view.primary;$('primary-action').href=view.href;$('scope-label').textContent=view.scope;$('requests-heading').textContent=view.scope;
             $('view-all').href=tickets;document.querySelectorAll('.metric').forEach(link=>link.href=tickets+'?status='+link.dataset.status);
-            renderActions(view);$('dashboard').hidden=false;await loadRequests();loadCounts();
+            renderActions(view);$('dashboard').hidden=false;await loadRequests();
         } catch(error){$('identity-error').hidden=false;$('identity-error').textContent=error.message;}
     })();
 })();

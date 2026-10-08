@@ -12,7 +12,7 @@
 @include('partials.school-brand')
 <div class="workspace">
 <aside class="sidebar">
-<a class="brand" href="/"><span class="brand-mark">H</span><span>Hỗ trợ sinh viên<small>HUNRE · KẾT NỐI & ĐỒNG HÀNH</small></span></a>
+<a class="brand" href="/"><span class="brand-mark">✓</span><span>Yêu cầu sinh viên<small>KẾT NỐI & ĐỒNG HÀNH</small></span></a>
 <p class="nav-label">KHÔNG GIAN LÀM VIỆC</p>
 <nav id="navigation" aria-label="Điều hướng chính"><a class="active" href="/">Tổng quan</a></nav>
 <div class="sidebar-note">● Một tài khoản, mọi hỗ trợ<p>Kết nối sinh viên với đúng phòng ban, theo dõi đến khi hoàn tất.</p></div>
@@ -30,6 +30,7 @@
 <a class="metric" data-status="in_progress" href="#"><span>Đang xử lý</span><strong id="count-progress">—</strong><small>Đang được hỗ trợ</small></a>
 <a class="metric" data-status="resolved" href="#"><span>Đã giải quyết</span><strong id="count-resolved">—</strong><small>Chờ xác nhận hoàn tất</small></a>
 </section>
+<p id="stats-feedback" class="stats-feedback" role="status">Đang tải số liệu từ dịch vụ yêu cầu…</p>
 <section><div class="section-title"><h2>Tiện ích của bạn</h2><span>Truy cập nhanh</span></div><div id="actions" class="action-grid"></div></section>
 <section class="panel"><div class="section-title"><div><h2 id="requests-heading">Yêu cầu cần theo dõi</h2><p>Ưu tiên yêu cầu khẩn cấp, sau đó đến yêu cầu mới nhất.</p></div><a id="view-all" href="#">Xem tất cả →</a></div>
 <form id="search-form" class="filters"><label class="search"><span>Tìm yêu cầu</span><input id="search" placeholder="Mã yêu cầu hoặc tiêu đề…" type="search"></label><label><span>Trạng thái</span><select id="status"><option value="">Tất cả trạng thái</option><option value="new">Mới tạo</option><option value="received">Đã tiếp nhận</option><option value="in_progress">Đang xử lý</option><option value="waiting_info">Chờ bổ sung</option><option value="resolved">Đã giải quyết</option><option value="closed">Đã đóng</option><option value="cancelled">Đã hủy</option></select></label><button class="button secondary" type="submit">Tìm kiếm</button></form>

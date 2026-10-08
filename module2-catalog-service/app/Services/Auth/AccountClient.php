@@ -11,6 +11,7 @@ class AccountClient
     {
         try {
             $response = Http::baseUrl(rtrim(config('account.url'), '/'))
+                ->withOptions(parse_url(config('account.url'), PHP_URL_HOST) === 'localhost' ? ['force_ip_resolve' => 'v4'] : [])
                 ->acceptJson()->withToken($token ?? '')
                 ->connectTimeout(3)->timeout(8)
                 ->send($method, $path, $method === 'GET' ? ['query' => $data] : ['json' => $data]);

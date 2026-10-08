@@ -38,6 +38,11 @@ class RequestController extends Controller
             $query->where('department_id', $this->auth->departmentId());
         }
 
+        // Scope dashboard totals to the verified user before applying list filters.
+        $statusCounts = (clone $query)->reorder()
+            ->selectRaw('status, COUNT(*) as aggregate')->groupBy('status')
+            ->pluck('aggregate', 'status')->map(fn ($count) => (int) $count)->all();
+
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
         }
@@ -76,6 +81,7 @@ class RequestController extends Controller
             'success' => true,
             'data' => SupportRequestResource::collection($paginator->items())->resolve($request),
             'message' => null,
+            'summary' => ['total' => array_sum($statusCounts), 'statuses' => $statusCounts],
             'meta' => ['current_page' => $paginator->currentPage(), 'last_page' => $paginator->lastPage(),
                 'per_page' => $paginator->perPage(), 'total' => $paginator->total()],
         ]);

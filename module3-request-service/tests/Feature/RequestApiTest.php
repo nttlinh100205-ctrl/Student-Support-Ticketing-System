@@ -6,10 +6,30 @@ use App\Models\SupportRequest;
 use App\Models\TicketComment;
 use App\Services\RequestWorkflowService;
 use App\Services\SlaService;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class RequestApiTest extends TestCase
 {
+    #[DataProvider('dashboardRoles')]
+    public function test_dashboard_summary_respects_role_scope_and_ignores_list_filter(string $role, int $id, int $total): void
+    {
+        SupportRequest::factory()->create(['student_id' => 101, 'department_id' => 1, 'assigned_to' => 21, 'status' => 'new']);
+        SupportRequest::factory()->create(['student_id' => 101, 'department_id' => 1, 'assigned_to' => 21, 'status' => 'in_progress']);
+        SupportRequest::factory()->create(['student_id' => 102, 'department_id' => 2, 'assigned_to' => 22, 'status' => 'new']);
+
+        $this->withHeaders(['X-User-Id' => $id, 'X-User-Role' => $role, 'X-Department-Id' => 1])
+            ->getJson('/api/requests?status=in_progress')
+            ->assertOk()->assertJsonPath('summary.total', $total)
+            ->assertJsonPath('summary.statuses.in_progress', 1)
+            ->assertJsonPath('meta.total', 1);
+    }
+
+    public static function dashboardRoles(): array
+    {
+        return [['student', 101, 2], ['staff', 21, 2], ['department_head', 31, 2], ['admin', 1, 3]];
+    }
+
     public function test_api_requires_auth_headers(): void
     {
         $response = $this->getJson('/api/requests');
