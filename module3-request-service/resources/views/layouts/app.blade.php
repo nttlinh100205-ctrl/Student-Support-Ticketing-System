@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi" class="h-full">
 <head>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('unisupport-theme')||'light';document.documentElement.dataset.sidebar=localStorage.getItem('unisupport-sidebar')||'expanded'}catch(e){}</script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -114,5 +115,11 @@
 
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+@if(session('success'))
+<x-toast>{{ session('success') }}</x-toast>
+@endif
+@if(session('error'))
+<x-toast type="error">{{ session('error') }}</x-toast>
+@endif
 </body>
 </html>

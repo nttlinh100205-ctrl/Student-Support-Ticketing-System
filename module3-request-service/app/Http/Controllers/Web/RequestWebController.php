@@ -144,6 +144,7 @@ class RequestWebController extends Controller
                     'resolved' => 'Đã giải quyết',
                     'closed' => 'Đã đóng',
                     'cancelled' => 'Đã hủy',
+                    'rejected' => 'Từ chối',
                 ];
 
                 $priorityLabels = ['low' => 'Thấp', 'normal' => 'Bình thường', 'high' => 'Cao', 'urgent' => 'Khẩn cấp'];
@@ -200,6 +201,12 @@ class RequestWebController extends Controller
             'staffNames' => $staffNames,
             'allUsers' => $allUsers,
         ])->render();
+
+        if ($format === 'print') {
+            $toolbar = '<div class="print-toolbar"><button onclick="window.print()">In / Lưu PDF</button><p>Chọn máy in hoặc Lưu dưới dạng PDF trong hộp thoại in.</p></div><style>@media print{.print-toolbar{display:none}}@page{size:A4 landscape;margin:12mm}.print-toolbar{padding:20px;font-family:Arial}</style>';
+
+            return response(str_replace('<body>', '<body>'.$toolbar, $content))->header('Cache-Control', 'private, no-store');
+        }
 
         return response("\xEF\xBB\xBF".$content, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
@@ -277,7 +284,7 @@ class RequestWebController extends Controller
         $completed = (clone $baseQuery)->whereIn('status', ['resolved', 'closed'])->count();
 
         $warningCount = (clone $baseQuery)->where('sla_flag', 'warning')
-            ->whereNotIn('status', ['resolved', 'closed', 'cancelled'])->count();
+            ->whereNotIn('status', ['resolved', 'closed', 'cancelled', 'rejected'])->count();
         $breachedCount = (clone $baseQuery)->where('sla_flag', 'breached')->count();
 
         $onTimeCount = max(0, $total - $breachedCount);
@@ -498,6 +505,9 @@ class RequestWebController extends Controller
         $data = $request->validate([
             'rating' => 'required|integer|between:1,5',
             'rating_comment' => 'nullable|string|max:1000',
+            'rating_attitude' => 'nullable|integer|between:1,5',
+            'rating_speed' => 'nullable|integer|between:1,5',
+            'rating_quality' => 'nullable|integer|between:1,5',
         ], [
             'rating.required' => 'Vui lòng chọn mức đánh giá.',
             'rating.between' => 'Mức đánh giá phải từ 1 đến 5 sao.',
@@ -511,6 +521,9 @@ class RequestWebController extends Controller
             ->whereNull('rating')
             ->update([
                 'rating' => $data['rating'],
+                'rating_attitude' => $data['rating_attitude'] ?? null,
+                'rating_speed' => $data['rating_speed'] ?? null,
+                'rating_quality' => $data['rating_quality'] ?? null,
                 'rating_comment' => $data['rating_comment'] ?? null,
                 'rated_at' => now(),
             ]);
@@ -619,7 +632,7 @@ class RequestWebController extends Controller
         }
 
         $data = $request->validate([
-            'status' => 'required|in:new,received,in_progress,waiting_info,resolved,closed,cancelled',
+            'status' => 'required|in:new,received,in_progress,waiting_info,resolved,closed,cancelled,rejected',
             'note' => 'nullable|string|max:1000',
         ]);
 
@@ -666,10 +679,13 @@ class RequestWebController extends Controller
 
         $data = $request->validate([
             'assigned_to' => 'required|integer',
+            'sla_deadline_at' => 'nullable|date|after:now',
+            'priority' => 'nullable|in:low,normal,high,urgent',
+            'note' => 'nullable|string|max:1000',
         ]);
 
         try {
-            $this->workflow->assign($supportRequest, (int) $data['assigned_to'], $user['id']);
+            $this->workflow->assign($supportRequest, (int) $data['assigned_to'], $user['id'], $data);
         } catch (ValidationException $e) {
             return back()->with('error', $e->getMessage());
         }

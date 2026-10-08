@@ -42,11 +42,11 @@ class RequestInbox
         }
 
         return match ($queue) {
-            'active' => $query->whereNotIn('status', ['closed', 'cancelled']),
+            'active' => $query->whereNotIn('status', ['closed', 'cancelled', 'rejected']),
             'waiting_info', 'resolved', 'new' => $query->where('status', $queue),
             'unrated' => $query->where('status', 'closed')->whereNull('rating'),
-            'unassigned' => $query->whereNull('assigned_to')->whereNotIn('status', ['closed', 'cancelled']),
-            'overdue' => $query->where('sla_deadline_at', '<=', now())->whereNotIn('status', ['resolved', 'closed', 'cancelled']),
+            'unassigned' => $query->whereNull('assigned_to')->whereNotIn('status', ['closed', 'cancelled', 'rejected']),
+            'overdue' => $query->where('sla_deadline_at', '<=', now())->whereNotIn('status', ['resolved', 'closed', 'cancelled', 'rejected']),
             default => $query,
         };
     }

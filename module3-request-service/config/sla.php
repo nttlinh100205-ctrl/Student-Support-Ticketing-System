@@ -52,5 +52,6 @@ return [
         'resolved',
         'closed',
         'cancelled',
+        'rejected',
     ],
 ];

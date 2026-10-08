@@ -12,15 +12,17 @@
         'resolved' => 'Chờ SV xác nhận',
         'closed' => 'Đã hoàn tất',
         'cancelled' => 'Đã hủy',
+        'rejected' => 'Từ chối',
     ];
     $statusColors = [
-        'new' => 'bg-sky-50 text-sky-700 border-sky-200',
+        'new' => 'bg-slate-100 text-slate-700 border-slate-200',
         'received' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
-        'in_progress' => 'bg-blue-50 text-blue-700 border-blue-200',
+        'in_progress' => 'bg-orange-50 text-orange-700 border-orange-200',
         'waiting_info' => 'bg-amber-50 text-amber-700 border-amber-200',
         'resolved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
         'closed' => 'bg-slate-100 text-slate-700 border-slate-200',
         'cancelled' => 'bg-rose-50 text-rose-700 border-rose-200',
+        'rejected' => 'bg-rose-50 text-rose-700 border-rose-200',
     ];
     $priorityLabels = [
         'low' => 'Thấp',
@@ -51,7 +53,7 @@
     if ($user['role'] === 'department_head') {
         $allowedNext = [];
     }
-    $isTerminal = in_array($statusVal, ['closed', 'cancelled'], true);
+    $isTerminal = in_array($statusVal, ['closed', 'cancelled', 'rejected'], true);
     $isStudentOwner = $user['role'] === 'student' && $request->student_id === $user['id'];
     $canReopen = $statusVal === 'closed' && ($isStudentOwner || $user['role'] === 'admin');
     $canStudentRework = $statusVal === 'resolved' && $isStudentOwner;
@@ -241,7 +243,7 @@
                         <label for="rating-comment" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                             Góp ý chi tiết <span class="font-normal lowercase text-slate-400">(không bắt buộc)</span>
                         </label>
-                        <textarea id="rating-comment" name="rating_comment" rows="3" maxlength="1000" placeholder="Chia sẻ thêm về trải nghiệm giải quyết hồ sơ hoặc thái độ phục vụ..."
+                        <div class="uni-grid" style="gap:12px;margin-bottom:16px">@foreach(['attitude'=>'Thái độ phục vụ','speed'=>'Tốc độ phản hồi','quality'=>'Chất lượng giải quyết'] as $criterion=>$label)<x-star-rating :name="'rating_'.$criterion" :label="$label" :value="old('rating_'.$criterion)"/>@endforeach</div><textarea id="rating-comment" name="rating_comment" rows="3" maxlength="1000" placeholder="Chia sẻ thêm về trải nghiệm giải quyết hồ sơ hoặc thái độ phục vụ..."
                                   class="w-full bg-slate-50 rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition resize-none">{{ old('rating_comment') }}</textarea>
                         @error('rating_comment')<p class="mt-1 text-xs text-rose-600 font-semibold">{{ $message }}</p>@enderror
                     </div>
@@ -256,7 +258,14 @@
                     <span class="text-sm font-bold text-slate-800 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200">{{ $request->rating }} / 5 sao</span>
                     @if($request->rated_at)<span class="text-xs text-slate-500">Đã gửi đánh giá lúc {{ $request->rated_at->format('d/m/Y H:i') }}</span>@endif
                 </div>
-                @if($request->rating_comment)
+                <div class="uni-rating-criteria">
+@foreach(['attitude'=>'Thái độ','speed'=>'Tốc độ','quality'=>'Chất lượng'] as $key=>$label)
+@if($request->{'rating_'.$key})
+<small>{{ $label }}: {{ $request->{'rating_'.$key} }}/5</small>
+@endif
+@endforeach
+</div>
+@if($request->rating_comment)
                     <div class="mt-3.5 bg-slate-50 rounded-xl p-4 border border-slate-200 text-sm text-slate-800 leading-relaxed">
                         <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nhận xét từ sinh viên:</p>
                         <p class="whitespace-pre-wrap">{{ $request->rating_comment }}</p>
@@ -335,7 +344,7 @@
                         <form method="POST" action="{{ route('requests.update-status', $request) }}" class="space-y-3">
                             @csrf
                             @method('PUT')
-                            <textarea id="workflow-note" name="note" rows="2" placeholder="Ghi chú nội dung tiến độ cập nhật (tùy chọn)..."
+                            <textarea id="workflow-note" name="note" rows="2" placeholder="Ghi chú xử lý; bắt buộc nêu lý do khi từ chối..."
                                       class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition resize-none"></textarea>
                             <div class="flex flex-wrap gap-2.5">
                                 @foreach($allowedNext as $next)
@@ -354,7 +363,10 @@
                     </div>
                 @endif
 
-                {{-- Transfer department (admin) --}}
+                @if(in_array($user['role'],['admin','department_head']) && $request->assigned_to && in_array($statusVal,['new','received']))
+<form class="uni-form" method="POST" action="{{ route('workspace.unassign',$request->id) }}">@csrf @method('DELETE')<label>Lý do thu hồi phân công<textarea name="note" required maxlength="1000"></textarea></label><button class="uni-button secondary" type="submit">Thu hồi phân công</button></form>
+@endif
+{{-- Transfer department (admin) --}}
                 @if($canTransfer)
                     <div class="pt-5 border-t border-slate-100">
                         <p class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Chuyển phòng ban điều phối</p>
