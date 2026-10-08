@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\AuthContext;
+use App\Models\LoginHistory;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -20,6 +21,30 @@ class ProfileService
         return $this->userData(
             $this->currentUser()
         );
+    }
+
+    public function loginHistory(): array
+    {
+        $user = $this->currentUser();
+
+        return LoginHistory::query()
+            ->where('user_id', $user->id)
+            ->latest('created_at')
+            ->limit(20)
+            ->get()
+            ->map(function (LoginHistory $history) {
+                return [
+                    'id' => (int) $history->id,
+                    'email' => $history->email,
+                    'success' => (bool) $history->success,
+                    'failure_reason' => $history->failure_reason,
+                    'ip_address' => $history->ip_address,
+                    'user_agent' => $history->user_agent,
+                    'created_at' => $history->created_at?->toISOString(),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     public function update(array $data): array

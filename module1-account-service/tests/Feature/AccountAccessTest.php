@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\LoginHistory;
 use App\Models\RefreshToken;
 use App\Models\User;
 use App\Services\Auth\JwtVerifier;
@@ -1454,6 +1455,130 @@ class AccountAccessTest extends TestCase
 
         $this->assertNull(
             $freshUser->locked_until
+        );
+    }
+
+    public function test_successful_login_is_recorded_in_login_history(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien History Success',
+            'email' => 'history.success@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000600',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('login_histories', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'success' => true,
+            'failure_reason' => null,
+        ]);
+    }
+
+    public function test_failed_login_is_recorded_in_login_history(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien History Failed',
+            'email' => 'history.failed@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000601',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ]);
+
+        $response
+            ->assertStatus(401)
+            ->assertJsonPath('success', false);
+
+        $this->assertDatabaseHas('login_histories', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'success' => false,
+            'failure_reason' => 'INVALID_CREDENTIALS',
+        ]);
+    }
+
+    public function test_user_can_view_only_own_login_history(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Xem History',
+            'email' => 'history.owner@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000602',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $otherUser = User::create([
+            'full_name' => 'Sinh Vien Khac',
+            'email' => 'history.other@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000603',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        LoginHistory::create([
+            'user_id' => $otherUser->id,
+            'email' => $otherUser->email,
+            'success' => true,
+            'failure_reason' => null,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Other Browser',
+        ]);
+
+        $loginResponse = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $token = $loginResponse->json('data.token');
+
+        $response = $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$token
+            )
+            ->getJson('/api/profile/login-history');
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath(
+                'data.0.email',
+                $user->email
+            );
+
+        $emails = collect(
+            $response->json('data')
+        )->pluck('email');
+
+        $this->assertTrue(
+            $emails->contains($user->email)
+        );
+
+        $this->assertFalse(
+            $emails->contains($otherUser->email)
         );
     }
 }

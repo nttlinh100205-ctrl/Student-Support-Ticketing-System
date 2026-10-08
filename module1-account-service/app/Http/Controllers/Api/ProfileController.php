@@ -31,6 +31,20 @@ class ProfileController extends Controller
         }
     }
 
+    public function loginHistory(): JsonResponse
+    {
+        try {
+            return ApiResponse::success(
+                $this->profileService->loginHistory()
+            );
+        } catch (RuntimeException $exception) {
+            return ApiResponse::error(
+                $exception->getMessage(),
+                404
+            );
+        }
+    }
+
     public function update(
         UpdateProfileRequest $request
     ): JsonResponse {

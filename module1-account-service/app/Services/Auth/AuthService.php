@@ -14,10 +14,20 @@ class AuthService
 
     private const TEMPORARY_LOCK_MINUTES = 15;
 
+    private const FAILURE_INVALID_CREDENTIALS =
+        'INVALID_CREDENTIALS';
+
+    private const FAILURE_ACCOUNT_LOCKED =
+        'ACCOUNT_LOCKED';
+
+    private const FAILURE_TEMPORARILY_LOCKED =
+        'TEMPORARILY_LOCKED';
+
     public function __construct(
         private readonly JwtIssuer $jwtIssuer,
         private readonly RefreshTokenService $refreshTokenService,
-        private readonly AuthContext $authContext
+        private readonly AuthContext $authContext,
+        private readonly LoginHistoryService $loginHistoryService
     ) {}
 
     public function register(array $data): array
@@ -47,36 +57,62 @@ class AuthService
             ->where('email', $data['email'])
             ->first();
 
+        /*
+         * Email khong ton tai.
+         */
         if ($user === null) {
+            $this->loginHistoryService->recordFailure(
+                null,
+                $data['email'],
+                self::FAILURE_INVALID_CREDENTIALS,
+                $ipAddress,
+                $userAgent
+            );
+
             throw new RuntimeException(
                 'Email hoac mat khau khong dung.'
             );
         }
 
         /*
-         * Tai khoan bi ADMIN khoa thu cong.
+         * Tai khoan bi Admin khoa thu cong.
          */
         if ($user->status !== 'ACTIVE') {
+            $this->loginHistoryService->recordFailure(
+                $user,
+                $data['email'],
+                self::FAILURE_ACCOUNT_LOCKED,
+                $ipAddress,
+                $userAgent
+            );
+
             throw new RuntimeException(
                 'Tai khoan da bi khoa.'
             );
         }
 
         /*
-         * Neu dang trong thoi gian khoa tam thoi
-         * thi khong cho dang nhap, ke ca mat khau dung.
+         * Tai khoan dang bi khoa tam thoi.
          */
         if (
             $user->locked_until !== null &&
             $user->locked_until->isFuture()
         ) {
+            $this->loginHistoryService->recordFailure(
+                $user,
+                $data['email'],
+                self::FAILURE_TEMPORARILY_LOCKED,
+                $ipAddress,
+                $userAgent
+            );
+
             throw new RuntimeException(
                 'Tai khoan tam thoi bi khoa do dang nhap sai qua nhieu lan.'
             );
         }
 
         /*
-         * Neu thoi gian khoa da het thi tu dong mo khoa.
+         * Neu het thoi gian khoa thi tu dong mo khoa.
          */
         if (
             $user->locked_until !== null &&
@@ -102,6 +138,9 @@ class AuthService
             $failedAttempts =
                 $user->failed_login_attempts + 1;
 
+            /*
+             * Sai lan thu 5.
+             */
             if (
                 $failedAttempts >=
                 self::MAX_FAILED_LOGIN_ATTEMPTS
@@ -114,14 +153,33 @@ class AuthService
                     ),
                 ]);
 
+                $this->loginHistoryService->recordFailure(
+                    $user,
+                    $data['email'],
+                    self::FAILURE_TEMPORARILY_LOCKED,
+                    $ipAddress,
+                    $userAgent
+                );
+
                 throw new RuntimeException(
                     'Tai khoan tam thoi bi khoa do dang nhap sai qua nhieu lan.'
                 );
             }
 
+            /*
+             * Sai nhung chua du 5 lan.
+             */
             $user->update([
                 'failed_login_attempts' => $failedAttempts,
             ]);
+
+            $this->loginHistoryService->recordFailure(
+                $user,
+                $data['email'],
+                self::FAILURE_INVALID_CREDENTIALS,
+                $ipAddress,
+                $userAgent
+            );
 
             throw new RuntimeException(
                 'Email hoac mat khau khong dung.'
@@ -129,7 +187,7 @@ class AuthService
         }
 
         /*
-         * Dang nhap dung thi xoa lich su sai truoc do.
+         * Dang nhap dung thi reset bo dem dang nhap sai.
          */
         if (
             $user->failed_login_attempts > 0 ||
@@ -143,11 +201,22 @@ class AuthService
             $user->refresh();
         }
 
-        return $this->createAuthPayload(
+        /*
+         * Chi ghi SUCCESS sau khi tao duoc token.
+         */
+        $payload = $this->createAuthPayload(
             $user,
             $ipAddress,
             $userAgent
         );
+
+        $this->loginHistoryService->recordSuccess(
+            $user,
+            $ipAddress,
+            $userAgent
+        );
+
+        return $payload;
     }
 
     public function refresh(
@@ -238,11 +307,15 @@ class AuthService
     {
         return [
             'id' => (int) $user->id,
+
             'full_name' => $user->full_name,
+
             'email' => $user->email,
+
             'role' => strtolower(
                 $user->role
             ),
+
             'must_change_password' => (bool) $user->must_change_password,
         ];
     }

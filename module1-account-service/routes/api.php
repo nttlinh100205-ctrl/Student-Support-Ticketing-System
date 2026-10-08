@@ -77,6 +77,10 @@ Route::middleware('jwt.auth')
 
         Route::middleware('password.changed')
             ->group(function () {
+                Route::get('/login-history', [
+                    ProfileController::class,
+                    'loginHistory',
+                ]);
                 Route::get('/', [
                     ProfileController::class,
                     'show',
