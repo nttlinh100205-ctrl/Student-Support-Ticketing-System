@@ -12,9 +12,11 @@
     <link rel="stylesheet"
           href="/css/app.css">
 
+<link rel="stylesheet" href="/css/school.css">
 </head>
 
 <body>
+@include('partials.school-brand')
 
 <div class="auth-container">
 

@@ -4,12 +4,15 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Không gian làm việc · Student Support</title>
 <link rel="stylesheet" href="/css/workspace.css">
+<link rel="stylesheet" href="/css/school.css">
 <script id="services" type="application/json">{!! json_encode(config('portal.services'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES) !!}</script>
 <script src="/js/workspace.js" defer></script>
 </head>
-<body><div class="workspace">
+<body>
+@include('partials.school-brand')
+<div class="workspace">
 <aside class="sidebar">
-<a class="brand" href="/"><span class="brand-mark">S</span><span>Student Support<small>ĐỒNG HÀNH CÙNG SINH VIÊN</small></span></a>
+<a class="brand" href="/"><span class="brand-mark">H</span><span>Hỗ trợ sinh viên<small>HUNRE · KẾT NỐI & ĐỒNG HÀNH</small></span></a>
 <p class="nav-label">KHÔNG GIAN LÀM VIỆC</p>
 <nav id="navigation" aria-label="Điều hướng chính"><a class="active" href="/">Tổng quan</a></nav>
 <div class="sidebar-note">● Một tài khoản, mọi hỗ trợ<p>Kết nối sinh viên với đúng phòng ban, theo dõi đến khi hoàn tất.</p></div>

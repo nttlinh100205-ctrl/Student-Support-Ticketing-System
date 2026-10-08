@@ -15,9 +15,11 @@
     <link rel="stylesheet"
           href="/css/app.css">
 
+<link rel="stylesheet" href="/css/school.css">
 </head>
 
 <body>
+@include('partials.school-brand')
 <nav style="padding:12px"><a href="/">Cổng hỗ trợ sinh viên</a></nav>
 
 <div class="dashboard">

@@ -7,22 +7,29 @@
     <title>Đăng nhập - Student Support</title>
 
     <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/school.css">
 </head>
 
-<body>
+<body class="school-login">
+@include('partials.school-brand')
 
 <div class="auth-container">
 
     <section class="auth-story">
-        <span class="brand-label">STUDENT SUPPORT</span>
-        <h2>Kết nối hôm nay.<br>Hỗ trợ mỗi ngày.</h2>
-        <p>Một không gian chung để sinh viên gửi yêu cầu, phòng ban phối hợp và mọi vấn đề được theo dõi đến cùng.</p>
-        <div class="steps">01 &nbsp; Đăng nhập bằng tài khoản của bạn<br>02 &nbsp; Gửi yêu cầu đến đúng phòng ban<br>03 &nbsp; Theo dõi phản hồi và kết quả</div>
+        <span class="brand-label">CỔNG HỖ TRỢ TRỰC TUYẾN</span>
+        <h2>Mọi yêu cầu được lắng nghe.<br>Mỗi bước đều có người đồng hành.</h2>
+        <p>Kết nối sinh viên với các phòng ban của Trường Đại học Tài nguyên và Môi trường Hà Nội. Gửi yêu cầu và theo dõi quá trình hỗ trợ trong một không gian.</p>
+        <div class="school-steps">
+            <article class="school-step"><b>01</b><h3>Gửi yêu cầu</h3><p>Chọn phòng ban và nội dung cần được hỗ trợ.</p></article>
+            <article class="school-step"><b>02</b><h3>Theo dõi xử lý</h3><p>Trao đổi, bổ sung thông tin và nhận phản hồi.</p></article>
+            <article class="school-step"><b>03</b><h3>Nhận kết quả</h3><p>Xem kết quả và đánh giá chất lượng hỗ trợ.</p></article>
+        </div>
+        <div class="school-note">Đăng nhập bằng tài khoản của hệ thống hỗ trợ sinh viên. Mỗi vai trò có không gian làm việc và quyền truy cập riêng.</div>
     </section>
 
     <div class="auth-card">
 
-        <h1>Student Support</h1>
+        <h1>HUNRE · HỖ TRỢ SINH VIÊN</h1>
 
         <h2>Đăng nhập</h2>
 
@@ -90,7 +97,7 @@
 
 </div>
 
-
+<footer class="school-login-footer"><span>Theo dõi tiến độ</span><span>Kết nối đúng phòng ban</span><span>Trao đổi trực tuyến</span></footer>
 <script>
 if (new URLSearchParams(location.search).has('logged_out')) { localStorage.removeItem('access_token'); localStorage.removeItem('current_user'); }
 
