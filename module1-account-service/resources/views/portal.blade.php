@@ -12,14 +12,7 @@
 <body class="suite-ui ">
 @include('partials.school-brand')
 <div class="workspace">
-<aside class="sidebar">
-<a class="brand" href="/"><span class="brand-mark">✓</span><span>Yêu cầu sinh viên<small>KẾT NỐI & ĐỒNG HÀNH</small></span></a>
-<p class="nav-label">KHÔNG GIAN LÀM VIỆC</p>
-<nav id="navigation" aria-label="Điều hướng chính"><a class="active" href="/">Tổng quan</a></nav>
-<div class="sidebar-note">● Một tài khoản, mọi hỗ trợ<p>Kết nối sinh viên với đúng phòng ban, theo dõi đến khi hoàn tất.</p></div>
-<a class="profile-link" href="/profile"><span id="avatar" class="avatar">…</span><span><strong id="user-name">Đang xác thực…</strong><small id="user-role">Tài khoản của bạn</small></span></a>
-<button id="logout" class="logout" type="button">Đăng xuất ↗</button>
-</aside>
+
 <main><header class="workspace-top"><span>Cổng hỗ trợ sinh viên <span class="muted">/ Tổng quan</span></span><span id="today"></span></header>
 <div id="identity-error" class="notice" role="alert" hidden></div>
 <div id="dashboard" hidden>

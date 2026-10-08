@@ -27,16 +27,13 @@
         return response.json();
     }
     function renderActions(view) {
-        const nav = $('navigation');
         view.actions.forEach(item => {
             const link = document.createElement('a'); link.href = item.href; link.className = 'action';
             const icon = document.createElement('span'); icon.className = 'action-icon'; icon.textContent = item.icon;
             const info = document.createElement('div'); const title = document.createElement('h3'); title.textContent = item.title;
             const description = document.createElement('p'); description.textContent = item.description; info.append(title,description); link.append(icon,info); $('actions').append(link);
-            const entry = document.createElement('a'); entry.href = item.href; entry.textContent = item.title; nav.append(entry);
         });
-        if (!view.actions.some(item => item.href === '/profile')) { const profile = document.createElement('a'); profile.href='/profile'; profile.textContent='Hồ sơ'; nav.append(profile); }
-        const exit = document.createElement('a'); exit.href='#'; exit.textContent='Đăng xuất'; exit.addEventListener('click', event => {event.preventDefault(); $('logout').click();}); nav.append(exit);
+
     }
     let generation = 0;
     async function loadRequests() {
@@ -86,7 +83,7 @@
         if(!token){location.replace('/login');return;}
         try {
             const {user}=await api('/api/v1/auth/me');const view=roleViews[user.role];if(!view)throw new Error('Vai trò tài khoản chưa được hỗ trợ.');
-            $('user-name').textContent=user.name;$('user-role').textContent=view.label;$('avatar').textContent=user.name.slice(0,1).toUpperCase();
+            document.dispatchEvent(new CustomEvent('suite:identity', {detail:user}));$('user-name').textContent=user.name;$('user-role').textContent=view.label;$('avatar').textContent=user.name.slice(0,1).toUpperCase();
             $('today').textContent=new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'numeric',month:'long'});
             $('role-eyebrow').textContent=view.label.toUpperCase();$('heading').textContent=view.heading;$('description').textContent=view.description;
             $('hero-title').textContent=view.hero;$('hero-description').textContent=view.detail;$('hero-link').href=view.href;
