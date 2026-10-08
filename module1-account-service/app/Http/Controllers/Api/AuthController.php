@@ -3,162 +3,97 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RefreshTokenRequest;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Responses\ApiResponse;
+use App\Services\Auth\AuthService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class AuthController extends Controller
 {
-    /**
-     * Đăng ký tài khoản mới.
-     * Tài khoản đăng ký từ API công khai luôn là STUDENT.
-     */
-    public function register(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                'unique:users,email',
-            ],
-            'password' => [
-                'required',
-                'string',
-                'min:8',
-                'confirmed',
-            ],
-            'phone' => [
-                'nullable',
-                'string',
-                'max:20',
-            ],
-        ]);
+    public function __construct(
+        private readonly AuthService $authService
+    ) {}
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-            'phone' => $validated['phone'] ?? null,
-            'role' => 'STUDENT',
-            'status' => 'ACTIVE',
-        ]);
+    public function register(
+        RegisterRequest $request
+    ): JsonResponse {
+        $data = $this->authService->register(
+            $request->validated()
+        );
 
-        $token = $user->createToken(
-            'student-support-client'
-        )->plainTextToken;
-
-        return response()->json([
-            'message' => 'Dang ky tai khoan thanh cong',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'role' => $user->role,
-                'status' => $user->status,
-            ],
-            'token' => $token,
-        ], 201);
+        return ApiResponse::success(
+            $data,
+            'Dang ky tai khoan thanh cong.',
+            201
+        );
     }
 
-    /**
-     * Đăng nhập.
-     */
-    public function login(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'email' => [
-                'required',
-                'email',
-            ],
-            'password' => [
-                'required',
-                'string',
-            ],
-        ]);
+    public function login(
+        LoginRequest $request
+    ): JsonResponse {
+        try {
+            $data = $this->authService->login(
+                $request->validated(),
+                $request->ip(),
+                $request->userAgent()
+            );
 
-        $user = User::where(
-            'email',
-            $validated['email']
-        )->first();
+            return ApiResponse::success(
+                $data
+            );
+        } catch (RuntimeException $exception) {
+            $status =
+                $exception->getMessage()
+                === 'Tai khoan da bi khoa.'
+                    ? 403
+                    : 401;
 
-        if (
-            !$user ||
-            !Hash::check(
-                $validated['password'],
-                $user->password
-            )
-        ) {
-            throw ValidationException::withMessages([
-                'email' => [
-                    'Email hoac mat khau khong dung.',
-                ],
-            ]);
+            return ApiResponse::error(
+                $exception->getMessage(),
+                $status
+            );
         }
+    }
 
-        if ($user->status !== 'ACTIVE') {
-            return response()->json([
-                'message' => 'Tai khoan dang bi khoa.',
-            ], 403);
+    public function refresh(
+        RefreshTokenRequest $request
+    ): JsonResponse {
+        try {
+            $data = $this->authService->refresh(
+                $request->validated(),
+                $request->ip(),
+                $request->userAgent()
+            );
+
+            return ApiResponse::success(
+                $data,
+                'Lam moi token thanh cong.'
+            );
+        } catch (RuntimeException $exception) {
+            return ApiResponse::error(
+                $exception->getMessage(),
+                401
+            );
         }
-
-        // Xóa token cũ của client hiện tại nếu muốn
-        $token = $user->createToken(
-            'student-support-client'
-        )->plainTextToken;
-
-        return response()->json([
-            'message' => 'Dang nhap thanh cong',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'role' => $user->role,
-                'status' => $user->status,
-            ],
-            'token' => $token,
-        ]);
     }
 
-    /**
-     * Đăng xuất token hiện tại.
-     */
-    public function logout(Request $request): JsonResponse
+    public function logoutAll(): JsonResponse
     {
-        $request->user()
-            ->currentAccessToken()
-            ?->delete();
+        try {
+            $this->authService->logoutAll();
 
-        return response()->json([
-            'message' => 'Dang xuat thanh cong',
-        ]);
-    }
-
-    /**
-     * Thông tin user hiện tại.
-     */
-    public function me(Request $request): JsonResponse
-    {
-        $user = $request->user();
-
-        return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'role' => $user->role,
-                'status' => $user->status,
-            ],
-        ]);
+            return ApiResponse::success(
+                null,
+                'Dang xuat tat ca thiet bi thanh cong.'
+            );
+        } catch (RuntimeException $exception) {
+            return ApiResponse::error(
+                $exception->getMessage(),
+                404
+            );
+        }
     }
 }

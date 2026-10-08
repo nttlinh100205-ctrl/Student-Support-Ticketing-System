@@ -26,7 +26,6 @@
         <form id="loginForm">
 
             <div class="form-group">
-
                 <label for="email">
                     Email
                 </label>
@@ -35,13 +34,12 @@
                     type="email"
                     id="email"
                     placeholder="Nhập email"
+                    autocomplete="email"
                     required
                 >
-
             </div>
 
             <div class="form-group">
-
                 <label for="password">
                     Mật khẩu
                 </label>
@@ -50,17 +48,23 @@
                     type="password"
                     id="password"
                     placeholder="Nhập mật khẩu"
+                    autocomplete="current-password"
                     required
                 >
-
             </div>
+
+            <p style="text-align: right; margin-top: -5px;">
+                <a href="/forgot-password">
+                    Quên mật khẩu?
+                </a>
+            </p>
 
             <button
                 type="submit"
-                class="btn-primary">
-
+                class="btn-primary"
+                id="loginButton"
+            >
                 Đăng nhập
-
             </button>
 
         </form>
@@ -68,125 +72,170 @@
         <div id="message"></div>
 
         <p class="switch-page">
-
             Chưa có tài khoản?
-
             <a href="/register">
                 Đăng ký
             </a>
-
         </p>
 
     </div>
 
 </div>
 
-
 <script>
-
 document
     .getElementById('loginForm')
-    .addEventListener('submit', async function(event) {
+    .addEventListener(
+        'submit',
+        async function (event) {
 
-        event.preventDefault();
+            event.preventDefault();
 
-        const email =
-            document.getElementById('email')
-                .value.trim();
+            const email =
+                document
+                    .getElementById('email')
+                    .value
+                    .trim();
 
-        const password =
-            document.getElementById('password')
-                .value;
+            const password =
+                document
+                    .getElementById('password')
+                    .value;
 
-        const message =
-            document.getElementById('message');
+            const message =
+                document
+                    .getElementById('message');
 
-        message.className = 'message';
+            const button =
+                document
+                    .getElementById(
+                        'loginButton'
+                    );
 
-        message.textContent =
-            'Đang đăng nhập...';
+            button.disabled = true;
 
-        try {
+            message.className =
+                'message';
 
-            const response = await fetch(
-                '/api/v1/auth/login',
-                {
-                    method: 'POST',
+            message.textContent =
+                'Đang đăng nhập...';
 
-                    headers: {
-                        'Content-Type':
-                            'application/json',
+            try {
 
-                        'Accept':
-                            'application/json'
-                    },
+                const response =
+                    await fetch(
+                        '/api/auth/login',
+                        {
+                            method: 'POST',
 
-                    body: JSON.stringify({
-                        email: email,
-                        password: password
-                    })
+                            headers: {
+                                'Content-Type':
+                                    'application/json',
+
+                                'Accept':
+                                    'application/json'
+                            },
+
+                            body: JSON.stringify({
+                                email: email,
+                                password: password
+                            })
+                        }
+                    );
+
+                const result =
+                    await response.json();
+
+                if (!response.ok) {
+
+                    message.className =
+                        'message error';
+
+                    message.textContent =
+                        result.message ||
+                        'Đăng nhập thất bại.';
+
+                    return;
                 }
-            );
 
-            const data =
-                await response.json();
+const token =
+    result.data.token;
 
-            if (!response.ok) {
+const refreshToken =
+    result.data.refresh_token;
+
+const user =
+    result.data.user;
+
+localStorage.setItem(
+    'access_token',
+    token
+);
+
+localStorage.setItem(
+    'refresh_token',
+    refreshToken
+);
+
+localStorage.setItem(
+    'current_user',
+    JSON.stringify(user)
+);
+
+                message.className =
+                    'message success';
+
+                if (
+                    user.must_change_password
+                ) {
+                    message.textContent =
+                        'Đăng nhập thành công. Bạn cần đổi mật khẩu trước khi tiếp tục.';
+
+                    setTimeout(
+                        function () {
+                            window.location.href =
+                                '/change-password';
+                        },
+                        500
+                    );
+
+                    return;
+                }
+
+                message.textContent =
+                    'Đăng nhập thành công!';
+
+                setTimeout(
+                    function () {
+                        if (
+                            user.role === 'admin'
+                        ) {
+                            window.location.href =
+                                '/admin/users';
+                        } else {
+                            window.location.href =
+                                '/profile';
+                        }
+                    },
+                    500
+                );
+
+            } catch (error) {
+
+                console.error(error);
 
                 message.className =
                     'message error';
 
                 message.textContent =
-                    data.message ||
-                    'Đăng nhập thất bại.';
+                    'Có lỗi xảy ra khi kết nối đến máy chủ.';
 
-                return;
+            } finally {
+
+                button.disabled = false;
             }
-
-            localStorage.setItem(
-                'access_token',
-                data.token
-            );
-
-            localStorage.setItem(
-                'current_user',
-                JSON.stringify(data.user)
-            );
-
-            message.className =
-                'message success';
-
-            message.textContent =
-                'Đăng nhập thành công!';
-
-            setTimeout(function() {
-
-                if (data.user.role === 'ADMIN') {
-
-                    window.location.href =
-                        '/admin/users';
-
-                } else {
-
-                    window.location.href =
-                        '/profile';
-
-                }
-
-            }, 500);
-
-        } catch (error) {
-
-            message.className =
-                'message error';
-
-            message.textContent =
-                'Không thể kết nối đến máy chủ.';
-
         }
-
-    });
-
+    );
 </script>
 
 </body>

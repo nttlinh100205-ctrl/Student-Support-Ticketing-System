@@ -22,3 +22,5 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+# JWT private key - NEVER commit
+/storage/app/jwt/private.pem

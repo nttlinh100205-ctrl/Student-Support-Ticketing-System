@@ -9,16 +9,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->unsignedBigInteger('department_id')
+            $table
+                ->string('avatar')
                 ->nullable()
-                ->after('status');
+                ->after('phone');
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('department_id');
+            $table->dropColumn('avatar');
         });
     }
 };

@@ -1,4 +1,6 @@
 *
 !private/
 !public/
+!jwt/
+!jwt/public.pem
 !.gitignore

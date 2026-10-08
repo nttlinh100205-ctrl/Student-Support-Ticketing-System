@@ -6,12 +6,11 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasFactory, Notifiable;
 
     /**
      * Các trường được phép mass assignment.
@@ -19,17 +18,20 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'full_name',
         'email',
         'password',
         'phone',
+        'avatar',
+        'must_change_password',
+        'auth_version',
         'role',
         'status',
         'department_id',
     ];
 
     /**
-     * Các trường không đưa ra khi serialize User.
+     * Các trường không trả ra khi serialize User.
      *
      * @var list<string>
      */
@@ -48,17 +50,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
+            'auth_version' => 'integer',
         ];
-    }
-
-    /**
-     * Phòng ban mà tài khoản thuộc về.
-     */
-    public function department()
-    {
-        return $this->belongsTo(
-            SupportDepartment::class,
-            'department_id'
-        );
     }
 }

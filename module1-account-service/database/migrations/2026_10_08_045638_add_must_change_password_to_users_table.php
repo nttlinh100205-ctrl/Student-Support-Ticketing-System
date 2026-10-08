@@ -9,16 +9,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->unsignedBigInteger('department_id')
-                ->nullable()
-                ->after('status');
+            $table
+                ->boolean('must_change_password')
+                ->default(false)
+                ->after('avatar');
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('department_id');
+            $table->dropColumn('must_change_password');
         });
     }
 };

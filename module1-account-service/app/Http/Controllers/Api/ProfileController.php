@@ -3,94 +3,101 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Profile\UpdateAvatarRequest;
+use App\Http\Requests\Profile\UpdatePasswordRequest;
+use App\Http\Requests\Profile\UpdateProfileRequest;
+use App\Http\Responses\ApiResponse;
+use App\Services\ProfileService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
+use RuntimeException;
 
 class ProfileController extends Controller
 {
-    /**
-     * Xem hồ sơ cá nhân
-     */
-    public function show(Request $request): JsonResponse
+    public function __construct(
+        private readonly ProfileService $profileService
+    ) {}
+
+    public function show(): JsonResponse
     {
-        $user = $request->user();
-
-        return response()->json([
-            'message' => 'Lay thong tin ho so thanh cong',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'role' => $user->role,
-                'status' => $user->status,
-            ],
-        ]);
-    }
-
-    /**
-     * Cập nhật hồ sơ cá nhân
-     */
-    public function update(Request $request): JsonResponse
-    {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($user->id),
-            ],
-            'phone' => ['nullable', 'string', 'max:20'],
-        ]);
-
-        $user->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
-        ]);
-
-        return response()->json([
-            'message' => 'Cap nhat ho so thanh cong',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'role' => $user->role,
-                'status' => $user->status,
-            ],
-        ]);
-    }
-
-    /**
-     * Đổi mật khẩu
-     */
-    public function updatePassword(Request $request): JsonResponse
-    {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'current_password' => ['required', 'string'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
-
-        if (!Hash::check($validated['current_password'], $user->password)) {
-            return response()->json([
-                'message' => 'Mat khau hien tai khong dung.',
-            ], 422);
+        try {
+            return ApiResponse::success(
+                $this->profileService->show()
+            );
+        } catch (RuntimeException $exception) {
+            return ApiResponse::error(
+                $exception->getMessage(),
+                404
+            );
         }
+    }
 
-        $user->update([
-            'password' => Hash::make($validated['password']),
-        ]);
+    public function update(
+        UpdateProfileRequest $request
+    ): JsonResponse {
+        try {
+            $data = $this->profileService->update(
+                $request->validated()
+            );
 
-        return response()->json([
-            'message' => 'Doi mat khau thanh cong',
-        ]);
+            return ApiResponse::success(
+                $data,
+                'Cap nhat ho so thanh cong.'
+            );
+        } catch (RuntimeException $exception) {
+            return ApiResponse::error(
+                $exception->getMessage(),
+                404
+            );
+        }
+    }
+
+    public function updateAvatar(
+        UpdateAvatarRequest $request
+    ): JsonResponse {
+        try {
+            $data = $this->profileService->updateAvatar(
+                $request->file('avatar')
+            );
+
+            return ApiResponse::success(
+                $data,
+                'Cap nhat anh dai dien thanh cong.'
+            );
+        } catch (RuntimeException $exception) {
+            $status = $exception->getMessage()
+                === 'Tai khoan khong ton tai.'
+                ? 404
+                : 500;
+
+            return ApiResponse::error(
+                $exception->getMessage(),
+                $status
+            );
+        }
+    }
+
+    public function updatePassword(
+        UpdatePasswordRequest $request
+    ): JsonResponse {
+        try {
+            $this->profileService->updatePassword(
+                $request->validated()
+            );
+
+            return ApiResponse::success(
+                null,
+                'Doi mat khau thanh cong.'
+            );
+        } catch (RuntimeException $exception) {
+            $status = $exception->getMessage()
+                === 'Mat khau hien tai khong dung.'
+                ? 422
+                : 404;
+
+            return ApiResponse::error(
+                $exception->getMessage(),
+                $status
+            );
+        }
     }
 }
