@@ -1,9 +1,5 @@
 @if(! config('account.fake'))
-<nav style="padding:12px;background:#172b4d;color:white;display:flex;gap:18px;align-items:center;flex-wrap:wrap">
-<a style="color:white" href="{{ rtrim(config('account.url'), '/') }}">Cổng hỗ trợ sinh viên</a>
-<span>{{ request()->attributes->get('account_user')['full_name'] ?? '' }}</span>
-<form method="POST" action="{{ route('account.logout') }}" style="margin-left:auto">@csrf<button type="submit">Đăng xuất</button></form>
-</nav>
+@include('partials.suite-header')
 <script>
 window.AccountUser = @json(request()->attributes->get('account_user'));
 window.AccountHeaders = () => ({'Accept': 'application/json', 'Authorization': 'Bearer ' + @json(session('account_token'))});

@@ -698,27 +698,12 @@
             margin-top: auto;
         }
     </style>
+<link rel="stylesheet" href="/css/suite.css">
 </head>
-<body>
+<body class="suite-ui report-ui">
 @include('partials.account')
 
-    <!-- Header Navigation -->
-    <header>
-        <div class="brand">
-            <div class="brand-logo">SV</div>
-            <div class="brand-text">
-                <span class="sub-title">Cổng Dịch vụ Một cửa · Module 5</span>
-                <h1>Trung tâm Báo cáo &amp; Phân tích Hiệu suất Hỗ trợ Sinh viên</h1>
-            </div>
-        </div>
 
-        <div class="header-actions">
-            <div class="account-chip">
-                <div class="avatar-circle" id="userAvatar">AD</div>
-                <select id="roleSelector" onchange="switchRole()"><option value="{{ request()->attributes->get('account_user')['role'] }}" data-name="{{ request()->attributes->get('account_user')['full_name'] }}">{{ request()->attributes->get('account_user')['full_name'] }}</option></select>
-            </div>
-        </div>
-    </header>
 
     <div class="container">
 
@@ -1096,15 +1081,7 @@
 
         function getAuthHeaders() { return window.AccountHeaders(); }
 
-        function switchRole() {
-            const selector = document.getElementById('roleSelector');
-            const opt = selector.options[selector.selectedIndex];
-            const name = opt.getAttribute('data-name') || opt.textContent;
-            
-            const parts = name.trim().split(/\s+/);
-            const initials = parts.length === 1 ? parts[0].slice(0, 2) : (parts[0][0] + parts[parts.length - 1][0]);
-            document.getElementById('userAvatar').innerText = initials.toUpperCase();
-
+        function initializeDashboard() {
             loadDashboardData();
             loadRatingsFeed();
         }
@@ -1642,7 +1619,7 @@
 
         // Init
         window.addEventListener('DOMContentLoaded', () => {
-            switchRole();
+            initializeDashboard();
         });
     </script>
 </body>

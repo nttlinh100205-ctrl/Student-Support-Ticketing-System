@@ -316,22 +316,13 @@
 
     </style>
 
+<link rel="stylesheet" href="/css/suite.css">
 </head>
 
-<body>
+<body class="suite-ui news-ui">
 @include('partials.account')
 
-<div class="topbar">
 
-    <div class="logo">
-        DH
-    </div>
-
-    <div class="topbar-title">
-        Hệ thống tin tức
-    </div>
-
-</div>
 
 <div class="container-news">
 
@@ -341,7 +332,7 @@
 
             <div>
 
-                <div class="page-title">
+                <div class="suite-kicker">THÔNG TIN & KẾT NỐI</div><div class="page-title">
                     <i class="bi bi-newspaper"></i>
                     Tin tức
                 </div>
@@ -368,17 +359,7 @@
 
         <div class="role-box mb-4">
 
-            <label class="form-label fw-bold">
-                Vai trò đang sử dụng
-            </label>
-
-            <select
-                id="currentRole" disabled
-                class="form-select"
-                onchange="changeRole()">
-
-                <option value="{{ in_array(request()->attributes->get('account_user')['role'], ['staff', 'department_head']) ? 'department' : request()->attributes->get('account_user')['role'] }}">{{ request()->attributes->get('account_user')['full_name'] }}</option>
-</select>
+            <input type="hidden" id="currentRole" value="{{ in_array(request()->attributes->get('account_user')['role'], ['staff', 'department_head']) ? 'department' : request()->attributes->get('account_user')['role'] }}">
 
             <div
                 id="departmentBox"
