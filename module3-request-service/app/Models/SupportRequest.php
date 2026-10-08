@@ -51,6 +51,7 @@ class SupportRequest extends Model
         'sla_flag' => SlaFlag::class,
         'assigned_at' => 'datetime',
         'resolved_at' => 'datetime',
+        'resolution_comment_boundary' => 'integer',
         'closed_at' => 'datetime',
         'sla_deadline_at' => 'datetime',
         'rating' => 'integer',
@@ -83,7 +84,9 @@ class SupportRequest extends Model
             && $this->comments()
                 ->where('user_role', 'student')
                 ->where('is_internal', false)
-                ->where('created_at', '>=', $this->resolved_at)
+                ->when($this->resolution_comment_boundary !== null,
+                    fn ($query) => $query->where('id', '>', $this->resolution_comment_boundary),
+                    fn ($query) => $query->where('created_at', '>', $this->resolved_at))
                 ->exists();
     }
 

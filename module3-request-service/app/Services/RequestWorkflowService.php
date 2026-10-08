@@ -131,6 +131,7 @@ class RequestWorkflowService
 
             if ($toStatus === RequestStatus::Resolved->value) {
                 $request->resolved_at = now();
+                $request->resolution_comment_boundary = $request->comments()->max('id') ?? 0;
             }
             if ($toStatus === RequestStatus::Closed->value && $request->closed_at === null) {
                 $request->closed_at = now();
