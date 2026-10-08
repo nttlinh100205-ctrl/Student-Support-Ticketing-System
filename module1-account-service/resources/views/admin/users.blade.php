@@ -583,15 +583,15 @@ async function loadUsers() {
                 </td>
 
                 <td>
-                    ${user.name || ''}
+                    ${escapeHtml(user.name)}
                 </td>
 
                 <td>
-                    ${user.email || ''}
+                    ${escapeHtml(user.email)}
                 </td>
 
                 <td>
-                    ${user.phone || ''}
+                    ${escapeHtml(user.phone)}
                 </td>
 
                 <td>
@@ -627,7 +627,7 @@ async function loadUsers() {
                 </td>
 
                 <td>
-                    ${user.status}
+                    ${escapeHtml(user.status)}
                 </td>
 
                 <td>
