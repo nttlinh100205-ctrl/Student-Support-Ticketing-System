@@ -1,5 +1,21 @@
 LOCAL API GATEWAY (Windows / XAMPP)
 
+ONE COMMAND FOR SERVICES AND GATEWAY (from repository root)
+  powershell -ExecutionPolicy Bypass -File .\start-system.ps1
+If reports need a separate PHP installation:
+  powershell -ExecutionPolicy Bypass -File .\start-system.ps1 -ReportPhp 'C:\php84\php.exe'
+For the current PHP 8.2 machine, run modules 1-4 and gateway:
+  powershell -ExecutionPolicy Bypass -File .\start-system.ps1 -SkipReports
+Append -Check to check prerequisites without starting any process.
+Prepare .env, Composer dependencies and databases first for each selected module.
+This launcher does not run migrations, start MySQL, or install dependencies.
+Existing listeners are reused only when their process command points inside this
+project's corresponding service folder. Unknown listeners block startup.
+Keep its terminal open and press Ctrl+C to stop the process trees it started.
+Reused services remain running and should be stopped from their original terminal.
+Do not close the terminal forcibly. Logs are in gateway/runtime/.
+Port checks verify listeners, not successful database access or full application health.
+
 From the repository root:
   powershell -ExecutionPolicy Bypass -File .\gateway\gateway.ps1 -Action Check
   powershell -ExecutionPolicy Bypass -File .\gateway\gateway.ps1
