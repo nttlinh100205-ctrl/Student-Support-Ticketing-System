@@ -14,11 +14,13 @@ use Illuminate\Support\Facades\Route;
  */
 
 /**
- * Dang ky va dang nhap.
+ * Dang ky, dang nhap va khoi phuc mat khau.
  * Khong can JWT.
  *
  * POST /api/auth/register
  * POST /api/auth/login
+ * POST /api/auth/forgot-password
+ * POST /api/auth/reset-password
  */
 Route::prefix('auth')->group(function () {
     Route::post('/register', [
@@ -30,6 +32,7 @@ Route::prefix('auth')->group(function () {
         AuthController::class,
         'login',
     ]);
+
     Route::post('/forgot-password', [
         PasswordResetController::class,
         'forgot',
@@ -42,49 +45,94 @@ Route::prefix('auth')->group(function () {
 });
 
 /**
- * Ho so cua tai khoan dang dang nhap.
- * Bat buoc JWT hop le.
+ * ============================================================
+ * HO SO CA NHAN
+ * ============================================================
  *
- * GET /api/profile
- * PUT /api/profile
- * PUT /api/profile/password
+ * Tat ca endpoint ben duoi deu can JWT hop le.
+ *
+ * PUT /api/profile/password:
+ * Duoc phep su dung ke ca khi tai khoan dang bi bat buoc
+ * doi mat khau lan dau.
+ *
+ * Cac endpoint con lai:
+ * Chi duoc truy cap sau khi must_change_password = false.
  */
 Route::middleware('jwt.auth')
     ->prefix('profile')
     ->group(function () {
-        Route::get('/', [
-            ProfileController::class,
-            'show',
-        ]);
 
-        Route::put('/', [
-            ProfileController::class,
-            'update',
-        ]);
-
-        Route::post('/avatar', [
-            ProfileController::class,
-            'updateAvatar',
-        ]);
-
+        /**
+         * Doi mat khau.
+         *
+         * KHONG gan middleware password.changed cho route nay,
+         * vi nguoi dung phai truy cap duoc route nay de hoan thanh
+         * viec doi mat khau bat buoc.
+         */
         Route::put('/password', [
             ProfileController::class,
             'updatePassword',
         ]);
+
+        /**
+         * Cac chuc nang ho so binh thuong.
+         * Bat buoc da doi mat khau lan dau.
+         */
+        Route::middleware('password.changed')
+            ->group(function () {
+
+                /**
+                 * GET /api/profile
+                 * Xem ho so.
+                 */
+                Route::get('/', [
+                    ProfileController::class,
+                    'show',
+                ]);
+
+                /**
+                 * PUT /api/profile
+                 * Cap nhat ho so.
+                 */
+                Route::put('/', [
+                    ProfileController::class,
+                    'update',
+                ]);
+
+                /**
+                 * POST /api/profile/avatar
+                 * Cap nhat anh dai dien.
+                 */
+                Route::post('/avatar', [
+                    ProfileController::class,
+                    'updateAvatar',
+                ]);
+            });
     });
 
 /**
- * Quan ly tai khoan.
- * Chi ADMIN duoc truy cap.
+ * ============================================================
+ * QUAN LY TAI KHOAN - ADMIN
+ * ============================================================
+ *
+ * Bat buoc:
+ * - JWT hop le
+ * - Da doi mat khau bat buoc
+ * - Role ADMIN
  *
  * GET /api/users
  * GET /api/users/{user}
  * PUT /api/users/{user}/role
  * PUT /api/users/{user}/status
  */
-Route::middleware(['jwt.auth', 'role:admin'])
+Route::middleware([
+    'jwt.auth',
+    'password.changed',
+    'role:admin',
+])
     ->prefix('users')
     ->group(function () {
+
         Route::get('/', [
             AdminUserController::class,
             'index',

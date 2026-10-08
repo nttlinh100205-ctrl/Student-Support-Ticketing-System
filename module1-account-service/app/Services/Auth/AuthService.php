@@ -19,6 +19,7 @@ class AuthService
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'password' => $data['password'],
+            'must_change_password' => false,
             'role' => 'student',
             'status' => 'ACTIVE',
             'department_id' => null,
@@ -63,6 +64,7 @@ class AuthService
             'full_name' => $user->full_name,
             'email' => $user->email,
             'role' => strtolower($user->role),
+            'must_change_password' => (bool) $user->must_change_password,
         ];
     }
 }

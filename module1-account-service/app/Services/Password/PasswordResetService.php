@@ -28,12 +28,13 @@ class PasswordResetService
             function (User $user, string $password) {
                 $user->forceFill([
                     'password' => $password,
+                    'must_change_password' => false,
                     'remember_token' => Str::random(60),
                 ])->save();
             }
         );
 
-        if ($status !== Password::PasswordReset) {
+        if ($status !== Password::PASSWORD_RESET) {
             throw new RuntimeException(
                 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.'
             );

@@ -52,11 +52,13 @@
                     required
                 >
             </div>
+
             <p style="text-align: right; margin-top: -5px;">
                 <a href="/forgot-password">
                     Quên mật khẩu?
                 </a>
             </p>
+
             <button
                 type="submit"
                 class="btn-primary"
@@ -79,62 +81,154 @@
     </div>
 
 </div>
+
 <script>
-document.getElementById('loginForm').addEventListener('submit', async function (event) {
-    event.preventDefault();
+document
+    .getElementById('loginForm')
+    .addEventListener(
+        'submit',
+        async function (event) {
 
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const message = document.getElementById('message');
+            event.preventDefault();
 
-    message.className = 'message';
-    message.textContent = 'Đang đăng nhập...';
+            const email =
+                document
+                    .getElementById('email')
+                    .value
+                    .trim();
 
-    try {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                email: email,
-                password: password
-            })
-        });
+            const password =
+                document
+                    .getElementById('password')
+                    .value;
 
-        const result = await response.json();
+            const message =
+                document
+                    .getElementById('message');
 
-        if (!response.ok) {
-            message.className = 'message error';
-            message.textContent = result.message || 'Đăng nhập thất bại.';
-            return;
-        }
+            const button =
+                document
+                    .getElementById(
+                        'loginButton'
+                    );
 
-        const token = result.data.token;
-        const user = result.data.user;
+            button.disabled = true;
 
-        localStorage.setItem('access_token', token);
-        localStorage.setItem('current_user', JSON.stringify(user));
+            message.className =
+                'message';
 
-        message.className = 'message success';
-        message.textContent = 'Đăng nhập thành công!';
+            message.textContent =
+                'Đang đăng nhập...';
 
-        setTimeout(function () {
-            if (user.role === 'admin') {
-                window.location.href = '/admin/users';
-            } else {
-                window.location.href = '/profile';
+            try {
+
+                const response =
+                    await fetch(
+                        '/api/auth/login',
+                        {
+                            method: 'POST',
+
+                            headers: {
+                                'Content-Type':
+                                    'application/json',
+
+                                'Accept':
+                                    'application/json'
+                            },
+
+                            body: JSON.stringify({
+                                email: email,
+                                password: password
+                            })
+                        }
+                    );
+
+                const result =
+                    await response.json();
+
+                if (!response.ok) {
+
+                    message.className =
+                        'message error';
+
+                    message.textContent =
+                        result.message ||
+                        'Đăng nhập thất bại.';
+
+                    return;
+                }
+
+                const token =
+                    result.data.token;
+
+                const user =
+                    result.data.user;
+
+                localStorage.setItem(
+                    'access_token',
+                    token
+                );
+
+                localStorage.setItem(
+                    'current_user',
+                    JSON.stringify(user)
+                );
+
+                message.className =
+                    'message success';
+
+                if (
+                    user.must_change_password
+                ) {
+                    message.textContent =
+                        'Đăng nhập thành công. Bạn cần đổi mật khẩu trước khi tiếp tục.';
+
+                    setTimeout(
+                        function () {
+                            window.location.href =
+                                '/change-password';
+                        },
+                        500
+                    );
+
+                    return;
+                }
+
+                message.textContent =
+                    'Đăng nhập thành công!';
+
+                setTimeout(
+                    function () {
+                        if (
+                            user.role === 'admin'
+                        ) {
+                            window.location.href =
+                                '/admin/users';
+                        } else {
+                            window.location.href =
+                                '/profile';
+                        }
+                    },
+                    500
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                message.className =
+                    'message error';
+
+                message.textContent =
+                    'Có lỗi xảy ra khi kết nối đến máy chủ.';
+
+            } finally {
+
+                button.disabled = false;
             }
-        }, 500);
-
-    } catch (error) {
-        console.error(error);
-
-        message.className = 'message error';
-        message.textContent = 'Có lỗi xảy ra khi kết nối đến máy chủ.';
-    }
-});
+        }
+    );
 </script>
+
 </body>
 </html>

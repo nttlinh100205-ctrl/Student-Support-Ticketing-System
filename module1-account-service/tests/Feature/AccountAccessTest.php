@@ -739,4 +739,181 @@ class AccountAccessTest extends TestCase
             $user->fresh()->avatar
         );
     }
+
+    public function test_login_returns_must_change_password_flag(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Doi Mat Khau',
+            'email' => 'first.login@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000300',
+            'must_change_password' => true,
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath(
+                'data.user.must_change_password',
+                true
+            );
+
+        $this->assertNotEmpty(
+            $response->json('data.token')
+        );
+    }
+
+    public function test_user_must_change_password_before_accessing_profile(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Bi Chan Profile',
+            'email' => 'blocked.profile@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000301',
+            'must_change_password' => true,
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $loginResponse = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $token = $loginResponse->json(
+            'data.token'
+        );
+
+        $response = $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$token
+            )
+            ->getJson('/api/profile');
+
+        $response
+            ->assertStatus(403)
+            ->assertExactJson([
+                'success' => false,
+                'message' => 'Ban phai doi mat khau truoc khi tiep tuc.',
+            ]);
+    }
+
+    public function test_user_can_change_required_password_and_clear_flag(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Doi Password',
+            'email' => 'change.required@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000302',
+            'must_change_password' => true,
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $loginResponse = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $token = $loginResponse->json(
+            'data.token'
+        );
+
+        $response = $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$token
+            )
+            ->putJson('/api/profile/password', [
+                'current_password' => 'password123',
+                'password' => 'NewPassword@123',
+                'password_confirmation' => 'NewPassword@123',
+            ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath(
+                'message',
+                'Doi mat khau thanh cong.'
+            );
+
+        $freshUser = $user->fresh();
+
+        $this->assertFalse(
+            $freshUser->must_change_password
+        );
+
+        $this->assertTrue(
+            Hash::check(
+                'NewPassword@123',
+                $freshUser->password
+            )
+        );
+    }
+
+    public function test_user_can_access_profile_after_required_password_change(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Sau Doi Password',
+            'email' => 'after.change@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000303',
+            'must_change_password' => true,
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $loginResponse = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $token = $loginResponse->json(
+            'data.token'
+        );
+
+        $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$token
+            )
+            ->putJson('/api/profile/password', [
+                'current_password' => 'password123',
+                'password' => 'NewPassword@456',
+                'password_confirmation' => 'NewPassword@456',
+            ])
+            ->assertStatus(200);
+
+        $response = $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$token
+            )
+            ->getJson('/api/profile');
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath(
+                'data.email',
+                'after.change@university.edu.vn'
+            )
+            ->assertJsonPath(
+                'data.must_change_password',
+                false
+            );
+    }
 }

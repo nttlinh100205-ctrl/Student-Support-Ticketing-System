@@ -79,3 +79,10 @@ Route::get('/reset-password/{token}', function (string $token) {
         'email' => request()->query('email', ''),
     ]);
 })->name('password.reset');
+
+/**
+ * Trang bắt buộc đổi mật khẩu lần đầu.
+ */
+Route::get('/change-password', function () {
+    return view('auth.change-password');
+})->name('password.change');

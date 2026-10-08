@@ -86,6 +86,7 @@ class ProfileService
 
         $user->update([
             'password' => $data['password'],
+            'must_change_password' => false,
         ]);
     }
 
@@ -117,6 +118,7 @@ class ProfileService
                 : null,
             'role' => strtolower($user->role),
             'status' => $user->status,
+            'must_change_password' => (bool) $user->must_change_password,
             'department_id' => $user->department_id !== null
                 ? (int) $user->department_id
                 : null,

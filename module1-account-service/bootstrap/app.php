@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsurePasswordChangedMiddleware;
 use App\Http\Middleware\JwtAuthMiddleware;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Responses\ApiResponse;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'jwt.auth' => JwtAuthMiddleware::class,
+            'password.changed' => EnsurePasswordChangedMiddleware::class,
             'role' => RoleMiddleware::class,
         ]);
     })
