@@ -6,9 +6,11 @@ use App\Models\User;
 use App\Services\Auth\JwtVerifier;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AccountAccessTest extends TestCase
@@ -520,5 +522,221 @@ class AccountAccessTest extends TestCase
                 'message',
                 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.'
             );
+    }
+
+    public function test_user_can_upload_avatar(): void
+    {
+        Storage::fake('public');
+
+        $user = User::create([
+            'full_name' => 'Sinh Vien Avatar',
+            'email' => 'avatar.test@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000200',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $loginResponse = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $token = $loginResponse->json('data.token');
+
+        $imageContent = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2ZJ0AAAAASUVORK5CYII='
+        );
+
+        $avatar = UploadedFile::fake()
+            ->createWithContent(
+                'avatar.png',
+                $imageContent
+            );
+
+        $response = $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$token
+            )
+            ->post(
+                '/api/profile/avatar',
+                [
+                    'avatar' => $avatar,
+                ],
+                [
+                    'Accept' => 'application/json',
+                ]
+            );
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath(
+                'message',
+                'Cap nhat anh dai dien thanh cong.'
+            );
+
+        $avatarPath = $response->json(
+            'data.avatar'
+        );
+
+        $this->assertNotEmpty(
+            $avatarPath
+        );
+
+        $this->assertSame(
+            $avatarPath,
+            $user->fresh()->avatar
+        );
+
+        Storage::disk('public')
+            ->assertExists(
+                $avatarPath
+            );
+    }
+
+    public function test_uploading_new_avatar_deletes_old_avatar(): void
+    {
+        Storage::fake('public');
+
+        Storage::disk('public')->put(
+            'avatars/old-avatar.png',
+            'old-avatar-content'
+        );
+
+        $user = User::create([
+            'full_name' => 'Sinh Vien Doi Avatar',
+            'email' => 'replace.avatar@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000201',
+            'avatar' => 'avatars/old-avatar.png',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $loginResponse = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $token = $loginResponse->json(
+            'data.token'
+        );
+
+        $imageContent = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2ZJ0AAAAASUVORK5CYII='
+        );
+
+        $newAvatar = UploadedFile::fake()
+            ->createWithContent(
+                'new-avatar.png',
+                $imageContent
+            );
+
+        $response = $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$token
+            )
+            ->post(
+                '/api/profile/avatar',
+                [
+                    'avatar' => $newAvatar,
+                ],
+                [
+                    'Accept' => 'application/json',
+                ]
+            );
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath(
+                'success',
+                true
+            );
+
+        $newAvatarPath =
+            $response->json(
+                'data.avatar'
+            );
+
+        $this->assertNotSame(
+            'avatars/old-avatar.png',
+            $newAvatarPath
+        );
+
+        Storage::disk('public')
+            ->assertMissing(
+                'avatars/old-avatar.png'
+            );
+
+        Storage::disk('public')
+            ->assertExists(
+                $newAvatarPath
+            );
+
+        $this->assertSame(
+            $newAvatarPath,
+            $user->fresh()->avatar
+        );
+    }
+
+    public function test_avatar_upload_rejects_invalid_file(): void
+    {
+        Storage::fake('public');
+
+        $user = User::create([
+            'full_name' => 'Sinh Vien Avatar Sai',
+            'email' => 'invalid.avatar@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000202',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $loginResponse = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $token = $loginResponse->json(
+            'data.token'
+        );
+
+        $invalidFile = UploadedFile::fake()
+            ->create(
+                'avatar.txt',
+                10,
+                'text/plain'
+            );
+
+        $response = $this
+            ->withHeader(
+                'Authorization',
+                'Bearer '.$token
+            )
+            ->post(
+                '/api/profile/avatar',
+                [
+                    'avatar' => $invalidFile,
+                ],
+                [
+                    'Accept' => 'application/json',
+                ]
+            );
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(
+                'avatar'
+            );
+
+        $this->assertNull(
+            $user->fresh()->avatar
+        );
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Profile\UpdateAvatarRequest;
 use App\Http\Requests\Profile\UpdatePasswordRequest;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Http\Responses\ApiResponse;
@@ -46,6 +47,31 @@ class ProfileController extends Controller
             return ApiResponse::error(
                 $exception->getMessage(),
                 404
+            );
+        }
+    }
+
+    public function updateAvatar(
+        UpdateAvatarRequest $request
+    ): JsonResponse {
+        try {
+            $data = $this->profileService->updateAvatar(
+                $request->file('avatar')
+            );
+
+            return ApiResponse::success(
+                $data,
+                'Cap nhat anh dai dien thanh cong.'
+            );
+        } catch (RuntimeException $exception) {
+            $status = $exception->getMessage()
+                === 'Tai khoan khong ton tai.'
+                ? 404
+                : 500;
+
+            return ApiResponse::error(
+                $exception->getMessage(),
+                $status
             );
         }
     }

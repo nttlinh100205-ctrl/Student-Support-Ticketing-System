@@ -62,6 +62,11 @@ Route::middleware('jwt.auth')
             'update',
         ]);
 
+        Route::post('/avatar', [
+            ProfileController::class,
+            'updateAvatar',
+        ]);
+
         Route::put('/password', [
             ProfileController::class,
             'updatePassword',

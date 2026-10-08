@@ -85,6 +85,75 @@
             font-size: 14px;
             margin-bottom: 20px;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ảnh đại diện
+        |--------------------------------------------------------------------------
+        */
+
+        .avatar-section {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+        }
+
+        .avatar-wrapper {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #e2e8f0;
+            border: 3px solid #cbd5e1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .avatar-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .avatar-placeholder {
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            padding: 10px;
+        }
+
+        .avatar-controls {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .avatar-controls h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        .avatar-note {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .avatar-controls input[type="file"] {
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        #avatarMessage {
+            margin-top: 15px;
+        }
     </style>
 </head>
 
@@ -125,13 +194,16 @@
 
     <main class="content">
 
-        <!-- HỒ SƠ CÁ NHÂN -->
+        <!-- ======================================================
+             HỒ SƠ CÁ NHÂN
+        ======================================================= -->
         <section class="card">
 
             <div class="profile-header">
 
                 <div>
                     <h2>Hồ sơ cá nhân</h2>
+
                     <p>
                         Xem và cập nhật thông tin tài khoản của bạn.
                     </p>
@@ -141,6 +213,64 @@
 
             <div id="profileMessage"></div>
 
+
+            <!-- ==================================================
+                 ẢNH ĐẠI DIỆN
+            =================================================== -->
+            <div class="avatar-section">
+
+                <div class="avatar-wrapper">
+
+                    <img
+                        id="avatarPreview"
+                        class="avatar-preview"
+                        src=""
+                        alt="Ảnh đại diện"
+                    >
+
+                    <div
+                        id="avatarPlaceholder"
+                        class="avatar-placeholder"
+                    >
+                        Chưa có<br>ảnh đại diện
+                    </div>
+
+                </div>
+
+
+                <div class="avatar-controls">
+
+                    <h3>Ảnh đại diện</h3>
+
+                    <p class="avatar-note">
+                        Chấp nhận JPG, JPEG, PNG hoặc WEBP.
+                        Dung lượng tối đa 2MB.
+                    </p>
+
+                    <input
+                        type="file"
+                        id="avatarInput"
+                        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    >
+
+                    <button
+                        type="button"
+                        class="btn-primary"
+                        id="avatarUploadButton"
+                    >
+                        Cập nhật ảnh đại diện
+                    </button>
+
+                    <div id="avatarMessage"></div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================================================
+                 FORM HỒ SƠ
+            =================================================== -->
             <form id="profileForm">
 
                 <div class="form-group">
@@ -249,7 +379,9 @@
         </section>
 
 
-        <!-- ĐỔI MẬT KHẨU -->
+        <!-- ======================================================
+             ĐỔI MẬT KHẨU
+        ======================================================= -->
         <section class="card">
 
             <h2>Đổi mật khẩu</h2>
@@ -326,14 +458,15 @@
 
 
 <script>
-const token = localStorage.getItem('access_token');
+const token =
+    localStorage.getItem('access_token');
 
 let currentUser = null;
 
 
 /*
 |--------------------------------------------------------------------------
-| Không có JWT thì quay về trang đăng nhập
+| Không có JWT thì quay về đăng nhập
 |--------------------------------------------------------------------------
 */
 if (!token) {
@@ -366,7 +499,7 @@ function showMessage(
 
 /*
 |--------------------------------------------------------------------------
-| Hiển thị role đẹp hơn
+| Role
 |--------------------------------------------------------------------------
 */
 function formatRole(role) {
@@ -383,7 +516,7 @@ function formatRole(role) {
 
 /*
 |--------------------------------------------------------------------------
-| Hiển thị department_id
+| Phòng ban
 |--------------------------------------------------------------------------
 */
 function formatDepartment(departmentId) {
@@ -396,6 +529,48 @@ function formatDepartment(departmentId) {
     }
 
     return `Phòng ban ID: ${departmentId}`;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Hiển thị avatar
+|--------------------------------------------------------------------------
+*/
+function displayAvatar(user) {
+    const avatarPreview =
+        document.getElementById('avatarPreview');
+
+    const avatarPlaceholder =
+        document.getElementById('avatarPlaceholder');
+
+    if (user.avatar_url) {
+
+        /*
+         * Thêm timestamp để trình duyệt
+         * không cache ảnh cũ sau khi upload.
+         */
+        avatarPreview.src =
+            user.avatar_url +
+            '?v=' +
+            Date.now();
+
+        avatarPreview.style.display =
+            'block';
+
+        avatarPlaceholder.style.display =
+            'none';
+
+    } else {
+
+        avatarPreview.removeAttribute('src');
+
+        avatarPreview.style.display =
+            'none';
+
+        avatarPlaceholder.style.display =
+            'block';
+    }
 }
 
 
@@ -439,20 +614,26 @@ function displayUser(user) {
     document
         .getElementById('department')
         .textContent =
-        formatDepartment(user.department_id);
+        formatDepartment(
+            user.department_id
+        );
+
+    displayAvatar(user);
 
     /*
-     * Chỉ Admin mới thấy nút
+     * Chỉ Admin mới thấy
      * Quản lý tài khoản.
      */
     if (user.role === 'admin') {
         document
             .getElementById('adminLink')
-            .style.display = 'inline-block';
+            .style.display =
+            'inline-block';
     } else {
         document
             .getElementById('adminLink')
-            .style.display = 'none';
+            .style.display =
+            'none';
     }
 }
 
@@ -464,6 +645,7 @@ function displayUser(user) {
 */
 async function loadProfile() {
     try {
+
         const response =
             await fetch(
                 '/api/profile',
@@ -481,6 +663,7 @@ async function loadProfile() {
             );
 
         if (response.status === 401) {
+
             localStorage.clear();
 
             window.location.href =
@@ -493,6 +676,7 @@ async function loadProfile() {
             await response.json();
 
         if (!response.ok) {
+
             showMessage(
                 'profileMessage',
                 result.message ||
@@ -514,6 +698,7 @@ async function loadProfile() {
         );
 
     } catch (error) {
+
         console.error(error);
 
         showMessage(
@@ -523,6 +708,246 @@ async function loadProfile() {
         );
     }
 }
+
+
+/*
+|--------------------------------------------------------------------------
+| Xem trước ảnh khi chọn file
+|--------------------------------------------------------------------------
+*/
+document
+    .getElementById('avatarInput')
+    .addEventListener(
+        'change',
+        function () {
+
+            const file =
+                this.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            const allowedTypes = [
+                'image/jpeg',
+                'image/png',
+                'image/webp'
+            ];
+
+            if (
+                !allowedTypes.includes(
+                    file.type
+                )
+            ) {
+                showMessage(
+                    'avatarMessage',
+                    'Ảnh chỉ được phép là JPG, JPEG, PNG hoặc WEBP.',
+                    'error'
+                );
+
+                this.value = '';
+
+                return;
+            }
+
+            if (
+                file.size >
+                2 * 1024 * 1024
+            ) {
+                showMessage(
+                    'avatarMessage',
+                    'Ảnh đại diện không được vượt quá 2MB.',
+                    'error'
+                );
+
+                this.value = '';
+
+                return;
+            }
+
+            const avatarPreview =
+                document.getElementById(
+                    'avatarPreview'
+                );
+
+            const avatarPlaceholder =
+                document.getElementById(
+                    'avatarPlaceholder'
+                );
+
+            avatarPreview.src =
+                URL.createObjectURL(file);
+
+            avatarPreview.style.display =
+                'block';
+
+            avatarPlaceholder.style.display =
+                'none';
+
+            showMessage(
+                'avatarMessage',
+                'Đã chọn ảnh. Bấm "Cập nhật ảnh đại diện" để lưu.'
+            );
+        }
+    );
+
+
+/*
+|--------------------------------------------------------------------------
+| Upload ảnh đại diện
+|--------------------------------------------------------------------------
+*/
+document
+    .getElementById('avatarUploadButton')
+    .addEventListener(
+        'click',
+        async function () {
+
+            const input =
+                document.getElementById(
+                    'avatarInput'
+                );
+
+            const file =
+                input.files[0];
+
+            if (!file) {
+
+                showMessage(
+                    'avatarMessage',
+                    'Vui lòng chọn ảnh đại diện.',
+                    'error'
+                );
+
+                return;
+            }
+
+            const button =
+                document.getElementById(
+                    'avatarUploadButton'
+                );
+
+            button.disabled = true;
+
+            showMessage(
+                'avatarMessage',
+                'Đang tải ảnh đại diện...'
+            );
+
+            const formData =
+                new FormData();
+
+            formData.append(
+                'avatar',
+                file
+            );
+
+            try {
+
+                const response =
+                    await fetch(
+                        '/api/profile/avatar',
+                        {
+                            method: 'POST',
+
+                            headers: {
+                                'Accept':
+                                    'application/json',
+
+                                'Authorization':
+                                    'Bearer ' + token
+                            },
+
+                            body: formData
+                        }
+                    );
+
+                if (
+                    response.status === 401
+                ) {
+                    localStorage.clear();
+
+                    window.location.href =
+                        '/login';
+
+                    return;
+                }
+
+                const result =
+                    await response.json();
+
+                if (!response.ok) {
+
+                    let errorMessage =
+                        result.message ||
+                        'Cập nhật ảnh đại diện thất bại.';
+
+                    if (result.errors) {
+
+                        const firstError =
+                            Object.values(
+                                result.errors
+                            )[0];
+
+                        if (
+                            Array.isArray(
+                                firstError
+                            ) &&
+                            firstError.length > 0
+                        ) {
+                            errorMessage =
+                                firstError[0];
+                        }
+                    }
+
+                    showMessage(
+                        'avatarMessage',
+                        errorMessage,
+                        'error'
+                    );
+
+                    return;
+                }
+
+                currentUser =
+                    result.data;
+
+                displayUser(
+                    currentUser
+                );
+
+                localStorage.setItem(
+                    'current_user',
+                    JSON.stringify(
+                        currentUser
+                    )
+                );
+
+                input.value = '';
+
+                showMessage(
+                    'avatarMessage',
+                    result.message ||
+                    'Cập nhật ảnh đại diện thành công.',
+                    'success'
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                showMessage(
+                    'avatarMessage',
+                    'Không thể kết nối đến máy chủ.',
+                    'error'
+                );
+
+            } finally {
+
+                button.disabled = false;
+            }
+        }
+    );
 
 
 /*
@@ -544,6 +969,7 @@ document
             );
 
             try {
+
                 const response =
                     await fetch(
                         '/api/profile',
@@ -592,7 +1018,9 @@ document
                 const result =
                     await response.json();
 
-                if (response.status === 401) {
+                if (
+                    response.status === 401
+                ) {
                     localStorage.clear();
 
                     window.location.href =
@@ -602,18 +1030,22 @@ document
                 }
 
                 if (!response.ok) {
+
                     let errorMessage =
                         result.message ||
                         'Cập nhật hồ sơ thất bại.';
 
                     if (result.errors) {
+
                         const firstError =
                             Object.values(
                                 result.errors
                             )[0];
 
                         if (
-                            Array.isArray(firstError) &&
+                            Array.isArray(
+                                firstError
+                            ) &&
                             firstError.length > 0
                         ) {
                             errorMessage =
@@ -633,11 +1065,15 @@ document
                 currentUser =
                     result.data;
 
-                displayUser(currentUser);
+                displayUser(
+                    currentUser
+                );
 
                 localStorage.setItem(
                     'current_user',
-                    JSON.stringify(currentUser)
+                    JSON.stringify(
+                        currentUser
+                    )
                 );
 
                 showMessage(
@@ -648,6 +1084,7 @@ document
                 );
 
             } catch (error) {
+
                 console.error(error);
 
                 showMessage(
@@ -695,8 +1132,10 @@ document
                     .value;
 
             if (
-                newPassword !== confirmation
+                newPassword !==
+                confirmation
             ) {
+
                 showMessage(
                     'passwordMessage',
                     'Xác nhận mật khẩu mới không khớp.',
@@ -712,6 +1151,7 @@ document
             );
 
             try {
+
                 const response =
                     await fetch(
                         '/api/profile/password',
@@ -745,7 +1185,9 @@ document
                 const result =
                     await response.json();
 
-                if (response.status === 401) {
+                if (
+                    response.status === 401
+                ) {
                     localStorage.clear();
 
                     window.location.href =
@@ -755,18 +1197,22 @@ document
                 }
 
                 if (!response.ok) {
+
                     let errorMessage =
                         result.message ||
                         'Đổi mật khẩu thất bại.';
 
                     if (result.errors) {
+
                         const firstError =
                             Object.values(
                                 result.errors
                             )[0];
 
                         if (
-                            Array.isArray(firstError) &&
+                            Array.isArray(
+                                firstError
+                            ) &&
                             firstError.length > 0
                         ) {
                             errorMessage =
@@ -797,6 +1243,7 @@ document
                     .reset();
 
             } catch (error) {
+
                 console.error(error);
 
                 showMessage(
@@ -813,8 +1260,6 @@ document
 |--------------------------------------------------------------------------
 | Đăng xuất
 |--------------------------------------------------------------------------
-| JWT hiện tại stateless.
-| Xóa token phía client là đủ.
 */
 document
     .getElementById('logoutButton')
