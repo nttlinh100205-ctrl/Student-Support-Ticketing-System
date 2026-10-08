@@ -105,6 +105,13 @@ php artisan migrate --seed
 php artisan serve --port=8005
 ```
 
+#### Khởi chạy API Gateway (cổng vào duy nhất của frontend):
+```bash
+cd api-gateway
+php -S localhost:8000 index.php
+```
+Frontend gọi `http://localhost:8000/api/...`, Gateway chuyển xuống đúng service. Xem [api-gateway/README.md](api-gateway/README.md).
+
 ---
 
 ## 🔄 Quy trình Làm việc Git (Git Flow & PR Guidelines)
