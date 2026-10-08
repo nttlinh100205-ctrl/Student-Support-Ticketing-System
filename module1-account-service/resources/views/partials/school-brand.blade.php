@@ -1,7 +1,6 @@
 <header class="school-masthead">
-    <a href="/" class="school-identity" aria-label="Trang chủ hỗ trợ sinh viên HUNRE">
-        <img src="https://student.hunre.edu.vn/congthongtin/logologin.png" alt="Trường Đại học Tài nguyên và Môi trường Hà Nội" width="260" height="42">
+    <a href="/" class="school-identity" aria-label="Trang chủ hệ thống xử lý yêu cầu sinh viên">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect width="48" height="48" rx="13" fill="white"/><path d="M13 13h22v16H23l-7 6v-6h-3V13Z" fill="#175ac4"/><path d="m18 21 4 4 8-9" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <strong class="system-name">HỆ THỐNG XỬ LÝ<br>YÊU CẦU SINH VIÊN</strong>
     </a>
-    <div class="school-heading"><span>HUNRE · KẾT NỐI & ĐỒNG HÀNH</span><strong>HỆ THỐNG HỖ TRỢ SINH VIÊN</strong></div>
-    <a class="school-site" href="https://student.hunre.edu.vn/congthongtin/Index.aspx" target="_blank" rel="noopener noreferrer">Cổng thông tin trường ↗</a>
 </header>

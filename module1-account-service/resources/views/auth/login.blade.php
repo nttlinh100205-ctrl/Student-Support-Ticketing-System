@@ -18,7 +18,7 @@
     <section class="auth-story">
         <span class="brand-label">CỔNG HỖ TRỢ TRỰC TUYẾN</span>
         <h2>Mọi yêu cầu được lắng nghe.<br>Mỗi bước đều có người đồng hành.</h2>
-        <p>Kết nối sinh viên với các phòng ban của Trường Đại học Tài nguyên và Môi trường Hà Nội. Gửi yêu cầu và theo dõi quá trình hỗ trợ trong một không gian.</p>
+        <p>Kết nối sinh viên với các phòng ban. Gửi yêu cầu, trao đổi và theo dõi quá trình hỗ trợ trong một không gian.</p>
         <div class="school-steps">
             <article class="school-step"><b>01</b><h3>Gửi yêu cầu</h3><p>Chọn phòng ban và nội dung cần được hỗ trợ.</p></article>
             <article class="school-step"><b>02</b><h3>Theo dõi xử lý</h3><p>Trao đổi, bổ sung thông tin và nhận phản hồi.</p></article>
@@ -29,7 +29,7 @@
 
     <div class="auth-card">
 
-        <h1>HUNRE · HỖ TRỢ SINH VIÊN</h1>
+        <h1>HỆ THỐNG XỬ LÝ YÊU CẦU SINH VIÊN</h1>
 
         <h2>Đăng nhập</h2>
 
