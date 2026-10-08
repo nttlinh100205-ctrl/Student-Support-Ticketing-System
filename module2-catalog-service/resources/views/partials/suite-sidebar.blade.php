@@ -39,13 +39,14 @@
 <aside id="system-sidebar" class="system-sidebar" data-role="{{ $suiteRole }}" data-service="{{ $suiteService }}" aria-label="Menu hệ thống" tabindex="-1">
     <div class="system-menu-heading"><span>KHÔNG GIAN LÀM VIỆC</span><button type="button" class="system-menu-close" aria-label="Đóng menu">×</button></div>
     <nav aria-label="Điều hướng chính">
-        <a class="system-overview" href="{{ $requestsBase }}/dashboard"><span aria-hidden="true">◈</span> Tổng quan</a>
+        <a class="system-overview" href="{{ $suiteAccountUrl }}/"><span><x-nav-icon name="home"/></span> Trang chủ & tin mới</a>
+        <a class="system-overview" href="{{ $requestsBase }}/dashboard"><span><x-nav-icon name="reports"/></span> Tổng quan</a>
         @foreach($groups as [$key, $label, $items, $roles])
             <details class="system-menu-group" data-group="{{ $key }}" data-roles="{{ $roles }}" @if($roles && !in_array($suiteRole, explode(' ', $roles), true)) hidden @endif @if($suiteService === $key) open @endif>
-                <summary><span class="system-group-icon" aria-hidden="true">{{ ['catalog' => '▦', 'requests' => '▤', 'news' => '▧', 'reports' => '▥', 'accounts' => '◉'][$key] }}</span>{{ $label }}<span class="system-chevron" aria-hidden="true">›</span></summary>
+                <summary><span class="system-group-icon" aria-hidden="true"><x-nav-icon :name="$key"/></span>{{ $label }}<span class="system-chevron" aria-hidden="true">›</span></summary>
                 <div class="system-submenu">
                     @foreach($items as [$href, $text, $itemRoles])
-                        <a href="{{ $href }}" data-roles="{{ $itemRoles }}" @if($itemRoles && !in_array($suiteRole, explode(' ', $itemRoles), true)) hidden @endif>{{ $text }}</a>
+                        <a href="{{ $href }}" data-roles="{{ $itemRoles }}" @if($itemRoles && !in_array($suiteRole, explode(' ', $itemRoles), true)) hidden @endif><x-nav-icon :name="(['Phòng ban'=>'catalog','Cán bộ theo phòng ban'=>'accounts','Cán bộ & phân công'=>'accounts','Quản lý người dùng'=>'accounts','Hồ sơ & mật khẩu'=>'accounts','Tạo yêu cầu mới'=>'create','Bảng công việc'=>'kanban','Nhật ký xử lý'=>'file','Cấu hình xử lý'=>'settings','Loại hỗ trợ & SLA'=>'settings','Biểu mẫu theo loại'=>'file','Câu hỏi thường gặp'=>'help','Đánh giá của sinh viên'=>'star','Đánh giá hỗ trợ'=>'star','Yêu cầu quá hạn'=>'clock','Đang xử lý'=>'clock','Chờ xác nhận kết quả'=>'check','Cần bổ sung thông tin'=>'file','Xuất báo cáo Excel'=>'reports','Bảng tin & tài liệu'=>'news','Thống kê hiệu suất'=>'reports'])[$text] ?? $key"/><span>{{ $text }}</span></a>
                     @endforeach
                 </div>
             </details>
