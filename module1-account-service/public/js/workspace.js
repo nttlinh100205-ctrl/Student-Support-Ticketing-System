@@ -29,7 +29,24 @@
     function renderActions(view) {
         view.actions.forEach(item => {
             const link = document.createElement('a'); link.href = item.href; link.className = 'action';
-            const icon = document.createElement('span'); icon.className = 'action-icon'; icon.textContent = item.icon;
+            const icon = document.createElement('span'); icon.className = 'action-icon'; const shapes = {
+                users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3a4 4 0 0 1 0 8M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+                building:'M3 21h18M5 21V7l7-4 7 4v14M9 8h1m4 0h1M9 12h1m4 0h1M10 21v-5h4v5',
+                news:'M5 4h15v15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8h2M5 4v15M9 8h7M9 12h7M9 16h3',
+                chart:'M4 3v18h17M8 17v-4M13 17V7M18 17v-7',
+                plus:'M12 5v14M5 12h14',
+                ticket:'M5 4h14v6a2 2 0 0 0 0 4v6H5v-6a2 2 0 0 0 0-4V4M9 8h6M9 12h3M9 16h6'
+            };
+            const kind = /Tài khoản|Hồ sơ|Cán bộ/.test(item.title) ? 'users'
+                : /Phòng ban/.test(item.title) ? 'building'
+                : /Tin tức/.test(item.title) ? 'news'
+                : /Báo cáo/.test(item.title) ? 'chart'
+                : /Gửi yêu cầu|Yêu cầu mới/.test(item.title) ? 'plus' : 'ticket';
+            const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+            svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('width','27'); svg.setAttribute('height','27');
+            svg.setAttribute('fill','none'); svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','1.8');
+            svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round'); svg.setAttribute('aria-hidden','true');
+            const path = document.createElementNS(svg.namespaceURI,'path'); path.setAttribute('d',shapes[kind]); svg.append(path); icon.append(svg);
             const info = document.createElement('div'); const title = document.createElement('h3'); title.textContent = item.title;
             const description = document.createElement('p'); description.textContent = item.description; info.append(title,description); link.append(icon,info); $('actions').append(link);
         });

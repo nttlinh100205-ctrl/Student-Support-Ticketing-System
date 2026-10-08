@@ -17,6 +17,7 @@
 <main><header class="workspace-top"><span>Cổng hỗ trợ sinh viên <span class="muted">/ Tổng quan</span></span><span id="today"></span></header>
 <div id="identity-error" class="notice" role="alert" hidden></div>
 <div id="dashboard" hidden>
+@include('partials.latest-news')
 <section class="welcome"><div><p id="role-eyebrow" class="eyebrow"></p><h1 id="heading"></h1><p id="description"></p></div><a id="primary-action" class="button" href="#"></a></section>
 <section class="hero"><div><span class="hero-tag">STUDENT SUPPORT / KHÔNG GIAN CỦA BẠN</span><h2 id="hero-title"></h2><p id="hero-description"></p><a id="hero-link" href="#">Bắt đầu ngay →</a></div><div class="hero-art" aria-hidden="true"><div class="orbit"></div><div class="paper"><span>YÊU CẦU HỖ TRỢ</span><i></i><i></i><i></i><b>✓ Được kết nối</b></div><span class="floating">✦</span></div></section>
 <section class="metrics" aria-label="Thống kê yêu cầu">
