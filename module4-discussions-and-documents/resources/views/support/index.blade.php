@@ -2,6 +2,7 @@
 <html lang="vi">
 
 <head>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('unisupport-theme')||'light';document.documentElement.dataset.sidebar=localStorage.getItem('unisupport-sidebar')||'expanded'}catch(e){}</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
