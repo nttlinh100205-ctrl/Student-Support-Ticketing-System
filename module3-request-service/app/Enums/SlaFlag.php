@@ -11,15 +11,15 @@ namespace App\Enums;
  */
 enum SlaFlag: string
 {
-    case OnTime   = 'on_time';
-    case Warning  = 'warning';
+    case OnTime = 'on_time';
+    case Warning = 'warning';
     case Breached = 'breached';
 
     public function label(): string
     {
         return match ($this) {
-            self::OnTime   => 'Đúng hạn',
-            self::Warning  => 'Sắp quá hạn',
+            self::OnTime => 'Đúng hạn',
+            self::Warning => 'Sắp quá hạn',
             self::Breached => 'Đã quá hạn',
         };
     }
@@ -30,8 +30,8 @@ enum SlaFlag: string
     public function badge(): string
     {
         return match ($this) {
-            self::OnTime   => 'badge-success',
-            self::Warning  => 'badge-warning',
+            self::OnTime => 'badge-success',
+            self::Warning => 'badge-warning',
             self::Breached => 'badge-danger',
         };
     }

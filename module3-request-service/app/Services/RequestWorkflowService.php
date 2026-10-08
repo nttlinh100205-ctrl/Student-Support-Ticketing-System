@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-
 class RequestWorkflowService
 {
     public function __construct(
@@ -49,14 +48,16 @@ class RequestWorkflowService
 
             $request = SupportRequest::create([
                 ...$payload,
-                'student_id'      => $studentId,
-                'assigned_to'     => $assignedTo,
-                'assigned_at'     => $assignedTo ? $createdAt : null,
-                'status'          => RequestStatus::New->value,
-                'priority'        => $priority,
-                'code'            => $this->generateCode(),
-                'sla_deadline_at' => $this->slaService->calculateDeadline($priority, $createdAt),
-                'sla_flag'        => SlaFlag::OnTime->value,
+                'student_id' => $studentId,
+                'assigned_to' => $assignedTo,
+                'assigned_at' => $assignedTo ? $createdAt : null,
+                'status' => RequestStatus::New->value,
+                'priority' => $priority,
+                'code' => $this->generateCode(),
+                'sla_deadline_at' => ($slaDays = config('master_data.support_types.'.$payload['support_type_id'].'.sla_days')) !== null
+                    ? $createdAt->copy()->addDays((int) $slaDays)
+                    : $this->slaService->calculateDeadline($priority, $createdAt),
+                'sla_flag' => SlaFlag::OnTime->value,
             ]);
 
             $historyNote = $assignedTo ? "Tự động phân công cán bộ #{$assignedTo}." : null;
@@ -96,8 +97,8 @@ class RequestWorkflowService
      * Đổi trạng thái theo state machine.
      * - Phải đã gán cán bộ trước khi chuyển (trừ cancelled).
      * - resolved = cán bộ xử lý xong, chờ SV phản hồi.
-    * - resolved → closed: cán bộ đóng sau khi sinh viên phản hồi.
-    * - resolved/closed → in_progress: sinh viên yêu cầu xử lý tiếp.
+     * - resolved → closed: cán bộ đóng sau khi sinh viên phản hồi.
+     * - resolved/closed → in_progress: sinh viên yêu cầu xử lý tiếp.
      */
     public function changeStatus(SupportRequest $request, string $toStatus, int $changedBy, ?string $note = null): SupportRequest
     {
@@ -153,7 +154,6 @@ class RequestWorkflowService
         });
     }
 
-   
     public function assign(SupportRequest $request, int $staffId, int $changedBy): SupportRequest
     {
         return DB::transaction(function () use ($request, $staffId, $changedBy) {
@@ -259,6 +259,9 @@ class RequestWorkflowService
 
     protected function selectStaffForDepartment(int $departmentId): ?int
     {
+        if (! config('account.fake') && ! request()->attributes->has('account_user')) {
+            return null;
+        }
         $staffIds = config("master_data.staff_by_department.{$departmentId}", []);
         if ($staffIds === []) {
             return null;
@@ -336,7 +339,6 @@ class RequestWorkflowService
         return $assignedCount;
     }
 
-   
     public function cancel(SupportRequest $request, int $changedBy, ?string $reason = null, bool $asStudent = false): SupportRequest
     {
         if ($asStudent && ! in_array($request->status->value, [
@@ -355,7 +357,6 @@ class RequestWorkflowService
         return $updated;
     }
 
-    
     public function update(SupportRequest $request, array $data, int $changedBy): SupportRequest
     {
         if ($request->status->value !== RequestStatus::New->value) {
@@ -415,7 +416,7 @@ class RequestWorkflowService
     protected function generateCode(): string
     {
         $year = now()->format('Y');
-     
+
         $sequence = SupportRequest::withTrashed()->whereYear('created_at', $year)->count() + 1;
 
         return sprintf('YC-%s-%06d', $year, $sequence);

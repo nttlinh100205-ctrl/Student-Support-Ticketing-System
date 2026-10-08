@@ -4,7 +4,6 @@ namespace App\Enums;
 
 /**
  * Trạng thái của 1 yêu cầu hỗ trợ (state machine).
-
  */
 enum RequestStatus: string
 {

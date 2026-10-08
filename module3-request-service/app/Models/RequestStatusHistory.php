@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-/* 
+
+/*
  * Ghi lại lịch sử đổi trạng thái để Module 5 (Report) lấy dữ liệu thống kê
 
  */

@@ -675,4 +675,119 @@ class RequestApiTest extends TestCase
             $response->getContent(),
         );
     }
+
+    public function test_assigned_staff_name_is_displayed_instead_of_just_id(): void
+    {
+        $ticket = SupportRequest::factory()->create([
+            'student_id' => 12,
+            'assigned_to' => 21,
+            'department_id' => 3,
+        ]);
+
+        // Kiểm tra Web Index hiển thị tên cán bộ thay vì chỉ hiện CB #21
+        $this->withSession(['fake_user' => ['id' => 1, 'role' => 'admin', 'full_name' => 'Admin Hệ thống']])
+            ->get(route('requests.index'))
+            ->assertOk()
+            ->assertSee('Nguyễn Văn A')
+            ->assertDontSee('CB #21');
+
+        // Kiểm tra Web Show hiển thị tên cán bộ
+        $this->withSession(['fake_user' => ['id' => 1, 'role' => 'admin', 'full_name' => 'Admin Hệ thống']])
+            ->get(route('requests.show', $ticket))
+            ->assertOk()
+            ->assertSee('Nguyễn Văn A');
+
+        // Kiểm tra API trả về assigned_staff_name
+        $this->withHeaders([
+            'X-User-Id' => 1,
+            'X-User-Role' => 'admin',
+        ])->getJson("/api/requests/{$ticket->id}")
+            ->assertOk()
+            ->assertJsonPath('data.assigned_staff_name', 'Nguyễn Văn A');
+    }
+
+    public function test_requests_can_be_exported_to_excel_csv_with_utf8_bom(): void
+    {
+        $ticket = SupportRequest::factory()->create([
+            'title' => 'Cần hỗ trợ giấy vay vốn ngân hàng',
+            'student_id' => 12,
+            'assigned_to' => 21,
+            'department_id' => 3,
+            'priority' => 'high',
+            'status' => 'in_progress',
+        ]);
+
+        $response = $this->withSession(['fake_user' => ['id' => 1, 'role' => 'admin', 'full_name' => 'Admin Hệ thống']])
+            ->get(route('requests.export', ['format' => 'csv']));
+
+        $response->assertOk();
+        $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('danh-sach-yeu-cau-', $response->headers->get('Content-Disposition'));
+
+        // Capture streamed response content
+        ob_start();
+        $response->sendContent();
+        $content = ob_get_clean();
+
+        // Kiểm tra UTF-8 BOM để Excel tiếng Việt không lỗi font
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $content);
+        $this->assertStringContainsString('"Mã yêu cầu","Tiêu đề"', $content);
+        $this->assertStringContainsString('"Cán bộ phụ trách"', $content);
+        $this->assertStringContainsString($ticket->code, $content);
+        $this->assertStringContainsString('Cần hỗ trợ giấy vay vốn ngân hàng', $content);
+        $this->assertStringContainsString('Nguyễn Văn A', $content);
+    }
+
+    public function test_sla_statistics_are_computed_and_rendered_on_index(): void
+    {
+        SupportRequest::factory()->create([
+            'status' => 'in_progress',
+            'sla_flag' => 'warning',
+            'sla_deadline_at' => now()->addHour(),
+        ]);
+        SupportRequest::factory()->create([
+            'status' => 'closed',
+            'sla_flag' => 'on_time',
+            'rating' => 5,
+        ]);
+
+        $this->withSession(['fake_user' => ['id' => 1, 'role' => 'admin', 'full_name' => 'Admin Hệ thống']])
+            ->get(route('requests.index'))
+            ->assertOk()
+            ->assertSee('Tỷ lệ đúng hạn SLA')
+            ->assertSee('Sắp quá hạn')
+            ->assertSee('Đánh giá CSAT')
+            ->assertSee('Xuất Excel');
+    }
+
+    public function test_student_can_rate_closed_request_and_see_stars_and_comment(): void
+    {
+        $ticket = SupportRequest::factory()->create([
+            'student_id' => 12,
+            'status' => 'closed',
+            'rating' => null,
+            'rating_comment' => null,
+        ]);
+
+        $studentSession = ['fake_user' => ['id' => 12, 'role' => 'student', 'full_name' => 'Trần Thị B']];
+
+        // Gửi đánh giá 5 sao
+        $response = $this->withSession($studentSession)->post(route('requests.rating.store', $ticket), [
+            'rating' => 5,
+            'rating_comment' => 'Cán bộ xử lý rất nhanh chóng và chuyên nghiệp.',
+        ]);
+
+        $response->assertSessionHas('success', 'Cảm ơn bạn đã đánh giá kết quả hỗ trợ.');
+
+        $fresh = $ticket->fresh();
+        $this->assertSame(5, $fresh->rating);
+        $this->assertSame('Cán bộ xử lý rất nhanh chóng và chuyên nghiệp.', $fresh->rating_comment);
+        $this->assertNotNull($fresh->rated_at);
+
+        // Xem lại trang show để kiểm tra sao và nhận xét
+        $this->withSession($studentSession)->get(route('requests.show', $ticket))
+            ->assertOk()
+            ->assertSee('5 / 5 sao')
+            ->assertSee('Cán bộ xử lý rất nhanh chóng và chuyên nghiệp.');
+    }
 }

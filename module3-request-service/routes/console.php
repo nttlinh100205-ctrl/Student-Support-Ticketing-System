@@ -42,4 +42,3 @@ if ($intervalMinutes > 5) {
         ->onOneServer()
         ->description('Kiểm tra SLA ticket — quét warning/breached');
 }
-

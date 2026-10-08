@@ -25,8 +25,7 @@ class CommentController extends Controller
     public function __construct(
         protected CommentService $commentService,
         protected AuthContext $auth,
-    ) {
-    }
+    ) {}
 
     /**
      * GET /api/requests/{supportRequest}/comments
@@ -73,12 +72,12 @@ class CommentController extends Controller
 
         try {
             $comment = $this->commentService->addComment(
-                ticket:   $supportRequest,
-                data:     $request->safe()->only(['body', 'is_internal']),
-                userId:   $this->auth->userId(),
+                ticket: $supportRequest,
+                data: $request->safe()->only(['body', 'is_internal']),
+                userId: $this->auth->userId(),
                 userName: $this->auth->fullName(),
                 userRole: $this->auth->role(),
-                files:    $files,
+                files: $files,
             );
         } catch (ValidationException $e) {
             return ApiResponse::error($e->getMessage(), 422, $e->errors());
@@ -122,11 +121,11 @@ class CommentController extends Controller
     protected function canView(SupportRequest $supportRequest): bool
     {
         return match ($this->auth->role()) {
-            'student'         => $supportRequest->student_id === $this->auth->userId(),
-            'staff'           => $supportRequest->assigned_to === $this->auth->userId(),
+            'student' => $supportRequest->student_id === $this->auth->userId(),
+            'staff' => $supportRequest->assigned_to === $this->auth->userId(),
             'department_head' => $supportRequest->department_id === $this->auth->departmentId(),
-            'admin'           => true,
-            default           => false,
+            'admin' => true,
+            default => false,
         };
     }
 }

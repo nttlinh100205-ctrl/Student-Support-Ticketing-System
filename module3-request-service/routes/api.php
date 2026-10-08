@@ -1,11 +1,15 @@
 <?php
 
+use App\Http\Controllers\Api\AttachmentController;
+use App\Http\Controllers\Api\CatalogUsageController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\RequestController;
+use App\Http\Controllers\Api\SlaController;
 use Illuminate\Support\Facades\Route;
 
 /**
- * Middleware 'auth.fake' — khi Module 1 xong đổi sang JWT.
+ * Alias cũ auth.fake dùng AccountAuthentication mặc định; mock chỉ bật qua cấu hình.
  */
 Route::middleware('auth.fake')->prefix('requests')->group(function () {
     Route::get('/', [RequestController::class, 'index']);
@@ -17,6 +21,7 @@ Route::middleware('auth.fake')->prefix('requests')->group(function () {
     Route::put('/{supportRequest}/transfer', [RequestController::class, 'transfer']);
     Route::put('/{supportRequest}/cancel', [RequestController::class, 'cancel']);
     Route::delete('/{supportRequest}', [RequestController::class, 'destroy']);
+    Route::post('/{supportRequest}/rating', [RatingController::class, 'store']);
     Route::get('/{supportRequest}/history', [RequestController::class, 'history']);
 
     /*
@@ -27,10 +32,10 @@ Route::middleware('auth.fake')->prefix('requests')->group(function () {
     Route::get('/{supportRequest}/comments', [CommentController::class, 'index']);
     Route::post('/{supportRequest}/comments', [CommentController::class, 'store']);
     Route::delete('/{supportRequest}/comments/{comment}', [CommentController::class, 'destroy']);
-    Route::post('/{supportRequest}/comments/{comment}/attachments', [\App\Http\Controllers\Api\AttachmentController::class, 'store'])
+    Route::post('/{supportRequest}/comments/{comment}/attachments', [AttachmentController::class, 'store'])
         ->name('api.requests.comments.attachments.store');
 
-    Route::withoutMiddleware('auth.fake')->get('/{supportRequest}/comments/{comment}/attachments/{commentAttachment}/preview', [\App\Http\Controllers\Api\AttachmentController::class, 'preview'])
+    Route::get('/{supportRequest}/comments/{comment}/attachments/{commentAttachment}/preview', [AttachmentController::class, 'preview'])
         ->name('api.requests.comments.attachments.preview');
 });
 
@@ -41,7 +46,9 @@ Route::middleware('auth.fake')->prefix('requests')->group(function () {
 */
 Route::middleware('auth.fake')->prefix('sla')->group(function () {
     // Danh sách thông báo SLA của user hiện tại (chuông thông báo)
-    Route::get('/notifications', [\App\Http\Controllers\Api\SlaController::class, 'notifications']);
+    Route::get('/notifications', [SlaController::class, 'notifications']);
     // Danh sách ticket vi phạm / sắp quá hạn SLA (dashboard)
-    Route::get('/tickets', [\App\Http\Controllers\Api\SlaController::class, 'tickets']);
+    Route::get('/tickets', [SlaController::class, 'tickets']);
 });
+
+Route::get('/catalog-usage', CatalogUsageController::class)->middleware('auth.fake');

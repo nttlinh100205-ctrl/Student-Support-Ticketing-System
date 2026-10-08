@@ -15,27 +15,27 @@ class TicketCommentResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'          => $this->id,
-            'request_id'  => $this->request_id,
-            'user_id'     => $this->user_id,
-            'user_name'   => $this->user_name,
-            'user_role'   => $this->user_role,
-            'body'        => $this->body,
+            'id' => $this->id,
+            'request_id' => $this->request_id,
+            'user_id' => $this->user_id,
+            'user_name' => $this->user_name,
+            'user_role' => $this->user_role,
+            'body' => $this->body,
             'is_internal' => $this->is_internal,
-            'created_at'  => $this->created_at?->toJSON(),
-            'updated_at'  => $this->updated_at?->toJSON(),
+            'created_at' => $this->created_at?->toJSON(),
+            'updated_at' => $this->updated_at?->toJSON(),
 
             'attachments' => $this->whenLoaded('attachments', function () {
                 return $this->attachments->map(fn ($a) => [
-                    'id'            => $a->id,
+                    'id' => $a->id,
                     'original_name' => $a->original_name,
-                    'url'           => route('api.requests.comments.attachments.preview', [
+                    'url' => route('api.requests.comments.attachments.preview', [
                         'supportRequest' => $this->request_id,
                         'comment' => $this->id,
                         'commentAttachment' => $a->id,
                     ]),
-                    'mime_type'     => $a->mime_type,
-                    'size'          => $a->size,
+                    'mime_type' => $a->mime_type,
+                    'size' => $a->size,
                 ]);
             }),
         ];

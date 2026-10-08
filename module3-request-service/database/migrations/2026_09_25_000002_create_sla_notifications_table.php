@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('request_id');
             $table->string('type', 20)->comment('warning | breached');
             $table->unsignedBigInteger('notified_user_id')->nullable()
-                  ->comment('User nhận thông báo (assigned_to / department_head)');
+                ->comment('User nhận thông báo (assigned_to / department_head)');
             $table->text('message')->nullable();
             $table->timestamp('sent_at')->useCurrent();
 

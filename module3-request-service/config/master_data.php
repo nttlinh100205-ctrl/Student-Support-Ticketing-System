@@ -1,6 +1,5 @@
 <?php
 
-
 return [
     'departments' => [
         1 => 'Phòng Đào tạo',
@@ -11,7 +10,6 @@ return [
         6 => 'Phòng Cơ sở vật chất',
     ],
 
-   
     'support_types' => [
         1 => [
             'name' => 'Xác nhận sinh viên',
@@ -79,5 +77,74 @@ return [
         'need_info' => 'Bạn vui lòng bổ sung thêm thông tin hoặc tài liệu để chúng tôi tiếp tục xử lý yêu cầu này.',
         'in_progress' => 'Yêu cầu đang được xử lý. Chúng tôi sẽ cập nhật kết quả tại cuộc trao đổi này.',
         'resolved' => 'Yêu cầu đã được xử lý. Bạn vui lòng kiểm tra và phản hồi nếu cần hỗ trợ thêm.',
+    ],
+
+    'staff' => [
+        21 => [
+            'id' => 21,
+            'full_name' => 'Nguyễn Văn A',
+            'role' => 'staff',
+            'department_id' => 3,
+            'email' => 'canbo01@university.edu.vn',
+        ],
+        22 => [
+            'id' => 22,
+            'full_name' => 'Phạm Minh D',
+            'role' => 'staff',
+            'department_id' => 3,
+            'email' => 'canbo02@university.edu.vn',
+        ],
+        23 => [
+            'id' => 23,
+            'full_name' => 'Hoàng Thị E',
+            'role' => 'staff',
+            'department_id' => 1,
+            'email' => 'canbo03@university.edu.vn',
+        ],
+    ],
+
+    'users' => [
+        1 => [
+            'id' => 1,
+            'role' => 'admin',
+            'department_id' => null,
+            'full_name' => 'Admin Hệ thống',
+            'email' => 'admin@university.edu.vn',
+        ],
+        12 => [
+            'id' => 12,
+            'role' => 'student',
+            'department_id' => null,
+            'full_name' => 'Trần Thị B',
+            'email' => 'sv001@university.edu.vn',
+        ],
+        21 => [
+            'id' => 21,
+            'role' => 'staff',
+            'department_id' => 3,
+            'full_name' => 'Nguyễn Văn A',
+            'email' => 'canbo01@university.edu.vn',
+        ],
+        22 => [
+            'id' => 22,
+            'role' => 'staff',
+            'department_id' => 3,
+            'full_name' => 'Phạm Minh D',
+            'email' => 'canbo02@university.edu.vn',
+        ],
+        23 => [
+            'id' => 23,
+            'role' => 'staff',
+            'department_id' => 1,
+            'full_name' => 'Hoàng Thị E',
+            'email' => 'canbo03@university.edu.vn',
+        ],
+        31 => [
+            'id' => 31,
+            'role' => 'department_head',
+            'department_id' => 3,
+            'full_name' => 'Lê Thị C',
+            'email' => 'truongphong@university.edu.vn',
+        ],
     ],
 ];
