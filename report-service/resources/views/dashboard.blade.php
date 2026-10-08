@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('unisupport-theme')||'light';document.documentElement.dataset.sidebar=localStorage.getItem('unisupport-sidebar')||'expanded'}catch(e){}</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống Báo cáo &amp; Thống kê Hỗ trợ Sinh viên</title>
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -20,46 +21,46 @@
             --bg-card: #ffffff;
             --bg-card-subtle: #f1f5f9;
             --bg-card-hover: #f8fafc;
-            
+
             --text-main: #0f172a;
             --text-muted: #475569;
             --text-light: #94a3b8;
-            
+
             --border: #e2e8f0;
             --border-subtle: #f1f5f9;
             --border-focus: #3b82f6;
-            
+
             --primary: #2563eb;
             --primary-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
             --primary-light: #eff6ff;
             --primary-dark: #1d4ed8;
-            
+
             --success: #059669;
             --success-light: #ecfdf5;
             --success-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
-            
+
             --warning: #d97706;
             --warning-light: #fffbeb;
             --warning-gradient: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
-            
+
             --danger: #dc2626;
             --danger-light: #fef2f2;
             --danger-gradient: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            
+
             --indigo: #4f46e5;
             --indigo-light: #eef2ff;
             --indigo-gradient: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-            
+
             --cyan: #0284c7;
             --cyan-light: #f0f9ff;
-            
+
             --gold: #f59e0b;
-            
+
             --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
             --shadow-sm: 0 2px 4px 0 rgba(15, 23, 42, 0.05);
             --shadow-md: 0 4px 12px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
             --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
-            
+
             --radius-sm: 8px;
             --radius: 14px;
             --radius-lg: 20px;
@@ -1457,7 +1458,7 @@
             tbody.innerHTML = rankings.map(s => {
                 const rankClass = s.rank === 1 ? 'rank-1' : (s.rank === 2 ? 'rank-2' : (s.rank === 3 ? 'rank-3' : 'rank-default'));
                 const medal = s.rank === 1 ? '🥇' : (s.rank === 2 ? '🥈' : (s.rank === 3 ? '🥉' : s.rank));
-                
+
                 const tierBadge = s.tier === 'Xuất sắc' ? 'badge-pill success' :
                                  (s.tier === 'Tốt' ? 'badge-pill info' :
                                  (s.tier === 'Đạt' ? 'badge-pill warning' : 'badge-pill danger'));
