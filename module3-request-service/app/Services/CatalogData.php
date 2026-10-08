@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
+
 class CatalogData
 {
     public function __construct(private ServiceClient $client) {}
@@ -9,9 +11,24 @@ class CatalogData
     public function load(): void
     {
         $url = config('account.catalog_url');
-        $departments = $this->client->all($url, '/api/catalog/departments');
-        $types = $this->client->all($url, '/api/catalog/support-types');
-        $staff = $this->client->all(config('account.url'), '/api/v1/directory/staff');
+        $fetch = fn () => [
+            $this->client->all($url, '/api/catalog/departments'),
+            $this->client->all($url, '/api/catalog/support-types'),
+            $this->client->all(config('account.url'), '/api/v1/directory/staff'),
+        ];
+        $request = request();
+        $user = $request->attributes->get('account_user');
+        $token = $request->attributes->get('account_token') ?: $request->bearerToken();
+        $ttl = max(0, (int) config('account.catalog_cache_seconds', 30));
+        // Chỉ lưu danh mục để hiển thị; ghi dữ liệu luôn kiểm tra danh mục mới.
+        // Khóa riêng theo phiên và quyền, không lưu token thô trong tên khóa.
+        $key = 'catalog:v1:'.hash('sha256', json_encode([$url, config('account.url'), $token, $user]));
+        if ($request->isMethodSafe() && $ttl > 0 && $token && $user) {
+            [$departments, $types, $staff] = Cache::remember($key, $ttl, $fetch);
+        } else {
+            Cache::forget($key);
+            [$departments, $types, $staff] = $fetch();
+        }
         $staffByDepartment = [];
         $users = [];
         foreach ($staff as $person) {
