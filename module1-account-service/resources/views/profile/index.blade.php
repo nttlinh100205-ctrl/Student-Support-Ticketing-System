@@ -2,6 +2,7 @@
 <html lang="vi">
 
 <head>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('unisupport-theme')||'light';document.documentElement.dataset.sidebar=localStorage.getItem('unisupport-sidebar')||'expanded'}catch(e){}</script>
 
     <meta charset="UTF-8">
 
@@ -58,7 +59,7 @@
 
             <div id="profileMessage"></div>
 
-            <form id="profileForm">
+            <form id="profileForm">@foreach(['student_code'=>'Mã số sinh viên','class_name'=>'Lớp','faculty'=>'Khoa'] as $field=>$label)<div class="form-group"><label for="{{ $field }}">{{ $label }}</label><input id="{{ $field }}" type="text"></div>@endforeach
 
                 <div class="form-group">
 
@@ -284,6 +285,7 @@ async function loadProfile() {
 
         document.getElementById('phone')
             .value = user.phone || '';
+        ['student_code','class_name','faculty'].forEach(key=>document.getElementById(key).value=user[key]||'');
 
 
         document.getElementById('role')
@@ -357,6 +359,9 @@ document
                                         )
                                         .value,
 
+                                student_code:document.getElementById('student_code').value,
+                                class_name:document.getElementById('class_name').value,
+                                faculty:document.getElementById('faculty').value,
                                 phone:
                                     document
                                         .getElementById(

@@ -267,3 +267,9 @@ Route::post('/v1/auth/sso/ticket', [SingleSignOnController::class, 'ticket'])->m
 Route::post('/v1/auth/sso/exchange', [SingleSignOnController::class, 'exchange'])->middleware('throttle:30,1');
 
 Route::get('/v1/directory/staff', StaffDirectoryController::class)->middleware('auth:sanctum');
+
+Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('v1/admin')->group(function () {
+    Route::post('/users', [AdminUserController::class, 'store']);
+    Route::put('/users/{user}', [AdminUserController::class, 'update']);
+    Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
+});

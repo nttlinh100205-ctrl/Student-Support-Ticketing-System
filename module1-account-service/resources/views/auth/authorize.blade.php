@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>Đăng nhập hệ thống</title></head>
+<head>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('unisupport-theme')||'light';document.documentElement.dataset.sidebar=localStorage.getItem('unisupport-sidebar')||'expanded'}catch(e){}</script><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>Đăng nhập hệ thống</title></head>
 <body>
 <p id="message">Đang xác thực phiên đăng nhập…</p>
 <script>
