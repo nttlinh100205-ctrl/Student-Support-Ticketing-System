@@ -8,149 +8,89 @@ use Illuminate\Support\Facades\Route;
 
 /**
  * ============================================================
- * MODULE 1 - TÀI KHOẢN VÀ QUYỀN TRUY CẬP
+ * MODULE 1 - TAI KHOAN VA QUYEN TRUY CAP
  * ============================================================
- *
- * API công khai:
- * POST /api/v1/auth/register
- * POST /api/v1/auth/login
- *
- * API cần đăng nhập:
- * POST /api/v1/auth/logout
- * GET  /api/v1/auth/me
- *
- * API hồ sơ:
- * GET  /api/v1/profile
- * PUT  /api/v1/profile
- * PUT  /api/v1/profile/password
- *
  */
-
 
 /**
- * ============================================================
- * ĐĂNG KÝ + ĐĂNG NHẬP
- * Không cần token
- * ============================================================
+ * Dang ky va dang nhap.
+ * Khong can JWT.
+ *
+ * POST /api/auth/register
+ * POST /api/auth/login
  */
-Route::prefix('v1/auth')->group(function () {
-
+Route::prefix('auth')->group(function () {
     Route::post('/register', [
         AuthController::class,
-        'register'
+        'register',
     ]);
 
     Route::post('/login', [
         AuthController::class,
-        'login'
+        'login',
     ]);
 });
 
-
 /**
- * ============================================================
- * LOGOUT + THÔNG TIN TÀI KHOẢN HIỆN TẠI
- * Bắt buộc có Sanctum token
- * ============================================================
+ * Ho so cua tai khoan dang dang nhap.
+ * Bat buoc JWT hop le.
+ *
+ * GET /api/profile
+ * PUT /api/profile
+ * PUT /api/profile/password
  */
-Route::middleware('auth:sanctum')
-    ->prefix('v1/auth')
+Route::middleware('jwt.auth')
+    ->prefix('profile')
     ->group(function () {
-
-        Route::post('/logout', [
-            AuthController::class,
-            'logout'
-        ]);
-
-        Route::get('/me', [
-            AuthController::class,
-            'me'
-        ]);
-    });
-
-
-/**
- * ============================================================
- * HỒ SƠ CÁ NHÂN
- * Bắt buộc có Sanctum token
- * ============================================================
- */
-Route::middleware('auth:sanctum')
-    ->prefix('v1/profile')
-    ->group(function () {
-
         Route::get('/', [
             ProfileController::class,
-            'show'
+            'show',
         ]);
 
         Route::put('/', [
             ProfileController::class,
-            'update'
+            'update',
         ]);
 
         Route::put('/password', [
             ProfileController::class,
-            'updatePassword'
+            'updatePassword',
         ]);
     });
-
 
 /**
- * ============================================================
- * QUẢN LÝ TÀI KHOẢN - CHỈ ADMIN
- * ============================================================
+ * Quan ly tai khoan.
+ * Chi ADMIN duoc truy cap.
  *
- * Bắt buộc:
- * 1. Có Sanctum token
- * 2. Role = ADMIN
- *
+ * GET /api/users
+ * GET /api/users/{user}
+ * PUT /api/users/{user}/role
+ * PUT /api/users/{user}/status
  */
-Route::middleware(['auth:sanctum', 'role:ADMIN'])
-    ->prefix('v1/admin')
+Route::middleware(['jwt.auth', 'role:admin'])
+    ->prefix('users')
     ->group(function () {
-
-        /**
-         * API kiểm tra quyền ADMIN
-         */
-        Route::get('/test', function () {
-            return response()->json([
-                'message' => 'Ban la ADMIN va co quyen truy cap.'
-            ]);
-        });
-
-        /**
-         * Danh sách tất cả tài khoản
-         */
-        Route::get('/users', [
+        Route::get('/', [
             AdminUserController::class,
-            'index'
+            'index',
         ]);
 
-        /**
-         * Xem chi tiết một tài khoản
-         */
-        Route::get('/users/{user}', [
+        Route::get('/{user}', [
             AdminUserController::class,
-            'show'
+            'show',
         ]);
 
-        /**
-         * Thay đổi quyền và phòng ban
-         */
-        Route::put('/users/{user}/role', [
+        Route::put('/{user}/role', [
             AdminUserController::class,
-            'updateRole'
+            'updateRole',
         ]);
 
-        /**
-         * Khóa / mở khóa tài khoản
-         */
-        Route::put('/users/{user}/status', [
+        Route::put('/{user}/status', [
             AdminUserController::class,
-            'updateStatus'
+            'updateStatus',
         ]);
     });
+
 
 
 /**

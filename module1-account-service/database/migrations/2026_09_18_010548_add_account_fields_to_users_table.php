@@ -17,7 +17,7 @@ return new class extends Migration
                 ->after('email');
 
             $table->string('role', 20)
-                ->default('STUDENT')
+                ->default('student')
                 ->after('phone');
 
             $table->string('status', 20)
