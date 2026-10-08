@@ -14,9 +14,10 @@
           href="/css/app.css">
 
 <link rel="stylesheet" href="/css/school.css">
+<link rel="stylesheet" href="/css/suite.css">
 </head>
 
-<body>
+<body class="suite-ui ">
 @include('partials.school-brand')
 <nav style="padding:12px"><a href="/">Cổng hỗ trợ sinh viên</a></nav>
 

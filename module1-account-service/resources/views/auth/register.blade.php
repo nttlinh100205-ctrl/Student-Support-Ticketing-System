@@ -13,9 +13,10 @@
           href="/css/app.css">
 
 <link rel="stylesheet" href="/css/school.css">
+<link rel="stylesheet" href="/css/suite.css">
 </head>
 
-<body>
+<body class="suite-ui ">
 @include('partials.school-brand')
 
 <div class="auth-container">

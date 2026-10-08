@@ -8,9 +8,10 @@
 
     <link rel="stylesheet" href="/css/app.css">
     <link rel="stylesheet" href="/css/school.css">
+<link rel="stylesheet" href="/css/suite.css">
 </head>
 
-<body class="school-login">
+<body class="suite-ui school-login">
 @include('partials.school-brand')
 
 <div class="auth-container">
