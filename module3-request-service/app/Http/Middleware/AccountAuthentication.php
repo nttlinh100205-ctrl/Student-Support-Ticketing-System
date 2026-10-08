@@ -54,7 +54,7 @@ class AccountAuthentication
             return response()->json(['success' => false, 'message' => 'Vui lòng đăng nhập.'], 401);
         }
         if ($request->isMethod('GET')) {
-            $request->session()->put('account_intended', '/'.$request->path());
+            $request->session()->put('account_intended', '/'.ltrim($request->getRequestUri(), '/'));
         }
 
         return redirect()->route('account.start');

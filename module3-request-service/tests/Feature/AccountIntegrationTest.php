@@ -10,6 +10,14 @@ use Tests\TestCase;
 
 class AccountIntegrationTest extends TestCase
 {
+    public function test_login_preserves_the_selected_request_queue_and_filters(): void
+    {
+        $this->get('/requests?queue=unassigned&sort=deadline')
+            ->assertRedirect(route('account.start'))
+            ->assertSessionHas('account_intended', '/requests?queue=unassigned&sort=deadline');
+        Http::assertNothingSent();
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
