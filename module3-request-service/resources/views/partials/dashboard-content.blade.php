@@ -1,4 +1,5 @@
 <div class="uni-dashboard">
+@include('partials.latest-news')
 <div class="uni-page-heading">
 <div>
 <span class="uni-eyebrow">{{ $roleLabel }} / TỔNG QUAN</span>
