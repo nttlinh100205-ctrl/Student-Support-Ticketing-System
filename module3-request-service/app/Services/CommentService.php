@@ -45,7 +45,7 @@ class CommentService
         }
 
         // Ticket đã closed/cancelled thì không cho comment
-        $blockedStatuses = ['closed', 'cancelled'];
+        $blockedStatuses = ['closed', 'cancelled', 'rejected'];
         if (in_array($ticket->status->value, $blockedStatuses, true)) {
             throw ValidationException::withMessages([
                 'request_id' => ['Không thể bình luận vào yêu cầu đã đóng hoặc đã hủy.'],

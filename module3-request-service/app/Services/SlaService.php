@@ -23,7 +23,7 @@ class SlaService
      */
     public function calculateDeadline(string $priority, Carbon $createdAt): Carbon
     {
-        $hours = config("sla.deadline_hours.{$priority}", config('sla.deadline_hours.normal', 24));
+        $hours = app(WorkspaceSettings::class)->get("deadline_hours.{$priority}");
 
         return $createdAt->copy()->addHours($hours);
     }
@@ -37,8 +37,8 @@ class SlaService
     public function checkAll(bool $dryRun = false): array
     {
         $now = Carbon::now();
-        $excludedStatuses = config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled']);
-        $warningPercent = config('sla.warning_threshold_percent', 75) / 100;
+        $excludedStatuses = config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled', 'rejected']);
+        $warningPercent = app(WorkspaceSettings::class)->get('warning_threshold_percent') / 100;
 
         $counters = ['warned' => 0, 'breached' => 0];
 

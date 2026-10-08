@@ -42,6 +42,7 @@ class SupportRequest extends Model
         'sla_flag',
         'rating',
         'rating_comment',
+        'rating_attitude', 'rating_speed', 'rating_quality',
         'rated_at',
     ];
 

@@ -19,13 +19,14 @@ class RequestWorkflowService
     ) {}
 
     public const TRANSITIONS = [
-        'new' => ['received', 'cancelled'],
-        'received' => ['in_progress', 'cancelled'],
-        'in_progress' => ['waiting_info', 'resolved', 'cancelled'],
-        'waiting_info' => ['in_progress', 'cancelled'],
+        'new' => ['received', 'cancelled', 'rejected'],
+        'received' => ['in_progress', 'cancelled', 'rejected'],
+        'in_progress' => ['waiting_info', 'resolved', 'cancelled', 'rejected'],
+        'waiting_info' => ['in_progress', 'cancelled', 'rejected'],
         'resolved' => ['closed', 'in_progress'], // staff đóng sau phản hồi | SV yêu cầu xử lý lại
         'closed' => ['in_progress'], // SV yêu cầu mở lại để staff tiếp tục
         'cancelled' => [],
+        'rejected' => [],
     ];
 
     /**
@@ -102,6 +103,9 @@ class RequestWorkflowService
      */
     public function changeStatus(SupportRequest $request, string $toStatus, int $changedBy, ?string $note = null): SupportRequest
     {
+        if ($toStatus === 'rejected' && trim($note ?? '') === '') {
+            throw ValidationException::withMessages(['note' => 'Vui lòng nêu lý do từ chối yêu cầu.']);
+        }
         $from = $request->status->value;
         $allowed = self::TRANSITIONS[$from] ?? [];
 
@@ -155,10 +159,10 @@ class RequestWorkflowService
         });
     }
 
-    public function assign(SupportRequest $request, int $staffId, int $changedBy): SupportRequest
+    public function assign(SupportRequest $request, int $staffId, int $changedBy, array $options = []): SupportRequest
     {
-        return DB::transaction(function () use ($request, $staffId, $changedBy) {
-            if (in_array($request->status->value, ['closed', 'cancelled'], true)) {
+        return DB::transaction(function () use ($request, $staffId, $changedBy, $options) {
+            if (in_array($request->status->value, ['closed', 'cancelled', 'rejected'], true)) {
                 throw ValidationException::withMessages([
                     'status' => 'Không thể gán cán bộ cho yêu cầu đã đóng hoặc đã hủy.',
                 ]);
@@ -170,6 +174,13 @@ class RequestWorkflowService
                 ]);
             }
 
+            if (! empty($options['sla_deadline_at'])) {
+                $request->sla_deadline_at = $options['sla_deadline_at'];
+                $request->sla_flag = SlaFlag::OnTime;
+            }
+            if (! empty($options['priority'])) {
+                $request->priority = $options['priority'];
+            }
             $request->assigned_to = $staffId;
             $request->assigned_at = now();
             $request->save();
@@ -180,7 +191,7 @@ class RequestWorkflowService
                 $status,
                 $status,
                 $changedBy,
-                "Gán cán bộ xử lý #{$staffId}.",
+                trim("Gán cán bộ xử lý #{$staffId}. ".($options['note'] ?? '')),
             );
 
             return $request->fresh();
@@ -189,7 +200,7 @@ class RequestWorkflowService
 
     public function transfer(SupportRequest $request, int $departmentId, int $supportTypeId, int $changedBy): SupportRequest
     {
-        if (in_array($request->status->value, ['closed', 'cancelled'], true)) {
+        if (in_array($request->status->value, ['closed', 'cancelled', 'rejected'], true)) {
             throw ValidationException::withMessages([
                 'status' => 'Chỉ có thể chuyển yêu cầu chưa đóng hoặc chưa hủy.',
             ]);
@@ -243,7 +254,7 @@ class RequestWorkflowService
         return SupportRequest::query()
             ->where('student_id', $studentId)
             ->where('department_id', $data['department_id'])
-            ->whereNotIn('status', ['closed', 'cancelled'])
+            ->whereNotIn('status', ['closed', 'cancelled', 'rejected'])
             ->latest()
             ->limit(100)
             ->get(['id', 'code', 'title', 'status', 'created_at'])
@@ -273,7 +284,7 @@ class RequestWorkflowService
                 'id' => (int) $staffId,
                 'load' => SupportRequest::query()
                     ->where('assigned_to', $staffId)
-                    ->whereNotIn('status', ['closed', 'cancelled'])
+                    ->whereNotIn('status', ['closed', 'cancelled', 'rejected'])
                     ->count(),
             ])
             ->sortBy(['load', 'id'])
@@ -283,7 +294,7 @@ class RequestWorkflowService
     public function assignOverdueUnassigned(bool $dryRun = false): int
     {
         $cutoff = now()->subDay();
-        $excludedStatuses = config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled']);
+        $excludedStatuses = config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled', 'rejected']);
         $assignedCount = 0;
 
         SupportRequest::query()

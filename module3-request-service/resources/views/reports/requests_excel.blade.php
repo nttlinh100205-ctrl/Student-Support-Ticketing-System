@@ -369,6 +369,7 @@
                     'resolved' => 'Chờ SV xác nhận',
                     'closed' => 'Đã hoàn tất',
                     'cancelled' => 'Đã hủy',
+        'rejected' => 'Từ chối',
                 ];
                 $priorityLabels = ['low' => 'Thấp', 'normal' => 'Bình thường', 'high' => 'Cao', 'urgent' => 'Khẩn cấp'];
                 $slaLabels = ['on_time' => 'Đúng hạn', 'warning' => 'Sắp quá hạn', 'breached' => 'Quá hạn'];

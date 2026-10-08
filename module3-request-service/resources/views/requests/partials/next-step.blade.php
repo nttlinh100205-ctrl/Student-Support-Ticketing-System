@@ -6,6 +6,7 @@
         'waiting_info' => 'Sinh viên cần gửi thêm thông tin trong phần trao đổi. Sau khi gửi, yêu cầu tự chuyển về đang xử lý.',
         'resolved' => $hasStudentReply ? 'Sinh viên đã phản hồi kết quả. Cán bộ kiểm tra phản hồi trước khi đóng yêu cầu.' : 'Kết quả đã sẵn sàng. Sinh viên kiểm tra và xác nhận trong phần trao đổi, hoặc yêu cầu xử lý lại.',
         'closed' => $request->rating ? 'Yêu cầu đã hoàn tất và được đánh giá.' : 'Yêu cầu đã hoàn tất. Sinh viên có thể đánh giá chất lượng hỗ trợ bên dưới.',
+        'rejected' => 'Yêu cầu đã bị từ chối. Xem lý do trong lịch sử xử lý để điều chỉnh hồ sơ hoặc liên hệ phòng ban.',
         default => 'Yêu cầu đã hủy. Sinh viên có thể sao chép nội dung để gửi một yêu cầu mới nếu cần.',
     };
 @endphp

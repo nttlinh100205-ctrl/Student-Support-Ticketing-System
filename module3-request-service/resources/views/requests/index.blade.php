@@ -3,6 +3,12 @@
 @section('title', 'Danh Sách Yêu Cầu Hỗ Trợ — Cổng Dịch Vụ Sinh Viên')
 
 @section('content')
+@if(in_array($user['role'],['admin','department_head','staff']))
+<div style="display:flex;justify-content:flex-end;margin-bottom:15px"><a class="uni-button secondary" href="{{ route('workspace.kanban') }}"><i class="fa-solid fa-columns"></i> Xem bảng công việc</a></div>
+@endif
+@if(in_array($user['role'],['admin','department_head']))
+<div style="display:flex;justify-content:flex-end;margin-bottom:15px"><a class="uni-button secondary" target="_blank" rel="noopener" href="{{ route('requests.export',array_merge(request()->query(),['format'=>'print'])) }}"><i class="fa-solid fa-print"></i> In / Lưu báo cáo PDF</a></div>
+@endif
 @php
     $statusLabels = [
         'new' => 'Mới tạo',
@@ -12,15 +18,17 @@
         'resolved' => 'Chờ SV xác nhận',
         'closed' => 'Đã hoàn tất',
         'cancelled' => 'Đã hủy',
+        'rejected' => 'Từ chối',
     ];
     $statusBadges = [
-        'new' => 'bg-sky-50 text-sky-700 border-sky-200',
+        'new' => 'bg-slate-100 text-slate-700 border-slate-200',
         'received' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
-        'in_progress' => 'bg-blue-50 text-blue-700 border-blue-200',
+        'in_progress' => 'bg-orange-50 text-orange-700 border-orange-200',
         'waiting_info' => 'bg-amber-50 text-amber-700 border-amber-200',
         'resolved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
         'closed' => 'bg-slate-100 text-slate-700 border-slate-200',
         'cancelled' => 'bg-rose-50 text-rose-700 border-rose-200',
+        'rejected' => 'bg-rose-50 text-rose-700 border-rose-200',
     ];
 
     $priorityLabels = [

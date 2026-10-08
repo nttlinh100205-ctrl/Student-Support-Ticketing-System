@@ -72,10 +72,12 @@
 
     <aside class="request-help"><strong>Gửi đúng thông tin, nhận hỗ trợ nhanh hơn</strong><p>Chọn phòng ban và loại hỗ trợ, mô tả vấn đề cùng kết quả mong muốn. Bạn có thể đính kèm ảnh minh chứng và theo dõi phản hồi trong chi tiết yêu cầu.</p></aside>
     {{-- Main Form Card --}}
-    <form method="POST" action="{{ route('requests.store') }}" enctype="multipart/form-data"
+    <form id="request-stepper" method="POST" action="{{ route('requests.store') }}" enctype="multipart/form-data"
           class="bg-white rounded-2xl border border-slate-200 shadow-subtle p-6 sm:p-8 space-y-6">
         @csrf
 
+        <nav class="uni-stepper" aria-label="Các bước gửi yêu cầu" hidden><button type="button" data-go-step="0">1. Loại hỗ trợ</button><button type="button" data-go-step="1">2. Nội dung</button><button type="button" data-go-step="2">3. Minh chứng</button><button type="button" data-go-step="3">4. Xác nhận</button></nav>
+        <section class="uni-step-panel" data-step="0" aria-label="Chọn loại hỗ trợ">
         {{-- Department --}}
         <div>
             <label for="department_id" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
@@ -97,7 +99,7 @@
             <p class="text-[11px] text-slate-400 mt-1.5">Lựa chọn đúng phòng ban để yêu cầu được giải quyết trong thời gian sớm nhất.</p>
         </div>
 
-        {{-- Support Type --}}
+        <x-field-error name="department_id"/>{{-- Support Type --}}
         <div>
             <label for="support_type_id" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
                 Loại nghiệp vụ hỗ trợ <span class="text-rose-500">*</span>
@@ -121,6 +123,7 @@
             </div>
         </div>
 
+        <x-field-error name="support_type_id"/></section><section class="uni-step-panel" data-step="1" aria-label="Nội dung yêu cầu">
         <div id="support-guidance" class="request-help" hidden></div>
         <button type="button" id="use-content-template" class="request-secondary" hidden>Điền mẫu nội dung</button>
         {{-- Title --}}
@@ -133,7 +136,7 @@
                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition shadow-sm font-medium placeholder:text-slate-400">
         </div>
 
-        {{-- Content --}}
+        <x-field-error name="title"/>{{-- Content --}}
         <div>
             <div class="flex items-center justify-between mb-2">
                 <label for="request_content" class="block text-xs font-bold uppercase tracking-wider text-slate-600">
@@ -145,7 +148,7 @@
                       class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition shadow-sm resize-none leading-relaxed placeholder:text-slate-400">{{ old('content', $copyRequest?->content) }}</textarea>
         </div>
 
-        {{-- Priority --}}
+        <x-field-error name="content"/>{{-- Priority --}}
         <div>
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Mức độ ưu tiên</label>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -160,6 +163,7 @@
             </div>
         </div>
 
+        </section><section class="uni-step-panel" data-step="2" aria-label="Tài liệu minh chứng">
         {{-- Attachments block — hiện khi chọn CSVC (id=6) --}}
         <div id="attachments_block" class="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 p-5 space-y-2">
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">
@@ -170,6 +174,8 @@
                    class="w-full text-sm text-slate-900 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:bg-primary-600 file:text-white file:font-bold file:text-xs hover:file:bg-primary-700 transition cursor-pointer">
         </div>
 
+        <x-field-error name="attachments"/><x-field-error name="attachments.*"/><div id="attachment-previews" class="uni-file-preview" aria-live="polite"></div><p class="text-sm text-slate-500">Kéo thả ảnh vào vùng đính kèm hoặc bấm chọn tệp.</p>
+        </section><section class="uni-step-panel" data-step="3" aria-label="Xác nhận gửi"><div class="uni-review" id="request-review" hidden></div>
         {{-- Actions --}}
         <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
             @if(session('possible_duplicates'))
@@ -190,7 +196,8 @@
                 Hủy bỏ
             </a>
         </div>
-    </form>
+        </section><div class="uni-step-controls" hidden><button type="button" class="uni-button secondary" id="step-back">Quay lại</button><button type="button" class="uni-button" id="step-next">Tiếp tục →</button></div>
+    </form><script src="/js/request-stepper.js" defer></script>
 </div>
 
 <script>

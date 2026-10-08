@@ -62,7 +62,7 @@ class SlaController extends Controller
         }
 
         $query = SupportRequest::whereIn('sla_flag', ['warning', 'breached'])
-            ->whereNotIn('status', config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled']));
+            ->whereNotIn('status', config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled', 'rejected']));
 
         // Filter theo role
         if ($role === 'staff') {

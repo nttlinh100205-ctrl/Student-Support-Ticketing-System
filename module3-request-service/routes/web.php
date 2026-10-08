@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Web\RequestWebController;
+use App\Http\Controllers\Web\WorkspaceController;
+use App\Http\Middleware\WorkspaceRole;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
@@ -54,3 +56,17 @@ Route::middleware('account.auth')->group(function () {
     Route::delete('/requests/{supportRequest}/comments/{comment}', [RequestWebController::class, 'destroyComment'])->name('requests.comments.destroy');
 
 });
+
+Route::middleware('account.auth')->group(function () {
+    Route::get('/dashboard', [WorkspaceController::class, 'index'])->name('workspace.dashboard');
+    Route::get('/kanban', [WorkspaceController::class, 'kanban'])->middleware(WorkspaceRole::class.':staff,department_head,admin')->name('workspace.kanban');
+    Route::get('/team', [WorkspaceController::class, 'team'])->middleware(WorkspaceRole::class.':department_head,admin')->name('workspace.team');
+    Route::get('/ratings', [WorkspaceController::class, 'ratings'])->middleware(WorkspaceRole::class.':staff,department_head,admin')->name('workspace.ratings');
+    Route::get('/admin/audit', [WorkspaceController::class, 'audit'])->middleware(WorkspaceRole::class.':admin')->name('workspace.audit');
+});
+
+Route::middleware(['account.auth', WorkspaceRole::class.':admin'])->group(function () {
+    Route::get('/admin/settings', [WorkspaceController::class, 'settings'])->name('workspace.settings');
+    Route::put('/admin/settings', [WorkspaceController::class, 'saveSettings'])->name('workspace.settings.save');
+});
+Route::delete('/requests/{id}/assignment', [WorkspaceController::class, 'unassign'])->middleware(['account.auth', WorkspaceRole::class.':admin,department_head'])->name('workspace.unassign');
