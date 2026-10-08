@@ -25,6 +25,8 @@ class User extends Authenticatable
         'avatar',
         'must_change_password',
         'auth_version',
+        'failed_login_attempts',
+        'locked_until',
         'role',
         'status',
         'department_id',
@@ -52,6 +54,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'must_change_password' => 'boolean',
             'auth_version' => 'integer',
+            'failed_login_attempts' => 'integer',
+            'locked_until' => 'datetime',
         ];
     }
 }

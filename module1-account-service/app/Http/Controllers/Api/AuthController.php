@@ -45,14 +45,25 @@ class AuthController extends Controller
                 $data
             );
         } catch (RuntimeException $exception) {
-            $status =
-                $exception->getMessage()
-                === 'Tai khoan da bi khoa.'
-                    ? 403
-                    : 401;
+            $message =
+                $exception->getMessage();
+
+            if (
+                $message ===
+                'Tai khoan da bi khoa.'
+            ) {
+                $status = 403;
+            } elseif (
+                $message ===
+                'Tai khoan tam thoi bi khoa do dang nhap sai qua nhieu lan.'
+            ) {
+                $status = 429;
+            } else {
+                $status = 401;
+            }
 
             return ApiResponse::error(
-                $exception->getMessage(),
+                $message,
                 $status
             );
         }

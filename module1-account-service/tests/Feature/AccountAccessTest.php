@@ -1268,4 +1268,192 @@ class AccountAccessTest extends TestCase
                 ->count()
         );
     }
+
+    public function test_failed_login_increases_failed_attempt_counter(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Login Sai',
+            'email' => 'failed.attempt@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000500',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ]);
+
+        $response
+            ->assertStatus(401)
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'message',
+                'Email hoac mat khau khong dung.'
+            );
+
+        $freshUser = $user->fresh();
+
+        $this->assertSame(
+            1,
+            $freshUser->failed_login_attempts
+        );
+
+        $this->assertNull(
+            $freshUser->locked_until
+        );
+    }
+
+    public function test_account_is_temporarily_locked_after_five_failed_logins(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Khoa Tam Thoi',
+            'email' => 'temporary.lock@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000501',
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        for ($attempt = 1; $attempt <= 4; $attempt++) {
+            $this
+                ->postJson('/api/auth/login', [
+                    'email' => $user->email,
+                    'password' => 'wrong-password',
+                ])
+                ->assertStatus(401);
+        }
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ]);
+
+        $response
+            ->assertStatus(429)
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'message',
+                'Tai khoan tam thoi bi khoa do dang nhap sai qua nhieu lan.'
+            );
+
+        $freshUser = $user->fresh();
+
+        $this->assertSame(
+            5,
+            $freshUser->failed_login_attempts
+        );
+
+        $this->assertNotNull(
+            $freshUser->locked_until
+        );
+
+        $this->assertTrue(
+            $freshUser->locked_until->isFuture()
+        );
+    }
+
+    public function test_correct_password_is_rejected_while_account_is_temporarily_locked(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Dang Bi Khoa',
+            'email' => 'locked.correct.password@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000502',
+            'failed_login_attempts' => 5,
+            'locked_until' => now()->addMinutes(15),
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $response
+            ->assertStatus(429)
+            ->assertJsonPath(
+                'success',
+                false
+            )
+            ->assertJsonPath(
+                'message',
+                'Tai khoan tam thoi bi khoa do dang nhap sai qua nhieu lan.'
+            );
+
+        $freshUser = $user->fresh();
+
+        $this->assertSame(
+            5,
+            $freshUser->failed_login_attempts
+        );
+
+        $this->assertNotNull(
+            $freshUser->locked_until
+        );
+    }
+
+    public function test_account_is_automatically_unlocked_after_lock_time_expires(): void
+    {
+        $user = User::create([
+            'full_name' => 'Sinh Vien Het Khoa',
+            'email' => 'expired.lock@university.edu.vn',
+            'password' => 'password123',
+            'phone' => '0900000503',
+            'failed_login_attempts' => 5,
+            'locked_until' => now()->addMinutes(15),
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'department_id' => null,
+        ]);
+
+        /*
+         * Gia lap thoi gian troi qua 16 phut.
+         */
+        $this->travel(16)->minutes();
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath(
+                'success',
+                true
+            );
+
+        $this->assertNotEmpty(
+            $response->json('data.token')
+        );
+
+        $this->assertNotEmpty(
+            $response->json(
+                'data.refresh_token'
+            )
+        );
+
+        $freshUser = $user->fresh();
+
+        $this->assertSame(
+            0,
+            $freshUser->failed_login_attempts
+        );
+
+        $this->assertNull(
+            $freshUser->locked_until
+        );
+    }
 }
