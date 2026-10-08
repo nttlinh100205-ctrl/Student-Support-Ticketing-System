@@ -1,20 +1,59 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <title>Quản lý tài khoản - ADMIN</title>
 
-    <title>
-        Quản lý tài khoản - ADMIN
-    </title>
+    <link rel="stylesheet" href="/css/app.css">
 
-    <link rel="stylesheet"
-          href="/css/app.css">
+    <style>
+        .action-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
 
+        .btn-secondary {
+            padding: 7px 10px;
+            border: none;
+            border-radius: 5px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+
+        .btn-warning {
+            padding: 7px 10px;
+            border: none;
+            border-radius: 5px;
+            background: #f59e0b;
+            color: white;
+            cursor: pointer;
+        }
+
+        .btn-secondary:disabled,
+        .btn-warning:disabled,
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .role-badge {
+            font-weight: bold;
+        }
+
+        .status-active {
+            color: #166534;
+            font-weight: bold;
+        }
+
+        .status-locked {
+            color: #991b1b;
+            font-weight: bold;
+        }
+    </style>
 </head>
 
 <body>
@@ -22,37 +61,28 @@
 <div class="dashboard">
 
     <header class="topbar">
-
-        <h1>
-            Student Support - ADMIN
-        </h1>
+        <h1>Student Support - ADMIN</h1>
 
         <nav>
-
             <a href="/profile">
                 Hồ sơ
             </a>
 
             <button
                 id="logoutButton"
-                class="btn-danger">
-
+                class="btn-danger"
+                type="button"
+            >
                 Đăng xuất
-
             </button>
-
         </nav>
-
     </header>
-
 
     <main class="content">
 
         <section class="card">
 
-            <h2>
-                Quản lý tài khoản
-            </h2>
+            <h2>Quản lý tài khoản</h2>
 
             <p>
                 Quản lý vai trò, phòng ban và trạng thái tài khoản
@@ -64,36 +94,21 @@
             <div class="table-container">
 
                 <table>
-
                     <thead>
-
-                        <tr>
-
-                            <th>ID</th>
-
-                            <th>Họ tên</th>
-
-                            <th>Email</th>
-
-                            <th>Điện thoại</th>
-
-                            <th>Role</th>
-
-                            <th>Phòng ban</th>
-
-                            <th>Status</th>
-
-                            <th>Thao tác</th>
-
-                        </tr>
-
+                    <tr>
+                        <th>ID</th>
+                        <th>Họ tên</th>
+                        <th>Email</th>
+                        <th>Điện thoại</th>
+                        <th>Role</th>
+                        <th>Phòng ban</th>
+                        <th>Status</th>
+                        <th>Thao tác</th>
+                    </tr>
                     </thead>
 
-
                     <tbody id="userTable">
-
                     </tbody>
-
                 </table>
 
             </div>
@@ -106,23 +121,17 @@
 
 
 <script>
-
-const token =
-    localStorage.getItem('access_token');
+const token = localStorage.getItem('access_token');
 
 let currentAdminId = null;
 
 
 /*
- * Danh sách phòng ban hiện tại.
- *
- * Hiện hệ thống của bạn đang có:
- * ID 1 - SUPPORT - Phòng Hỗ trợ Sinh viên
- *
- * Khi sau này có API quản lý phòng ban,
- * danh sách này có thể chuyển sang tải
- * động từ backend.
- */
+|--------------------------------------------------------------------------
+| Danh sách phòng ban demo
+|--------------------------------------------------------------------------
+| Module 1 chỉ lưu department_id theo dạng soft reference.
+*/
 const departments = [
     {
         id: 1,
@@ -133,162 +142,87 @@ const departments = [
 
 
 /*
- * Nếu không có token
- */
+|--------------------------------------------------------------------------
+| Không có token thì quay về login
+|--------------------------------------------------------------------------
+*/
 if (!token) {
-
     window.location.href = '/login';
-
 }
 
 
 /*
- * Hiển thị thông báo
- */
+|--------------------------------------------------------------------------
+| Hiển thị thông báo
+|--------------------------------------------------------------------------
+*/
 function showMessage(message, type = '') {
+    const element = document.getElementById('message');
 
-    const element =
-        document.getElementById('message');
+    element.className = type
+        ? `message ${type}`
+        : 'message';
 
-    element.className =
-        type ? `message ${type}` : 'message';
-
-    element.textContent =
-        message;
-
+    element.textContent = message;
 }
 
 
 /*
- * Tạo danh sách Role
- */
-function getRoleOptions(selectedRole, disabled) {
-
+|--------------------------------------------------------------------------
+| Tạo danh sách role
+|--------------------------------------------------------------------------
+*/
+function getRoleOptions(selectedRole) {
     const roles = [
-        'ADMIN',
-        'DEPARTMENT_HEAD',
-        'STAFF',
-        'STUDENT'
+        {
+            value: 'admin',
+            label: 'ADMIN'
+        },
+        {
+            value: 'department_head',
+            label: 'DEPARTMENT HEAD'
+        },
+        {
+            value: 'staff',
+            label: 'STAFF'
+        },
+        {
+            value: 'student',
+            label: 'STUDENT'
+        }
     ];
 
-    return roles.map(function(role) {
-
+    return roles.map(function (role) {
         return `
             <option
-                value="${role}"
-                ${selectedRole === role ? 'selected' : ''}
-                ${disabled ? 'disabled' : ''}>
-
-                ${role}
-
+                value="${role.value}"
+                ${selectedRole === role.value ? 'selected' : ''}
+            >
+                ${role.label}
             </option>
         `;
-
     }).join('');
-
 }
 
 
 /*
- * Tạo danh sách phòng ban
- */
-function getDepartmentOptions(
-    selectedDepartmentId,
-    selectedRole,
-    disabled
-) {
-
-    const departmentDisabled =
-        disabled ||
-        selectedRole === 'ADMIN' ||
-        selectedRole === 'STUDENT';
-
-
-    let html = `
-
-        <option value="">
-            Không thuộc phòng ban
-        </option>
-
-    `;
-
-
-    departments.forEach(function(department) {
-
-        html += `
-
-            <option
-                value="${department.id}"
-                ${
-                    Number(selectedDepartmentId) ===
-                    Number(department.id)
-                        ? 'selected'
-                        : ''
-                }>
-
-                ${department.name}
-                (${department.code})
-
-            </option>
-
-        `;
-
-    });
-
-
-    /*
-     * Khi ADMIN hoặc STUDENT,
-     * bắt buộc không thuộc phòng ban.
-     */
-    if (
-        selectedRole === 'ADMIN' ||
-        selectedRole === 'STUDENT'
-    ) {
-
-        html = `
-
-            <option value="" selected>
-                Không thuộc phòng ban
-            </option>
-
-        `;
-
-    }
-
-
-    return `
-        <select
-            id="department-${arguments[0]}"
-            ${departmentDisabled ? 'disabled' : ''}
-            onchange="
-                handleRoleChange(
-                    ${arguments[0]},
-                    this
-                )
-            ">
-
-            ${html}
-
-        </select>
-    `;
-}
-
-
-/*
- * Bản an toàn hơn để tạo select phòng ban.
- */
+|--------------------------------------------------------------------------
+| Tạo select phòng ban
+|--------------------------------------------------------------------------
+*/
 function createDepartmentSelect(
     userId,
     selectedDepartmentId,
     selectedRole,
     disabled
 ) {
+    const roleDoesNotNeedDepartment =
+        selectedRole === 'admin' ||
+        selectedRole === 'student';
 
-    const departmentDisabled =
+    const selectDisabled =
         disabled ||
-        selectedRole === 'ADMIN' ||
-        selectedRole === 'STUDENT';
-
+        roleDoesNotNeedDepartment;
 
     let options = `
         <option value="">
@@ -296,292 +230,220 @@ function createDepartmentSelect(
         </option>
     `;
 
+    departments.forEach(function (department) {
+        const selected =
+            Number(selectedDepartmentId) === Number(department.id)
+                ? 'selected'
+                : '';
 
-    if (
-        selectedRole !== 'ADMIN' &&
-        selectedRole !== 'STUDENT'
-    ) {
-
-        departments.forEach(function(department) {
-
-            const selected =
-                Number(selectedDepartmentId) ===
-                Number(department.id)
-                    ? 'selected'
-                    : '';
-
-            options += `
-                <option
-                    value="${department.id}"
-                    ${selected}>
-
-                    ${department.name}
-                    (${department.code})
-
-                </option>
-            `;
-
-        });
-
-    }
-
+        options += `
+            <option
+                value="${department.id}"
+                ${selected}
+            >
+                ${department.name} (${department.code})
+            </option>
+        `;
+    });
 
     return `
         <select
             id="department-${userId}"
-            ${departmentDisabled ? 'disabled' : ''}>
-
+            ${selectDisabled ? 'disabled' : ''}
+        >
             ${options}
-
         </select>
     `;
-
 }
 
 
 /*
- * Khi đổi Role trong giao diện
- *
- * ADMIN và STUDENT:
- *    không có phòng ban
- *
- * DEPARTMENT_HEAD và STAFF:
- *    có thể chọn phòng ban
- */
-function handleRoleChange(
-    userId,
-    selectElement
-) {
-
-    const role =
-        selectElement.value;
+|--------------------------------------------------------------------------
+| Khi đổi role trên giao diện
+|--------------------------------------------------------------------------
+*/
+function handleRoleChange(userId, selectElement) {
+    const role = selectElement.value;
 
     const departmentSelect =
         document.getElementById(
             `department-${userId}`
         );
 
-
     if (!departmentSelect) {
         return;
     }
 
-
     if (
-        role === 'ADMIN' ||
-        role === 'STUDENT'
+        role === 'admin' ||
+        role === 'student'
     ) {
-
         departmentSelect.value = '';
-
         departmentSelect.disabled = true;
-
     } else {
-
         departmentSelect.disabled = false;
-
     }
-
 }
 
 
 /*
- * Kiểm tra tài khoản hiện tại có phải ADMIN không
- */
+|--------------------------------------------------------------------------
+| Kiểm tra tài khoản hiện tại có phải Admin hay không
+|--------------------------------------------------------------------------
+*/
 async function checkAdmin() {
-
     try {
+        const response = await fetch(
+            '/api/profile',
+            {
+                method: 'GET',
 
-        const response =
-            await fetch(
-                '/api/v1/auth/me',
-                {
-                    method: 'GET',
-
-                    headers: {
-                        'Accept':
-                            'application/json',
-
-                        'Authorization':
-                            'Bearer ' + token
-                    }
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + token
                 }
-            );
-
+            }
+        );
 
         if (!response.ok) {
-
             localStorage.clear();
-
-            window.location.href =
-                '/login';
+            window.location.href = '/login';
 
             return false;
-
         }
 
+        const result = await response.json();
 
-        const data =
-            await response.json();
-
+        const user = result.data;
 
         if (
-            !data.user ||
-            data.user.role !== 'ADMIN'
+            !user ||
+            user.role !== 'admin'
         ) {
-
             alert(
                 'Bạn không có quyền truy cập trang ADMIN.'
             );
 
-            window.location.href =
-                '/profile';
+            window.location.href = '/profile';
 
             return false;
-
         }
 
-
-        currentAdminId =
-            Number(data.user.id);
-
+        currentAdminId = Number(user.id);
 
         return true;
 
-
     } catch (error) {
+        console.error(error);
 
         localStorage.clear();
 
-        window.location.href =
-            '/login';
+        window.location.href = '/login';
 
         return false;
-
     }
-
 }
 
 
 /*
- * Tải danh sách tài khoản
- */
+|--------------------------------------------------------------------------
+| Tải danh sách tài khoản
+|--------------------------------------------------------------------------
+*/
 async function loadUsers() {
-
     try {
+        const response = await fetch(
+            '/api/users',
+            {
+                method: 'GET',
 
-        const response =
-            await fetch(
-                '/api/v1/admin/users',
-                {
-                    method: 'GET',
-
-                    headers: {
-                        'Accept':
-                            'application/json',
-
-                        'Authorization':
-                            'Bearer ' + token
-                    }
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + token
                 }
-            );
-
+            }
+        );
 
         if (response.status === 401) {
-
             localStorage.clear();
 
-            window.location.href =
-                '/login';
+            window.location.href = '/login';
 
             return;
-
         }
 
-
         if (response.status === 403) {
-
             alert(
                 'Bạn không có quyền quản lý tài khoản.'
             );
 
-            window.location.href =
-                '/profile';
+            window.location.href = '/profile';
 
             return;
-
         }
 
-
-        const data =
-            await response.json();
-
+        const result = await response.json();
 
         if (!response.ok) {
-
             showMessage(
-                data.message ||
+                result.message ||
                 'Không thể tải danh sách tài khoản.',
                 'error'
             );
 
             return;
-
         }
 
-
         const tbody =
-            document.getElementById(
-                'userTable'
-            );
-
+            document.getElementById('userTable');
 
         tbody.innerHTML = '';
 
-
         const users =
-            data.data?.data || [];
+            result.data?.data || [];
 
+        if (users.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8">
+                        Chưa có tài khoản.
+                    </td>
+                </tr>
+            `;
 
-        users.forEach(function(user) {
+            return;
+        }
 
+        users.forEach(function (user) {
             const row =
                 document.createElement('tr');
-
 
             const isCurrentAdmin =
                 Number(user.id) ===
                 Number(currentAdminId);
-
 
             const statusButtonText =
                 user.status === 'ACTIVE'
                     ? 'Khóa'
                     : 'Mở khóa';
 
-
             const nextStatus =
                 user.status === 'ACTIVE'
                     ? 'LOCKED'
                     : 'ACTIVE';
 
-
-            const roleDisabled =
-                isCurrentAdmin;
-
-
-            const statusDisabled =
-                isCurrentAdmin;
-
+            const statusClass =
+                user.status === 'ACTIVE'
+                    ? 'status-active'
+                    : 'status-locked';
 
             row.innerHTML = `
-
                 <td>
                     ${user.id}
                 </td>
 
                 <td>
-                    ${user.name || ''}
+                    ${user.full_name || ''}
                 </td>
 
                 <td>
@@ -593,7 +455,6 @@ async function loadUsers() {
                 </td>
 
                 <td>
-
                     <select
                         id="role-${user.id}"
                         onchange="
@@ -602,199 +463,165 @@ async function loadUsers() {
                                 this
                             )
                         "
-                        ${roleDisabled ? 'disabled' : ''}>
-
-                        ${getRoleOptions(
-                            user.role,
-                            false
-                        )}
-
+                        ${isCurrentAdmin ? 'disabled' : ''}
+                    >
+                        ${getRoleOptions(user.role)}
                     </select>
-
                 </td>
 
                 <td>
-
                     ${createDepartmentSelect(
                         user.id,
                         user.department_id,
                         user.role,
                         isCurrentAdmin
                     )}
-
                 </td>
 
-                <td>
+                <td class="${statusClass}">
                     ${user.status}
                 </td>
 
                 <td>
+                    <div class="action-group">
 
-                    <button
-                        class="btn-small"
-                        onclick="
-                            changeRole(
-                                ${user.id}
-                            )
-                        "
-                        ${roleDisabled ? 'disabled' : ''}>
+                        <button
+                            type="button"
+                            class="btn-secondary"
+                            onclick="
+                                changeRole(
+                                    ${user.id}
+                                )
+                            "
+                            ${isCurrentAdmin ? 'disabled' : ''}
+                        >
+                            Lưu quyền
+                        </button>
 
-                        Lưu quyền
+                        <button
+                            type="button"
+                            class="btn-warning"
+                            onclick="
+                                changeStatus(
+                                    ${user.id},
+                                    '${nextStatus}'
+                                )
+                            "
+                            ${isCurrentAdmin ? 'disabled' : ''}
+                        >
+                            ${statusButtonText}
+                        </button>
 
-                    </button>
-
-
-                    <button
-                        class="btn-small"
-                        onclick="
-                            changeStatus(
-                                ${user.id},
-                                '${nextStatus}'
-                            )
-                        "
-                        ${statusDisabled ? 'disabled' : ''}>
-
-                        ${statusButtonText}
-
-                    </button>
-
+                    </div>
                 </td>
-
             `;
 
-
             tbody.appendChild(row);
-
         });
 
-
     } catch (error) {
+        console.error(error);
 
         showMessage(
             'Không thể tải danh sách tài khoản.',
             'error'
         );
-
     }
-
 }
 
 
 /*
- * Thay đổi Role + Phòng ban
- */
+|--------------------------------------------------------------------------
+| Thay đổi Role + department_id
+|--------------------------------------------------------------------------
+*/
 async function changeRole(userId) {
-
     const roleSelect =
         document.getElementById(
             `role-${userId}`
         );
-
 
     const departmentSelect =
         document.getElementById(
             `department-${userId}`
         );
 
-
     if (!roleSelect) {
-
         showMessage(
             'Không tìm thấy Role.',
             'error'
         );
 
         return;
-
     }
-
 
     const role =
         roleSelect.value;
-
 
     let departmentId =
         departmentSelect
             ? departmentSelect.value
             : '';
 
-
     /*
-     * ADMIN và STUDENT không thuộc phòng ban
+     * Admin và Student
+     * không thuộc phòng ban.
      */
     if (
-        role === 'ADMIN' ||
-        role === 'STUDENT'
+        role === 'admin' ||
+        role === 'student'
     ) {
-
         departmentId = '';
-
     }
 
-
     /*
-     * DEPARTMENT_HEAD và STAFF
-     * bắt buộc phải có phòng ban
+     * Staff và Department Head
+     * bắt buộc phải có phòng ban.
      */
     if (
         (
-            role === 'DEPARTMENT_HEAD' ||
-            role === 'STAFF'
+            role === 'department_head' ||
+            role === 'staff'
         ) &&
         !departmentId
     ) {
-
         showMessage(
-            'DEPARTMENT_HEAD và STAFF phải được gán phòng ban.',
+            'STAFF và DEPARTMENT HEAD phải được gán phòng ban.',
             'error'
         );
 
         return;
-
     }
 
-
     try {
+        const response = await fetch(
+            `/api/users/${userId}/role`,
+            {
+                method: 'PUT',
 
-        const response =
-            await fetch(
-                `/api/v1/admin/users/${userId}/role`,
-                {
-                    method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
 
-                    headers: {
-                        'Content-Type':
-                            'application/json',
+                body: JSON.stringify({
+                    role: role,
 
-                        'Accept':
-                            'application/json',
+                    department_id:
+                        departmentId
+                            ? Number(departmentId)
+                            : null
+                })
+            }
+        );
 
-                        'Authorization':
-                            'Bearer ' + token
-                    },
-
-                    body: JSON.stringify({
-
-                        role: role,
-
-                        department_id:
-                            departmentId
-                                ? Number(departmentId)
-                                : null
-
-                    })
-                }
-            );
-
-
-        const data =
+        const result =
             await response.json();
 
-
         if (!response.ok) {
-
             showMessage(
-                data.message ||
+                result.message ||
                 'Không thể thay đổi quyền tài khoản.',
                 'error'
             );
@@ -802,163 +629,126 @@ async function changeRole(userId) {
             await loadUsers();
 
             return;
-
         }
 
-
         showMessage(
-            data.message ||
+            result.message ||
             'Thay đổi quyền tài khoản thành công.',
             'success'
         );
 
-
         await loadUsers();
 
-
     } catch (error) {
+        console.error(error);
 
         showMessage(
             'Không thể kết nối đến máy chủ.',
             'error'
         );
-
     }
-
 }
 
 
 /*
- * Khóa / mở khóa tài khoản
- */
+|--------------------------------------------------------------------------
+| Khóa / mở khóa tài khoản
+|--------------------------------------------------------------------------
+*/
 async function changeStatus(
     userId,
     status
 ) {
-
     try {
+        const response = await fetch(
+            `/api/users/${userId}/status`,
+            {
+                method: 'PUT',
 
-        const response =
-            await fetch(
-                `/api/v1/admin/users/${userId}/status`,
-                {
-                    method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
 
-                    headers: {
-                        'Content-Type':
-                            'application/json',
+                body: JSON.stringify({
+                    status: status
+                })
+            }
+        );
 
-                        'Accept':
-                            'application/json',
-
-                        'Authorization':
-                            'Bearer ' + token
-                    },
-
-                    body: JSON.stringify({
-                        status: status
-                    })
-                }
-            );
-
-
-        const data =
+        const result =
             await response.json();
 
-
         if (!response.ok) {
-
             showMessage(
-                data.message ||
+                result.message ||
                 'Không thể cập nhật trạng thái tài khoản.',
                 'error'
             );
 
             return;
-
         }
 
-
         showMessage(
-            data.message ||
+            result.message ||
             'Cập nhật trạng thái tài khoản thành công.',
             'success'
         );
 
-
         await loadUsers();
 
-
     } catch (error) {
+        console.error(error);
 
         showMessage(
             'Không thể kết nối đến máy chủ.',
             'error'
         );
-
     }
-
 }
 
 
 /*
- * Logout
- */
+|--------------------------------------------------------------------------
+| Đăng xuất
+|--------------------------------------------------------------------------
+| JWT hiện tại là stateless.
+| Chỉ cần xóa token phía client.
+*/
 document
     .getElementById('logoutButton')
     .addEventListener(
         'click',
-        async function() {
+        function () {
+            localStorage.removeItem(
+                'access_token'
+            );
 
-            try {
+            localStorage.removeItem(
+                'current_user'
+            );
 
-                await fetch(
-                    '/api/v1/auth/logout',
-                    {
-                        method: 'POST',
-
-                        headers: {
-                            'Accept':
-                                'application/json',
-
-                            'Authorization':
-                                'Bearer ' + token
-                        }
-                    }
-                );
-
-            } finally {
-
-                localStorage.clear();
-
-                window.location.href =
-                    '/login';
-
-            }
-
+            window.location.href =
+                '/login';
         }
     );
 
 
 /*
- * Khởi động trang
- */
-(async function() {
-
+|--------------------------------------------------------------------------
+| Khởi động trang
+|--------------------------------------------------------------------------
+*/
+(async function () {
     const isAdmin =
         await checkAdmin();
 
-
     if (isAdmin) {
-
         await loadUsers();
-
     }
-
 })();
-
 </script>
 
 </body>
-
 </html>
