@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Enums\RequestPriority;
 use App\Enums\RequestStatus;
+use App\Enums\SlaFlag;
 use App\Http\Controllers\Controller;
 use App\Models\CommentAttachment;
 use App\Models\SupportRequest;
 use App\Models\TicketComment;
 use App\Services\CommentService;
+use App\Services\RequestInbox;
 use App\Services\RequestWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -15,18 +18,21 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-
 class RequestWebController extends Controller
 {
     public function __construct(
         protected RequestWorkflowService $workflow,
         protected CommentService $commentService,
-    ) {
-    }
+        protected RequestInbox $inbox,
+    ) {}
 
     /** Lấy user giả từ session (mặc định student). */
     protected function currentUser(): array
     {
+        if (! config('account.fake')) {
+            return request()->attributes->get('account_user');
+        }
+
         return Session::get('fake_user', [
             'id' => 12,
             'role' => 'student',
@@ -38,6 +44,7 @@ class RequestWebController extends Controller
 
     public function switchRole(Request $request)
     {
+        abort_unless(config('account.fake'), 404);
         $users = $this->demoUsers();
         $id = (int) $request->input('user_id');
         $user = collect($users)->firstWhere('id', $id);
@@ -51,20 +58,176 @@ class RequestWebController extends Controller
     public function index(Request $request)
     {
         $user = $this->currentUser();
-        // Khẩn cấp lên đầu: urgent > high > normal > low (MySQL FIELD)
-        $query = SupportRequest::query()
-            ->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")
-            ->latest();
+        $query = $this->buildFilteredQuery($request, $user);
+        $requests = $query->paginate(15)->withQueryString();
+        $slaStats = $this->computeSlaStatistics($user);
 
-      
-        if ($user['role'] === 'student') {
-            $query->where('student_id', $user['id']);
-        } elseif ($user['role'] === 'staff') {
-            $query->where('assigned_to', $user['id']);
-        } elseif ($user['role'] === 'department_head') {
-            $query->where('department_id', $user['department_id']);
+        return view('requests.index', [
+            'requests' => $requests,
+            'user' => $user,
+            'statusFilter' => $request->query('status', ''),
+            'priorityFilter' => $request->query('priority', ''),
+            'slaFlagFilter' => $request->query('sla_flag', ''),
+            'departmentFilter' => $request->query('department_id', ''),
+            'assignedToFilter' => $request->query('assigned_to', ''),
+            'fromFilter' => $request->query('from', ''),
+            'toFilter' => $request->query('to', ''),
+            'search' => $request->query('q', ''),
+            'departments' => $this->departments(),
+            'demoUsers' => $this->demoUsers(),
+            'staffNames' => $this->staffNames(),
+            'allUsers' => $this->allUsers(),
+            'slaStats' => $slaStats,
+            'queueLabels' => $this->inbox->labels($user),
+            'queueCounts' => $this->inbox->counts($user),
+        ]);
+    }
+
+    public function export(Request $request)
+    {
+        $user = $this->currentUser();
+        if (! in_array($user['role'], ['admin', 'department_head'], true)) {
+            return redirect()->route('requests.index')
+                ->with('error', 'Chỉ Quản trị viên và Lãnh đạo đơn vị mới có quyền xem và xuất báo cáo tổng quan.');
         }
-        // admin: không filter
+
+        $query = $this->buildFilteredQuery($request, $user);
+        $requests = $query->get();
+
+        $departments = $this->departments();
+        $supportTypes = $this->supportTypes();
+        $staffNames = $this->staffNames();
+        $allUsers = $this->allUsers();
+
+        $format = $request->query('format', 'excel');
+
+        // Xuất file CSV thuần nếu có yêu cầu format=csv
+        if ($format === 'csv') {
+            $filename = 'danh-sach-yeu-cau-sv-'.now()->format('Ymd-His').'.csv';
+
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires' => '0',
+            ];
+
+            $callback = function () use ($requests, $departments, $supportTypes, $staffNames, $allUsers) {
+                $handle = fopen('php://output', 'w');
+                fwrite($handle, "\xEF\xBB\xBF");
+
+                fputcsv($handle, [
+                    'Mã yêu cầu',
+                    'Tiêu đề',
+                    'Mã SV',
+                    'Họ tên sinh viên',
+                    'Phòng ban',
+                    'Loại hỗ trợ',
+                    'Mức ưu tiên',
+                    'Trạng thái',
+                    'Cán bộ phụ trách',
+                    'Hạn xử lý SLA',
+                    'Tình trạng SLA',
+                    'Đánh giá (Sao)',
+                    'Nhận xét đánh giá',
+                    'Thời gian tạo',
+                    'Thời gian giải quyết',
+                    'Thời gian đóng',
+                ]);
+
+                $statusLabels = [
+                    'new' => 'Mới tạo',
+                    'received' => 'Đã tiếp nhận',
+                    'in_progress' => 'Đang xử lý',
+                    'waiting_info' => 'Chờ bổ sung',
+                    'resolved' => 'Đã giải quyết',
+                    'closed' => 'Đã đóng',
+                    'cancelled' => 'Đã hủy',
+                    'rejected' => 'Từ chối',
+                ];
+
+                $priorityLabels = ['low' => 'Thấp', 'normal' => 'Bình thường', 'high' => 'Cao', 'urgent' => 'Khẩn cấp'];
+                $slaLabels = ['on_time' => 'Đúng hạn', 'warning' => 'Sắp quá hạn', 'breached' => 'Quá hạn'];
+
+                foreach ($requests as $req) {
+                    $statusVal = $req->status instanceof RequestStatus ? $req->status->value : $req->status;
+                    $priorityVal = $req->priority instanceof RequestPriority ? $req->priority->value : $req->priority;
+                    $slaVal = $req->sla_flag instanceof SlaFlag ? $req->sla_flag->value : $req->sla_flag;
+
+                    $studentName = $allUsers[$req->student_id]['full_name'] ?? ('SV #'.$req->student_id);
+                    $staffName = $req->assigned_to ? ($staffNames[$req->assigned_to] ?? ('Cán bộ #'.$req->assigned_to)) : 'Chưa phân công';
+
+                    fputcsv($handle, [
+                        $req->code,
+                        $req->title,
+                        $req->student_id,
+                        $studentName,
+                        $departments[$req->department_id] ?? ('Phòng #'.$req->department_id),
+                        $supportTypes[$req->support_type_id]['name'] ?? ('Loại #'.$req->support_type_id),
+                        $priorityLabels[$priorityVal] ?? $priorityVal,
+                        $statusLabels[$statusVal] ?? $statusVal,
+                        $staffName,
+                        $req->sla_deadline_at ? $req->sla_deadline_at->format('d/m/Y H:i') : '',
+                        $slaLabels[$slaVal] ?? $slaVal,
+                        $req->rating ? ($req->rating.'/5 sao') : 'Chưa đánh giá',
+                        $req->rating_comment ?? '',
+                        $req->created_at ? $req->created_at->format('d/m/Y H:i') : '',
+                        $req->resolved_at ? $req->resolved_at->format('d/m/Y H:i') : '',
+                        $req->closed_at ? $req->closed_at->format('d/m/Y H:i') : '',
+                    ]);
+                }
+
+                fclose($handle);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        }
+
+        // Xuất file Báo Cáo Excel Tổng Quan chuẩn định dạng học vụ (.xls)
+        $slaStats = $this->computeSlaStatistics($user);
+        $starDistribution = $this->computeStarDistribution($user);
+        $byDepartment = $this->computeDepartmentBreakdown($user);
+
+        $filename = 'Bao-cao-tong-quan-yeu-cau-ho-tro-'.now()->format('Ymd-His').'.xls';
+        $content = view('reports.requests_excel', [
+            'requests' => $requests,
+            'slaStats' => $slaStats,
+            'starDistribution' => $starDistribution,
+            'byDepartment' => $byDepartment,
+            'user' => $user,
+            'departments' => $departments,
+            'supportTypes' => $supportTypes,
+            'staffNames' => $staffNames,
+            'allUsers' => $allUsers,
+        ])->render();
+
+        if ($format === 'print') {
+            $toolbar = '<div class="print-toolbar"><button onclick="window.print()">In / Lưu PDF</button><p>Chọn máy in hoặc Lưu dưới dạng PDF trong hộp thoại in.</p></div><style>@media print{.print-toolbar{display:none}}@page{size:A4 landscape;margin:12mm}.print-toolbar{padding:20px;font-family:Arial}</style>';
+
+            return response(str_replace('<body>', '<body>'.$toolbar, $content))->header('Cache-Control', 'private, no-store');
+        }
+
+        return response("\xEF\xBB\xBF".$content, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ]);
+    }
+
+    protected function buildFilteredQuery(Request $request, array $user)
+    {
+        $query = $this->inbox->scoped($user);
+        $this->inbox->apply($query, (string) $request->query('queue', 'all'), $user);
+        match ($request->query('sort', 'priority')) {
+            'newest' => $query->orderByDesc('created_at'),
+            'oldest' => $query->orderBy('created_at'),
+            'deadline' => $query->orderByRaw('sla_deadline_at IS NULL')->orderBy('sla_deadline_at'),
+            default => $query->orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 WHEN 'low' THEN 4 ELSE 5 END"),
+        };
+        $query->orderByDesc('id');
 
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
@@ -72,6 +235,10 @@ class RequestWebController extends Controller
 
         if ($request->filled('priority')) {
             $query->where('priority', $request->query('priority'));
+        }
+
+        if ($request->filled('sla_flag')) {
+            $query->where('sla_flag', $request->query('sla_flag'));
         }
 
         if ($request->filled('department_id') && in_array($user['role'], ['admin', 'department_head'], true)) {
@@ -98,21 +265,98 @@ class RequestWebController extends Controller
             });
         }
 
-        $requests = $query->paginate(15)->withQueryString();
+        return $query;
+    }
 
-        return view('requests.index', [
-            'requests' => $requests,
-            'user' => $user,
-            'statusFilter' => $request->query('status', ''),
-            'priorityFilter' => $request->query('priority', ''),
-            'departmentFilter' => $request->query('department_id', ''),
-            'assignedToFilter' => $request->query('assigned_to', ''),
-            'fromFilter' => $request->query('from', ''),
-            'toFilter' => $request->query('to', ''),
-            'search' => $request->query('q', ''),
-            'departments' => $this->departments(),
-            'demoUsers' => $this->demoUsers(),
-        ]);
+    protected function computeSlaStatistics(array $user): array
+    {
+        $baseQuery = SupportRequest::query();
+        if ($user['role'] === 'student') {
+            $baseQuery->where('student_id', $user['id']);
+        } elseif ($user['role'] === 'staff') {
+            $baseQuery->where('assigned_to', $user['id']);
+        } elseif ($user['role'] === 'department_head') {
+            $baseQuery->where('department_id', $user['department_id']);
+        }
+
+        $total = (clone $baseQuery)->count();
+        $inProgress = (clone $baseQuery)->whereIn('status', ['new', 'received', 'in_progress', 'waiting_info'])->count();
+        $completed = (clone $baseQuery)->whereIn('status', ['resolved', 'closed'])->count();
+
+        $warningCount = (clone $baseQuery)->where('sla_flag', 'warning')
+            ->whereNotIn('status', ['resolved', 'closed', 'cancelled', 'rejected'])->count();
+        $breachedCount = (clone $baseQuery)->where('sla_flag', 'breached')->count();
+
+        $onTimeCount = max(0, $total - $breachedCount);
+        $onTimeRate = $total > 0 ? round(($onTimeCount / $total) * 100, 1) : 100.0;
+
+        $avgRating = (clone $baseQuery)->whereNotNull('rating')->avg('rating');
+        $ratedCount = (clone $baseQuery)->whereNotNull('rating')->count();
+
+        return [
+            'total' => $total,
+            'in_progress' => $inProgress,
+            'completed' => $completed,
+            'warning' => $warningCount,
+            'breached' => $breachedCount,
+            'on_time_rate' => $onTimeRate,
+            'avg_rating' => $avgRating ? round((float) $avgRating, 1) : null,
+            'rated_count' => $ratedCount,
+        ];
+    }
+
+    protected function computeStarDistribution(array $user): array
+    {
+        $baseQuery = SupportRequest::query();
+        if ($user['role'] === 'student') {
+            $baseQuery->where('student_id', $user['id']);
+        } elseif ($user['role'] === 'staff') {
+            $baseQuery->where('assigned_to', $user['id']);
+        } elseif ($user['role'] === 'department_head') {
+            $baseQuery->where('department_id', $user['department_id']);
+        }
+
+        $dist = [];
+        for ($s = 5; $s >= 1; $s--) {
+            $dist[$s] = (clone $baseQuery)->where('rating', $s)->count();
+        }
+
+        return $dist;
+    }
+
+    protected function computeDepartmentBreakdown(array $user): array
+    {
+        $baseQuery = SupportRequest::query();
+        if ($user['role'] === 'student') {
+            $baseQuery->where('student_id', $user['id']);
+        } elseif ($user['role'] === 'staff') {
+            $baseQuery->where('assigned_to', $user['id']);
+        } elseif ($user['role'] === 'department_head') {
+            $baseQuery->where('department_id', $user['department_id']);
+        }
+
+        $departments = $this->departments();
+        $breakdown = [];
+
+        foreach ($departments as $deptId => $deptName) {
+            $deptQuery = (clone $baseQuery)->where('department_id', $deptId);
+            $dTotal = (clone $deptQuery)->count();
+
+            if ($dTotal > 0 || in_array($user['role'], ['admin', 'department_head'], true)) {
+                $avg = (clone $deptQuery)->whereNotNull('rating')->avg('rating');
+                $breakdown[$deptId] = [
+                    'name' => $deptName,
+                    'total' => $dTotal,
+                    'in_progress' => (clone $deptQuery)->whereIn('status', ['new', 'received', 'in_progress', 'waiting_info'])->count(),
+                    'completed' => (clone $deptQuery)->whereIn('status', ['resolved', 'closed'])->count(),
+                    'breached' => (clone $deptQuery)->where('sla_flag', 'breached')->count(),
+                    'avg_rating' => $avg ? round((float) $avg, 1) : null,
+                    'rated_count' => (clone $deptQuery)->whereNotNull('rating')->count(),
+                ];
+            }
+        }
+
+        return $breakdown;
     }
 
     public function create(Request $request)
@@ -144,7 +388,7 @@ class RequestWebController extends Controller
             return back()->with('error', 'Chỉ sinh viên được tạo yêu cầu hỗ trợ.');
         }
 
-        $isFacilities = (int) $request->input('department_id') === 6;
+        $isFacilities = (int) $request->input('department_id') === (int) config('master_data.facilities_department_id', 6);
 
         $data = $request->validate([
             'department_id' => 'required|integer',
@@ -226,6 +470,8 @@ class RequestWebController extends Controller
             'supportTypes' => $this->supportTypes(),
             'transitions' => RequestWorkflowService::TRANSITIONS,
             'demoUsers' => $this->demoUsers(),
+            'staffNames' => $this->staffNames(),
+            'allUsers' => $this->allUsers(),
             'replyTemplates' => config('master_data.reply_templates', []),
         ]);
     }
@@ -259,6 +505,9 @@ class RequestWebController extends Controller
         $data = $request->validate([
             'rating' => 'required|integer|between:1,5',
             'rating_comment' => 'nullable|string|max:1000',
+            'rating_attitude' => 'nullable|integer|between:1,5',
+            'rating_speed' => 'nullable|integer|between:1,5',
+            'rating_quality' => 'nullable|integer|between:1,5',
         ], [
             'rating.required' => 'Vui lòng chọn mức đánh giá.',
             'rating.between' => 'Mức đánh giá phải từ 1 đến 5 sao.',
@@ -272,6 +521,9 @@ class RequestWebController extends Controller
             ->whereNull('rating')
             ->update([
                 'rating' => $data['rating'],
+                'rating_attitude' => $data['rating_attitude'] ?? null,
+                'rating_speed' => $data['rating_speed'] ?? null,
+                'rating_quality' => $data['rating_quality'] ?? null,
                 'rating_comment' => $data['rating_comment'] ?? null,
                 'rated_at' => now(),
             ]);
@@ -380,7 +632,7 @@ class RequestWebController extends Controller
         }
 
         $data = $request->validate([
-            'status' => 'required|in:new,received,in_progress,waiting_info,resolved,closed,cancelled',
+            'status' => 'required|in:new,received,in_progress,waiting_info,resolved,closed,cancelled,rejected',
             'note' => 'nullable|string|max:1000',
         ]);
 
@@ -427,10 +679,13 @@ class RequestWebController extends Controller
 
         $data = $request->validate([
             'assigned_to' => 'required|integer',
+            'sla_deadline_at' => 'nullable|date|after:now',
+            'priority' => 'nullable|in:low,normal,high,urgent',
+            'note' => 'nullable|string|max:1000',
         ]);
 
         try {
-            $this->workflow->assign($supportRequest, (int) $data['assigned_to'], $user['id']);
+            $this->workflow->assign($supportRequest, (int) $data['assigned_to'], $user['id'], $data);
         } catch (ValidationException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -521,15 +776,15 @@ class RequestWebController extends Controller
         }
 
         $data = $request->validate([
-            'body'          => 'required|string|max:5000',
-            'is_internal'   => 'sometimes|boolean',
-            'attachments'   => 'sometimes|array|max:5',
+            'body' => 'required|string|max:5000',
+            'is_internal' => 'sometimes|boolean',
+            'attachments' => 'sometimes|array|max:5',
             'attachments.*' => 'file|max:10240',
         ], [
-            'body.required'      => 'Nội dung bình luận không được để trống.',
-            'body.max'           => 'Nội dung bình luận tối đa 5000 ký tự.',
-            'attachments.max'    => 'Chỉ được đính kèm tối đa 5 file.',
-            'attachments.*.max'  => 'Mỗi file đính kèm không quá 10 MB.',
+            'body.required' => 'Nội dung bình luận không được để trống.',
+            'body.max' => 'Nội dung bình luận tối đa 5000 ký tự.',
+            'attachments.max' => 'Chỉ được đính kèm tối đa 5 file.',
+            'attachments.*.max' => 'Mỗi file đính kèm không quá 10 MB.',
         ]);
 
         $files = $request->file('attachments', []) ?: [];
@@ -539,12 +794,12 @@ class RequestWebController extends Controller
 
         try {
             $this->commentService->addComment(
-                ticket:   $supportRequest,
-                data:     $data,
-                userId:   $user['id'],
+                ticket: $supportRequest,
+                data: $data,
+                userId: $user['id'],
                 userName: $user['full_name'],
                 userRole: $user['role'],
-                files:    $files,
+                files: $files,
             );
         } catch (ValidationException $e) {
             return back()->with('error', $e->getMessage())->withInput();
@@ -591,6 +846,11 @@ class RequestWebController extends Controller
 
     protected function demoUsers(): array
     {
+        $users = config('master_data.users');
+        if (is_array($users) && ! empty($users)) {
+            return array_values($users);
+        }
+
         return [
             [
                 'id' => 12,
@@ -628,6 +888,39 @@ class RequestWebController extends Controller
                 'email' => 'admin@university.edu.vn',
             ],
         ];
+    }
+
+    public function staffNames(): array
+    {
+        $staff = config('master_data.staff', []);
+        $names = [];
+        foreach ($staff as $id => $item) {
+            $names[(int) $id] = is_array($item) ? ($item['full_name'] ?? "Cán bộ #{$id}") : (string) $item;
+        }
+
+        foreach ($this->demoUsers() as $u) {
+            if ($u['role'] === 'staff' && ! isset($names[$u['id']])) {
+                $names[$u['id']] = $u['full_name'];
+            }
+        }
+
+        return $names;
+    }
+
+    public function allUsers(): array
+    {
+        $users = config('master_data.users', []);
+        $map = [];
+        foreach ($users as $id => $item) {
+            $map[(int) $id] = $item;
+        }
+        foreach ($this->demoUsers() as $u) {
+            if (! isset($map[$u['id']])) {
+                $map[$u['id']] = $u;
+            }
+        }
+
+        return $map;
     }
 
     /** Mock data từ Module 2 — nguồn: config/master_data.php */

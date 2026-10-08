@@ -18,9 +18,9 @@ return [
     */
     'deadline_hours' => [
         'urgent' => 4,      // 4 giờ
-        'high'   => 8,      // 8 giờ
+        'high' => 8,      // 8 giờ
         'normal' => 24,     // 24 giờ (1 ngày)
-        'low'    => 72,     // 72 giờ (3 ngày)
+        'low' => 72,     // 72 giờ (3 ngày)
     ],
 
     /*
@@ -52,5 +52,6 @@ return [
         'resolved',
         'closed',
         'cancelled',
+        'rejected',
     ],
 ];

@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
-
 class StoreRequestRequest extends FormRequest
 {
     public const FACILITIES_DEPT_ID = 6;
@@ -17,7 +16,7 @@ class StoreRequestRequest extends FormRequest
 
     public function rules(): array
     {
-        $isFacilities = (int) $this->input('department_id') === self::FACILITIES_DEPT_ID;
+        $isFacilities = (int) $this->input('department_id') === (int) config('master_data.facilities_department_id', self::FACILITIES_DEPT_ID);
 
         return [
             'department_id' => 'required|integer',

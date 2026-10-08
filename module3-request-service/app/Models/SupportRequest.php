@@ -42,19 +42,21 @@ class SupportRequest extends Model
         'sla_flag',
         'rating',
         'rating_comment',
+        'rating_attitude', 'rating_speed', 'rating_quality',
         'rated_at',
     ];
 
     protected $casts = [
-        'status'          => RequestStatus::class,
-        'priority'        => RequestPriority::class,
-        'sla_flag'        => SlaFlag::class,
-        'assigned_at'     => 'datetime',
-        'resolved_at'     => 'datetime',
-        'closed_at'       => 'datetime',
+        'status' => RequestStatus::class,
+        'priority' => RequestPriority::class,
+        'sla_flag' => SlaFlag::class,
+        'assigned_at' => 'datetime',
+        'resolved_at' => 'datetime',
+        'resolution_comment_boundary' => 'integer',
+        'closed_at' => 'datetime',
         'sla_deadline_at' => 'datetime',
-        'rating'          => 'integer',
-        'rated_at'        => 'datetime',
+        'rating' => 'integer',
+        'rated_at' => 'datetime',
     ];
 
     public function statusHistories()
@@ -83,7 +85,9 @@ class SupportRequest extends Model
             && $this->comments()
                 ->where('user_role', 'student')
                 ->where('is_internal', false)
-                ->where('created_at', '>=', $this->resolved_at)
+                ->when($this->resolution_comment_boundary !== null,
+                    fn ($query) => $query->where('id', '>', $this->resolution_comment_boundary),
+                    fn ($query) => $query->where('created_at', '>', $this->resolved_at))
                 ->exists();
     }
 
@@ -119,5 +123,22 @@ class SupportRequest extends Model
         }
 
         return round(now()->diffInMinutes($this->sla_deadline_at, false) / 60, 1);
+    }
+
+    /**
+     * Tên cán bộ phụ trách hiển thị thay vì chỉ hiển thị ID.
+     */
+    public function getAssignedStaffNameAttribute(): ?string
+    {
+        if (! $this->assigned_to) {
+            return null;
+        }
+
+        $staff = config("master_data.staff.{$this->assigned_to}");
+        if ($staff) {
+            return is_array($staff) ? ($staff['full_name'] ?? "Cán bộ #{$this->assigned_to}") : (string) $staff;
+        }
+
+        return "Cán bộ #{$this->assigned_to}";
     }
 }

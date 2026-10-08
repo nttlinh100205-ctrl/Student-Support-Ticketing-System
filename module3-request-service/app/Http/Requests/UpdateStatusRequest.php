@@ -8,13 +8,13 @@ class UpdateStatusRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; 
+        return true;
     }
 
     public function rules(): array
     {
         return [
-            'status' => 'required|in:new,received,in_progress,waiting_info,resolved,closed,cancelled',
+            'status' => 'required|in:new,received,in_progress,waiting_info,resolved,closed,cancelled,rejected',
             'note' => 'nullable|string|max:1000',
         ];
     }

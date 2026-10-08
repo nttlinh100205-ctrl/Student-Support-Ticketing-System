@@ -17,8 +17,7 @@ class AttachmentController extends Controller
     public function __construct(
         protected CommentService $commentService,
         protected AuthContext $auth,
-    ) {
-    }
+    ) {}
 
     public function store(StoreAttachmentRequest $request, SupportRequest $supportRequest, TicketComment $comment)
     {
@@ -63,7 +62,7 @@ class AttachmentController extends Controller
             abort(404);
         }
 
-        if (! $this->canAccess($supportRequest)) {
+        if (! $this->canAccess($supportRequest) || ($this->auth->role() === 'student' && $comment->is_internal)) {
             abort(403);
         }
 

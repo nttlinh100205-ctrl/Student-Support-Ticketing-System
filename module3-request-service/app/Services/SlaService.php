@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\SlaFlag;
 use App\Models\SlaNotification;
 use App\Models\SupportRequest;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -22,7 +23,7 @@ class SlaService
      */
     public function calculateDeadline(string $priority, Carbon $createdAt): Carbon
     {
-        $hours = config("sla.deadline_hours.{$priority}", config('sla.deadline_hours.normal', 24));
+        $hours = app(WorkspaceSettings::class)->get("deadline_hours.{$priority}");
 
         return $createdAt->copy()->addHours($hours);
     }
@@ -36,8 +37,8 @@ class SlaService
     public function checkAll(bool $dryRun = false): array
     {
         $now = Carbon::now();
-        $excludedStatuses = config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled']);
-        $warningPercent = config('sla.warning_threshold_percent', 75) / 100;
+        $excludedStatuses = config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled', 'rejected']);
+        $warningPercent = app(WorkspaceSettings::class)->get('warning_threshold_percent') / 100;
 
         $counters = ['warned' => 0, 'breached' => 0];
 
@@ -76,19 +77,20 @@ class SlaService
                     $ticket->save();
                     $this->recordNotification($ticket, 'breached');
 
-                    Log::channel('stack')->warning('[SLA BREACHED] Ticket #' . $ticket->code . ' đã quá hạn SLA.', [
+                    Log::channel('stack')->warning('[SLA BREACHED] Ticket #'.$ticket->code.' đã quá hạn SLA.', [
                         'ticket_id' => $ticket->id,
-                        'deadline'  => $deadline->toDateTimeString(),
+                        'deadline' => $deadline->toDateTimeString(),
                     ]);
                 }
             }
+
             return;
         }
 
         // --- SẮP QUÁ HẠN (warning) ---
-        $created   = $ticket->created_at;
+        $created = $ticket->created_at;
         $totalSecs = $created->diffInSeconds($deadline);
-        $elapsed   = $created->diffInSeconds($now);
+        $elapsed = $created->diffInSeconds($now);
 
         if ($totalSecs > 0 && ($elapsed / $totalSecs) >= $warningPercent) {
             if ($ticket->sla_flag !== SlaFlag::Warning) {
@@ -99,10 +101,10 @@ class SlaService
                     $ticket->save();
                     $this->recordNotification($ticket, 'warning');
 
-                    Log::channel('stack')->info('[SLA WARNING] Ticket #' . $ticket->code . ' sắp quá hạn SLA.', [
-                        'ticket_id'  => $ticket->id,
-                        'deadline'   => $deadline->toDateTimeString(),
-                        'elapsed_%'  => round(($elapsed / $totalSecs) * 100, 1),
+                    Log::channel('stack')->info('[SLA WARNING] Ticket #'.$ticket->code.' sắp quá hạn SLA.', [
+                        'ticket_id' => $ticket->id,
+                        'deadline' => $deadline->toDateTimeString(),
+                        'elapsed_%' => round(($elapsed / $totalSecs) * 100, 1),
                     ]);
                 }
             }
@@ -116,19 +118,19 @@ class SlaService
     protected function recordNotification(SupportRequest $ticket, string $type): void
     {
         $messages = [
-            'warning'  => "⚠️ Ticket [{$ticket->code}] \"{$ticket->title}\" sắp quá hạn SLA. Hạn: {$ticket->sla_deadline_at->format('d/m/Y H:i')}.",
+            'warning' => "⚠️ Ticket [{$ticket->code}] \"{$ticket->title}\" sắp quá hạn SLA. Hạn: {$ticket->sla_deadline_at->format('d/m/Y H:i')}.",
             'breached' => "🚨 Ticket [{$ticket->code}] \"{$ticket->title}\" ĐÃ QUÁ HẠN SLA! Hạn: {$ticket->sla_deadline_at->format('d/m/Y H:i')}.",
         ];
 
         SlaNotification::updateOrCreate(
             [
                 'request_id' => $ticket->id,
-                'type'       => $type,
+                'type' => $type,
             ],
             [
                 'notified_user_id' => $ticket->assigned_to,
-                'message'          => $messages[$type] ?? "SLA {$type} cho ticket {$ticket->code}",
-                'sent_at'          => now(),
+                'message' => $messages[$type] ?? "SLA {$type} cho ticket {$ticket->code}",
+                'sent_at' => now(),
             ],
         );
     }
@@ -137,7 +139,7 @@ class SlaService
      * Lấy danh sách thông báo SLA cho một user (staff / department_head).
      * Dùng ở API endpoint để hiển thị chuông thông báo.
      */
-    public function getNotificationsForUser(int $userId, int $limit = 20): \Illuminate\Database\Eloquent\Collection
+    public function getNotificationsForUser(int $userId, int $limit = 20): Collection
     {
         return SlaNotification::where('notified_user_id', $userId)
             ->orderByDesc('sent_at')

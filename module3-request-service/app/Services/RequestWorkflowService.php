@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-
 class RequestWorkflowService
 {
     public function __construct(
@@ -20,13 +19,14 @@ class RequestWorkflowService
     ) {}
 
     public const TRANSITIONS = [
-        'new' => ['received', 'cancelled'],
-        'received' => ['in_progress', 'cancelled'],
-        'in_progress' => ['waiting_info', 'resolved', 'cancelled'],
-        'waiting_info' => ['in_progress', 'cancelled'],
+        'new' => ['received', 'cancelled', 'rejected'],
+        'received' => ['in_progress', 'cancelled', 'rejected'],
+        'in_progress' => ['waiting_info', 'resolved', 'cancelled', 'rejected'],
+        'waiting_info' => ['in_progress', 'cancelled', 'rejected'],
         'resolved' => ['closed', 'in_progress'], // staff đóng sau phản hồi | SV yêu cầu xử lý lại
         'closed' => ['in_progress'], // SV yêu cầu mở lại để staff tiếp tục
         'cancelled' => [],
+        'rejected' => [],
     ];
 
     /**
@@ -49,14 +49,16 @@ class RequestWorkflowService
 
             $request = SupportRequest::create([
                 ...$payload,
-                'student_id'      => $studentId,
-                'assigned_to'     => $assignedTo,
-                'assigned_at'     => $assignedTo ? $createdAt : null,
-                'status'          => RequestStatus::New->value,
-                'priority'        => $priority,
-                'code'            => $this->generateCode(),
-                'sla_deadline_at' => $this->slaService->calculateDeadline($priority, $createdAt),
-                'sla_flag'        => SlaFlag::OnTime->value,
+                'student_id' => $studentId,
+                'assigned_to' => $assignedTo,
+                'assigned_at' => $assignedTo ? $createdAt : null,
+                'status' => RequestStatus::New->value,
+                'priority' => $priority,
+                'code' => $this->generateCode(),
+                'sla_deadline_at' => ($slaDays = config('master_data.support_types.'.$payload['support_type_id'].'.sla_days')) !== null
+                    ? $createdAt->copy()->addDays((int) $slaDays)
+                    : $this->slaService->calculateDeadline($priority, $createdAt),
+                'sla_flag' => SlaFlag::OnTime->value,
             ]);
 
             $historyNote = $assignedTo ? "Tự động phân công cán bộ #{$assignedTo}." : null;
@@ -96,11 +98,14 @@ class RequestWorkflowService
      * Đổi trạng thái theo state machine.
      * - Phải đã gán cán bộ trước khi chuyển (trừ cancelled).
      * - resolved = cán bộ xử lý xong, chờ SV phản hồi.
-    * - resolved → closed: cán bộ đóng sau khi sinh viên phản hồi.
-    * - resolved/closed → in_progress: sinh viên yêu cầu xử lý tiếp.
+     * - resolved → closed: cán bộ đóng sau khi sinh viên phản hồi.
+     * - resolved/closed → in_progress: sinh viên yêu cầu xử lý tiếp.
      */
     public function changeStatus(SupportRequest $request, string $toStatus, int $changedBy, ?string $note = null): SupportRequest
     {
+        if ($toStatus === 'rejected' && trim($note ?? '') === '') {
+            throw ValidationException::withMessages(['note' => 'Vui lòng nêu lý do từ chối yêu cầu.']);
+        }
         $from = $request->status->value;
         $allowed = self::TRANSITIONS[$from] ?? [];
 
@@ -130,6 +135,7 @@ class RequestWorkflowService
 
             if ($toStatus === RequestStatus::Resolved->value) {
                 $request->resolved_at = now();
+                $request->resolution_comment_boundary = $request->comments()->max('id') ?? 0;
             }
             if ($toStatus === RequestStatus::Closed->value && $request->closed_at === null) {
                 $request->closed_at = now();
@@ -153,11 +159,10 @@ class RequestWorkflowService
         });
     }
 
-   
-    public function assign(SupportRequest $request, int $staffId, int $changedBy): SupportRequest
+    public function assign(SupportRequest $request, int $staffId, int $changedBy, array $options = []): SupportRequest
     {
-        return DB::transaction(function () use ($request, $staffId, $changedBy) {
-            if (in_array($request->status->value, ['closed', 'cancelled'], true)) {
+        return DB::transaction(function () use ($request, $staffId, $changedBy, $options) {
+            if (in_array($request->status->value, ['closed', 'cancelled', 'rejected'], true)) {
                 throw ValidationException::withMessages([
                     'status' => 'Không thể gán cán bộ cho yêu cầu đã đóng hoặc đã hủy.',
                 ]);
@@ -169,6 +174,13 @@ class RequestWorkflowService
                 ]);
             }
 
+            if (! empty($options['sla_deadline_at'])) {
+                $request->sla_deadline_at = $options['sla_deadline_at'];
+                $request->sla_flag = SlaFlag::OnTime;
+            }
+            if (! empty($options['priority'])) {
+                $request->priority = $options['priority'];
+            }
             $request->assigned_to = $staffId;
             $request->assigned_at = now();
             $request->save();
@@ -179,7 +191,7 @@ class RequestWorkflowService
                 $status,
                 $status,
                 $changedBy,
-                "Gán cán bộ xử lý #{$staffId}.",
+                trim("Gán cán bộ xử lý #{$staffId}. ".($options['note'] ?? '')),
             );
 
             return $request->fresh();
@@ -188,7 +200,7 @@ class RequestWorkflowService
 
     public function transfer(SupportRequest $request, int $departmentId, int $supportTypeId, int $changedBy): SupportRequest
     {
-        if (in_array($request->status->value, ['closed', 'cancelled'], true)) {
+        if (in_array($request->status->value, ['closed', 'cancelled', 'rejected'], true)) {
             throw ValidationException::withMessages([
                 'status' => 'Chỉ có thể chuyển yêu cầu chưa đóng hoặc chưa hủy.',
             ]);
@@ -242,7 +254,7 @@ class RequestWorkflowService
         return SupportRequest::query()
             ->where('student_id', $studentId)
             ->where('department_id', $data['department_id'])
-            ->whereNotIn('status', ['closed', 'cancelled'])
+            ->whereNotIn('status', ['closed', 'cancelled', 'rejected'])
             ->latest()
             ->limit(100)
             ->get(['id', 'code', 'title', 'status', 'created_at'])
@@ -259,6 +271,9 @@ class RequestWorkflowService
 
     protected function selectStaffForDepartment(int $departmentId): ?int
     {
+        if (! config('account.fake') && ! request()->attributes->has('account_user')) {
+            return null;
+        }
         $staffIds = config("master_data.staff_by_department.{$departmentId}", []);
         if ($staffIds === []) {
             return null;
@@ -269,7 +284,7 @@ class RequestWorkflowService
                 'id' => (int) $staffId,
                 'load' => SupportRequest::query()
                     ->where('assigned_to', $staffId)
-                    ->whereNotIn('status', ['closed', 'cancelled'])
+                    ->whereNotIn('status', ['closed', 'cancelled', 'rejected'])
                     ->count(),
             ])
             ->sortBy(['load', 'id'])
@@ -279,7 +294,7 @@ class RequestWorkflowService
     public function assignOverdueUnassigned(bool $dryRun = false): int
     {
         $cutoff = now()->subDay();
-        $excludedStatuses = config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled']);
+        $excludedStatuses = config('sla.excluded_statuses', ['resolved', 'closed', 'cancelled', 'rejected']);
         $assignedCount = 0;
 
         SupportRequest::query()
@@ -336,7 +351,6 @@ class RequestWorkflowService
         return $assignedCount;
     }
 
-   
     public function cancel(SupportRequest $request, int $changedBy, ?string $reason = null, bool $asStudent = false): SupportRequest
     {
         if ($asStudent && ! in_array($request->status->value, [
@@ -355,7 +369,6 @@ class RequestWorkflowService
         return $updated;
     }
 
-    
     public function update(SupportRequest $request, array $data, int $changedBy): SupportRequest
     {
         if ($request->status->value !== RequestStatus::New->value) {
@@ -415,7 +428,7 @@ class RequestWorkflowService
     protected function generateCode(): string
     {
         $year = now()->format('Y');
-     
+
         $sequence = SupportRequest::withTrashed()->whereYear('created_at', $year)->count() + 1;
 
         return sprintf('YC-%s-%06d', $year, $sequence);

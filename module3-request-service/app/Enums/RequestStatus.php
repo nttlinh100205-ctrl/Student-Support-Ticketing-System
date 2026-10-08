@@ -4,7 +4,6 @@ namespace App\Enums;
 
 /**
  * Trạng thái của 1 yêu cầu hỗ trợ (state machine).
-
  */
 enum RequestStatus: string
 {
@@ -15,6 +14,7 @@ enum RequestStatus: string
     case Resolved = 'resolved';
     case Closed = 'closed';
     case Cancelled = 'cancelled';
+    case Rejected = 'rejected';
 
     public function label(): string
     {
@@ -26,6 +26,7 @@ enum RequestStatus: string
             self::Resolved => 'Chờ sinh viên phản hồi',
             self::Closed => 'Đã đóng',
             self::Cancelled => 'Đã hủy',
+            self::Rejected => 'Từ chối',
         };
     }
 }
