@@ -28,6 +28,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Frontend gọi API qua Gateway (:8000). Để trống thì gọi thẳng Module 2.
+    'api_gateway' => [
+        'url' => env('API_GATEWAY_URL', ''),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

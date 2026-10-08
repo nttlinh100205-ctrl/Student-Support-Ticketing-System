@@ -62,6 +62,16 @@
     </style>
     <script>
         /**
+         * Frontend gọi API qua API Gateway (API_GATEWAY_URL, mặc định :8000),
+         * Gateway chuyển tiếp xuống Module 2. Để trống thì gọi thẳng Module 2.
+         */
+        window.ApiGateway = (() => {
+            const baseUrl = @json(rtrim((string) config('services.api_gateway.url'), '/'));
+
+            return { url: path => baseUrl + path };
+        })();
+
+        /**
          * Xác thực giả cho Module 2 (giống Module 3):
          * mỗi request API gửi kèm X-User-Id / X-User-Role.
          * Khi Module 1 có JWT thật, chỉ cần sửa headers() để gửi token.

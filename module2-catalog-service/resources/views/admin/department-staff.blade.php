@@ -113,7 +113,7 @@
         el('message').className = error ? 'text-sm text-red-600' : 'text-sm text-emerald-700';
     }
     async function api(url, options = {}) {
-        const response = await fetch(url, {
+        const response = await fetch(ApiGateway.url(url), {
             ...options,
             headers: { Accept: 'application/json', 'Content-Type': 'application/json',
                 ...DemoAuth.headers(), ...(options.headers || {}) }

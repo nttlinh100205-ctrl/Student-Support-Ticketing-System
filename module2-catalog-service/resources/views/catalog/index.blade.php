@@ -86,7 +86,7 @@
     }
 
     async function api(url, options = {}) {
-        const response = await fetch(url, {
+        const response = await fetch(ApiGateway.url(url), {
             ...options,
             headers: { Accept: 'application/json', ...DemoAuth.headers(), ...(options.headers || {}) }
         });
