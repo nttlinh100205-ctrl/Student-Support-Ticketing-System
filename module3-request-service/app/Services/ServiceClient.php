@@ -13,7 +13,8 @@ class ServiceClient
         $token = $request->attributes->get('account_token') ?: $request->bearerToken();
         abort_unless($token, 401, 'Thiếu phiên đăng nhập liên dịch vụ.');
         try {
-            $response = Http::acceptJson()->withToken($token)->connectTimeout(3)->timeout(8)
+            $response = Http::withOptions(parse_url($baseUrl, PHP_URL_HOST) === 'localhost' ? ['force_ip_resolve' => 'v4'] : [])
+                ->acceptJson()->withToken($token)->connectTimeout(3)->timeout(8)
                 ->get(rtrim($baseUrl, '/').$path, $query);
         } catch (ConnectionException $e) {
             abort(503, 'Không thể kết nối dịch vụ dữ liệu.');
