@@ -13,10 +13,15 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/support', function () {
-    return view('support.index');
-});
+require __DIR__.'/account.php';
 
-Route::get('/', function () {
-    return view('support.index');
+Route::middleware('account.auth')->group(function () {
+    Route::get('/support', function () {
+        return view('support.index');
+    });
+
+    Route::get('/', function () {
+        return view('support.index');
+    });
+
 });

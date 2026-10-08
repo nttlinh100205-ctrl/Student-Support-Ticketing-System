@@ -9,6 +9,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Service xử lý logic nghiệp vụ cho comment thread.
@@ -24,13 +25,8 @@ class CommentService
     /**
      * Tạo comment mới + upload file đính kèm.
      *
-     * @param  SupportRequest  $ticket
-     * @param  array           $data     ['body', 'is_internal']
-     * @param  int             $userId
-     * @param  string|null     $userName
-     * @param  string          $userRole
+     * @param  array  $data  ['body', 'is_internal']
      * @param  UploadedFile[]  $files
-     * @return TicketComment
      *
      * @throws ValidationException
      */
@@ -59,10 +55,10 @@ class CommentService
         return DB::transaction(function () use ($ticket, $data, $userId, $userName, $userRole, $files) {
             /** @var TicketComment $comment */
             $comment = $ticket->comments()->create([
-                'user_id'     => $userId,
-                'user_name'   => $userName,
-                'user_role'   => $userRole,
-                'body'        => $data['body'],
+                'user_id' => $userId,
+                'user_name' => $userName,
+                'user_role' => $userRole,
+                'body' => $data['body'],
                 'is_internal' => $userRole === 'student' ? false : ($data['is_internal'] ?? false),
             ]);
 
@@ -75,9 +71,9 @@ class CommentService
 
                 $comment->attachments()->create([
                     'original_name' => $file->getClientOriginalName(),
-                    'path'          => $path,
-                    'mime_type'     => $file->getMimeType(),
-                    'size'          => $file->getSize(),
+                    'path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
                 ]);
             }
 
@@ -147,7 +143,7 @@ class CommentService
     public function uploadAttachment(
         SupportRequest $supportRequest,
         TicketComment $comment,
-        \Illuminate\Http\UploadedFile $file,
+        UploadedFile $file,
         int $userId,
         string $userRole,
         ?int $departmentId = null,
@@ -174,7 +170,7 @@ class CommentService
         ]);
     }
 
-    public function previewAttachment(TicketComment $comment, CommentAttachment $attachment): \Symfony\Component\HttpFoundation\Response
+    public function previewAttachment(TicketComment $comment, CommentAttachment $attachment): Response
     {
         if ($attachment->comment_id !== $comment->id) {
             abort(404);

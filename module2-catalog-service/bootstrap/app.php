@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Middleware\FakeAuthMiddleware;
+use App\Http\Middleware\AccountAuthentication;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Foundation\Application;
@@ -19,7 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'auth.fake' => FakeAuthMiddleware::class,
+            'account.auth' => AccountAuthentication::class,
+            'auth.fake' => AccountAuthentication::class,
             'role' => RoleMiddleware::class,
         ]);
     })

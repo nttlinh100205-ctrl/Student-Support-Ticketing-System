@@ -16,6 +16,10 @@ class SupportRequestResource extends JsonResource
             'department_id' => $this->department_id,
             'support_type_id' => $this->support_type_id,
             'assigned_to' => $this->assigned_to,
+            'assigned_staff_name' => $this->assigned_staff_name,
+            'rating' => $this->rating,
+            'rating_comment' => $this->rating_comment,
+            'rated_at' => $this->rated_at?->toJSON(),
             'title' => $this->title,
             'content' => $this->content,
             'priority' => $this->priority?->value,
@@ -28,9 +32,9 @@ class SupportRequestResource extends JsonResource
             'updated_at' => $this->updated_at?->toJSON(),
 
             // --- SLA ---
-            'sla_deadline_at'     => $this->sla_deadline_at?->toJSON(),
-            'sla_flag'            => $this->sla_flag?->value ?? 'on_time',
-            'sla_flag_label'      => $this->sla_flag?->label() ?? 'Đúng hạn',
+            'sla_deadline_at' => $this->sla_deadline_at?->toJSON(),
+            'sla_flag' => $this->sla_flag?->value ?? 'on_time',
+            'sla_flag_label' => $this->sla_flag?->label() ?? 'Đúng hạn',
             'sla_remaining_hours' => $this->slaRemainingHours(),
 
             'attachments' => $this->whenLoaded('attachments', function () {
@@ -47,4 +51,3 @@ class SupportRequestResource extends JsonResource
         ];
     }
 }
-

@@ -18,6 +18,7 @@
 </head>
 
 <body>
+<nav style="padding:12px"><a href="/">Cổng hỗ trợ sinh viên</a></nav>
 
 <div class="dashboard">
 
@@ -113,23 +114,24 @@ const token =
 let currentAdminId = null;
 
 
-/*
- * Danh sách phòng ban hiện tại.
- *
- * Hiện hệ thống của bạn đang có:
- * ID 1 - SUPPORT - Phòng Hỗ trợ Sinh viên
- *
- * Khi sau này có API quản lý phòng ban,
- * danh sách này có thể chuyển sang tải
- * động từ backend.
- */
-const departments = [
-    {
-        id: 1,
-        name: 'Phòng Hỗ trợ Sinh viên',
-        code: 'SUPPORT'
-    }
-];
+let departments = [];
+function escapeHtml(value) {
+    const node = document.createElement('span'); node.textContent = String(value ?? ''); return node.innerHTML;
+}
+async function loadDepartments() {
+    let page = 1, lastPage = 1;
+    departments = [];
+    do {
+        const response = await fetch(@json(rtrim(config('portal.services.catalog'), '/')) + '/api/catalog/departments?page=' + page,
+            {headers: {'Accept': 'application/json', 'Authorization': 'Bearer ' + token}});
+        if (!response.ok) { throw new Error('Không thể tải phòng ban từ dịch vụ danh mục.'); }
+        const result = await response.json();
+        departments.push(...result.data.data);
+        lastPage = result.data.last_page;
+        page++;
+    } while (page <= lastPage);
+}
+
 
 
 /*
@@ -226,8 +228,8 @@ function getDepartmentOptions(
                         : ''
                 }>
 
-                ${department.name}
-                (${department.code})
+                ${escapeHtml(department.name)}
+                (${escapeHtml(department.code)})
 
             </option>
 
@@ -315,8 +317,8 @@ function createDepartmentSelect(
                     value="${department.id}"
                     ${selected}>
 
-                    ${department.name}
-                    (${department.code})
+                    ${escapeHtml(department.name)}
+                    (${escapeHtml(department.code)})
 
                 </option>
             `;
@@ -951,7 +953,8 @@ document
 
     if (isAdmin) {
 
-        await loadUsers();
+        try { await loadDepartments(); await loadUsers(); }
+        catch (error) { showMessage(error.message, 'error'); }
 
     }
 

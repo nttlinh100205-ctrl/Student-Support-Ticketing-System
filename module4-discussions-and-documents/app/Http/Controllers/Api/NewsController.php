@@ -104,8 +104,7 @@ class NewsController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' =>
-                    'Không thể tải danh sách tin tức: ' .
+                'message' => 'Không thể tải danh sách tin tức: '.
                     $e->getMessage(),
                 'errors' => [],
             ], 500);
@@ -114,11 +113,14 @@ class NewsController extends Controller
 
     public function adminIndex(Request $request)
     {
+        abort_unless($request->attributes->get('account_user')['role'] === 'admin', 403);
+
         return $this->index($request);
     }
 
     public function store(Request $request)
     {
+        $this->setAuthenticatedOwner($request);
         $validator = Validator::make(
             $request->all(),
             [
@@ -174,41 +176,29 @@ class NewsController extends Controller
                 ],
             ],
             [
-                'title.required' =>
-                    'Vui lòng nhập tiêu đề.',
+                'title.required' => 'Vui lòng nhập tiêu đề.',
 
-                'title.max' =>
-                    'Tiêu đề không được vượt quá 255 ký tự.',
+                'title.max' => 'Tiêu đề không được vượt quá 255 ký tự.',
 
-                'content.required' =>
-                    'Vui lòng nhập nội dung.',
+                'content.required' => 'Vui lòng nhập nội dung.',
 
-                'category.required' =>
-                    'Vui lòng chọn chuyên mục.',
+                'category.required' => 'Vui lòng chọn chuyên mục.',
 
-                'category.in' =>
-                    'Chuyên mục không hợp lệ.',
+                'category.in' => 'Chuyên mục không hợp lệ.',
 
-                'owner_id.required' =>
-                    'Thiếu thông tin người đăng.',
+                'owner_id.required' => 'Thiếu thông tin người đăng.',
 
-                'owner_name.required' =>
-                    'Thiếu tên người đăng.',
+                'owner_name.required' => 'Thiếu tên người đăng.',
 
-                'owner_role.required' =>
-                    'Thiếu vai trò người đăng.',
+                'owner_role.required' => 'Thiếu vai trò người đăng.',
 
-                'owner_role.in' =>
-                    'Vai trò người đăng không hợp lệ.',
+                'owner_role.in' => 'Vai trò người đăng không hợp lệ.',
 
-                'file.file' =>
-                    'File tải lên không hợp lệ.',
+                'file.file' => 'File tải lên không hợp lệ.',
 
-                'file.max' =>
-                    'File không được vượt quá 10MB.',
+                'file.max' => 'File không được vượt quá 10MB.',
 
-                'file.mimes' =>
-                    'File chỉ được phép là JPG, JPEG, PNG, WEBP, PDF, DOC, DOCX, XLS hoặc XLSX.',
+                'file.mimes' => 'File chỉ được phép là JPG, JPEG, PNG, WEBP, PDF, DOC, DOCX, XLS hoặc XLSX.',
             ]
         );
 
@@ -250,59 +240,47 @@ class NewsController extends Controller
 
                 'id' => $id,
 
-                'title' =>
-                    trim(
-                        (string) $request->input('title')
-                    ),
+                'title' => trim(
+                    (string) $request->input('title')
+                ),
 
-                'content' =>
-                    trim(
-                        (string) $request->input('content')
-                    ),
+                'content' => trim(
+                    (string) $request->input('content')
+                ),
 
-                'category' =>
-                    $category,
+                'category' => $category,
 
-                'category_name' =>
-                    $this->getCategoryName(
-                        $category
-                    ),
+                'category_name' => $this->getCategoryName(
+                    $category
+                ),
 
-                'owner_id' =>
-                    (int) $request->input('owner_id'),
+                'owner_id' => (int) $request->input('owner_id'),
 
-                'owner_name' =>
-                    trim(
-                        (string) $request->input('owner_name')
-                    ),
+                'owner_name' => trim(
+                    (string) $request->input('owner_name')
+                ),
 
-                'owner_role' =>
-                    trim(
-                        (string) $request->input('owner_role')
-                    ),
+                'owner_role' => trim(
+                    (string) $request->input('owner_role')
+                ),
 
-                'status' =>
-                    $request->input(
-                        'status',
-                        'published'
-                    ),
+                'status' => $request->input(
+                    'status',
+                    'published'
+                ),
 
-                'is_pinned' =>
-                    $request->boolean(
-                        'is_pinned'
-                    ),
+                'is_pinned' => $request->boolean(
+                    'is_pinned'
+                ),
 
-                'published_at' =>
-                    $now,
+                'published_at' => $now,
 
-                'created_at' =>
-                    $now,
+                'created_at' => $now,
 
-                'updated_at' =>
-                    $now,
+                'updated_at' => $now,
             ];
 
-            if (!empty($fileData)) {
+            if (! empty($fileData)) {
 
                 $item = array_merge(
                     $item,
@@ -316,20 +294,17 @@ class NewsController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' =>
-                    $this->appendFileUrls(
-                        $item
-                    ),
-                'message' =>
-                    'Đăng tin thành công.',
+                'data' => $this->appendFileUrls(
+                    $item
+                ),
+                'message' => 'Đăng tin thành công.',
             ], 201);
 
         } catch (Throwable $e) {
 
             return response()->json([
                 'success' => false,
-                'message' =>
-                    'Không thể đăng tin: ' .
+                'message' => 'Không thể đăng tin: '.
                     $e->getMessage(),
                 'errors' => [],
             ], 500);
@@ -339,8 +314,8 @@ class NewsController extends Controller
     public function update(
         Request $request,
         $id
-    )
-    {
+    ) {
+        $this->setAuthenticatedOwner($request);
         $validator = Validator::make(
             $request->all(),
             [
@@ -396,23 +371,17 @@ class NewsController extends Controller
                 ],
             ],
             [
-                'title.required' =>
-                    'Vui lòng nhập tiêu đề.',
+                'title.required' => 'Vui lòng nhập tiêu đề.',
 
-                'content.required' =>
-                    'Vui lòng nhập nội dung.',
+                'content.required' => 'Vui lòng nhập nội dung.',
 
-                'category.required' =>
-                    'Vui lòng chọn chuyên mục.',
+                'category.required' => 'Vui lòng chọn chuyên mục.',
 
-                'category.in' =>
-                    'Chuyên mục không hợp lệ.',
+                'category.in' => 'Chuyên mục không hợp lệ.',
 
-                'file.max' =>
-                    'File không được vượt quá 10MB.',
+                'file.max' => 'File không được vượt quá 10MB.',
 
-                'file.mimes' =>
-                    'File chỉ được phép là JPG, JPEG, PNG, WEBP, PDF, DOC, DOCX, XLS hoặc XLSX.',
+                'file.mimes' => 'File chỉ được phép là JPG, JPEG, PNG, WEBP, PDF, DOC, DOCX, XLS hoặc XLSX.',
             ]
         );
 
@@ -439,8 +408,7 @@ class NewsController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' =>
-                        'Không tìm thấy tin tức.',
+                    'message' => 'Không tìm thấy tin tức.',
                     'errors' => [],
                 ], 404);
             }
@@ -472,8 +440,7 @@ class NewsController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' =>
-                        'Bạn không có quyền sửa tin này.',
+                    'message' => 'Bạn không có quyền sửa tin này.',
                     'errors' => [],
                 ], 403);
             }
@@ -569,20 +536,17 @@ class NewsController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' =>
-                    $this->appendFileUrls(
-                        $item
-                    ),
-                'message' =>
-                    'Cập nhật tin thành công.',
+                'data' => $this->appendFileUrls(
+                    $item
+                ),
+                'message' => 'Cập nhật tin thành công.',
             ]);
 
         } catch (Throwable $e) {
 
             return response()->json([
                 'success' => false,
-                'message' =>
-                    'Không thể cập nhật tin: ' .
+                'message' => 'Không thể cập nhật tin: '.
                     $e->getMessage(),
                 'errors' => [],
             ], 500);
@@ -592,8 +556,8 @@ class NewsController extends Controller
     public function destroy(
         Request $request,
         $id
-    )
-    {
+    ) {
+        $this->setAuthenticatedOwner($request);
         try {
 
             $news = $this->readNews();
@@ -608,8 +572,7 @@ class NewsController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' =>
-                        'Không tìm thấy tin tức.',
+                    'message' => 'Không tìm thấy tin tức.',
                     'errors' => [],
                 ], 404);
             }
@@ -641,8 +604,7 @@ class NewsController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' =>
-                        'Bạn không có quyền xóa tin này.',
+                    'message' => 'Bạn không có quyền xóa tin này.',
                     'errors' => [],
                 ], 403);
             }
@@ -662,16 +624,14 @@ class NewsController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => null,
-                'message' =>
-                    'Xóa tin thành công.',
+                'message' => 'Xóa tin thành công.',
             ]);
 
         } catch (Throwable $e) {
 
             return response()->json([
                 'success' => false,
-                'message' =>
-                    'Không thể xóa tin: ' .
+                'message' => 'Không thể xóa tin: '.
                     $e->getMessage(),
                 'errors' => [],
             ], 500);
@@ -694,8 +654,7 @@ class NewsController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' =>
-                        'Không tìm thấy tin tức.',
+                    'message' => 'Không tìm thấy tin tức.',
                 ], 404);
             }
 
@@ -707,14 +666,13 @@ class NewsController extends Controller
                 );
 
             if (
-                !$filePath ||
-                !is_file($filePath)
+                ! $filePath ||
+                ! is_file($filePath)
             ) {
 
                 return response()->json([
                     'success' => false,
-                    'message' =>
-                        'File không tồn tại trên máy chủ.',
+                    'message' => 'File không tồn tại trên máy chủ.',
                 ], 404);
             }
 
@@ -727,19 +685,16 @@ class NewsController extends Controller
             return response()->file(
                 $filePath,
                 [
-                    'Content-Type' =>
-                        $mimeType,
+                    'Content-Type' => $mimeType,
 
-                    'Content-Disposition' =>
-                        'inline; filename="' .
+                    'Content-Disposition' => 'inline; filename="'.
                         $this->safeHeaderFileName(
                             $item['file_name'] ??
                             basename($filePath)
-                        ) .
+                        ).
                         '"',
 
-                    'X-Content-Type-Options' =>
-                        'nosniff',
+                    'X-Content-Type-Options' => 'nosniff',
                 ]
             );
 
@@ -747,8 +702,7 @@ class NewsController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' =>
-                    'Không thể xem file: ' .
+                'message' => 'Không thể xem file: '.
                     $e->getMessage(),
             ], 500);
         }
@@ -770,8 +724,7 @@ class NewsController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' =>
-                        'Không tìm thấy tin tức.',
+                    'message' => 'Không tìm thấy tin tức.',
                 ], 404);
             }
 
@@ -783,14 +736,13 @@ class NewsController extends Controller
                 );
 
             if (
-                !$filePath ||
-                !is_file($filePath)
+                ! $filePath ||
+                ! is_file($filePath)
             ) {
 
                 return response()->json([
                     'success' => false,
-                    'message' =>
-                        'File không tồn tại trên máy chủ.',
+                    'message' => 'File không tồn tại trên máy chủ.',
                 ], 404);
             }
 
@@ -807,8 +759,7 @@ class NewsController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' =>
-                    'Không thể tải file: ' .
+                'message' => 'Không thể tải file: '.
                     $e->getMessage(),
             ], 500);
         }
@@ -818,7 +769,7 @@ class NewsController extends Controller
     {
         $disk = Storage::disk('local');
 
-        if (!$disk->exists($this->jsonFile)) {
+        if (! $disk->exists($this->jsonFile)) {
 
             $disk->makeDirectory(
                 dirname($this->jsonFile)
@@ -851,7 +802,7 @@ class NewsController extends Controller
                 true
             );
 
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             return [];
         }
 
@@ -860,8 +811,7 @@ class NewsController extends Controller
 
     private function writeNews(
         array $news
-    ): void
-    {
+    ): void {
         Storage::disk('local')->makeDirectory(
             dirname($this->jsonFile)
         );
@@ -879,8 +829,7 @@ class NewsController extends Controller
 
     private function getNextId(
         array $news
-    ): int
-    {
+    ): int {
         $maxId = 0;
 
         foreach ($news as $item) {
@@ -899,8 +848,7 @@ class NewsController extends Controller
     private function findNewsIndex(
         array $news,
         $id
-    ): ?int
-    {
+    ): ?int {
         foreach ($news as $index => $item) {
 
             if (
@@ -916,13 +864,12 @@ class NewsController extends Controller
 
     private function saveUploadedFile(
         $file
-    ): array
-    {
+    ): array {
         $disk =
             Storage::disk('public');
 
         if (
-            !$disk->exists(
+            ! $disk->exists(
                 $this->uploadDirectory
             )
         ) {
@@ -954,10 +901,10 @@ class NewsController extends Controller
         }
 
         $uniqueName =
-            $safeBaseName .
-            '_' .
-            Str::random(20) .
-            '.' .
+            $safeBaseName.
+            '_'.
+            Str::random(20).
+            '.'.
             $extension;
 
         $path =
@@ -968,28 +915,23 @@ class NewsController extends Controller
             );
 
         return [
-            'file_path' =>
-                $path,
+            'file_path' => $path,
 
-            'file_name' =>
-                $originalName,
+            'file_name' => $originalName,
 
-            'file_type' =>
-                $this->getUploadedMimeType(
-                    $file,
-                    $extension
-                ),
+            'file_type' => $this->getUploadedMimeType(
+                $file,
+                $extension
+            ),
 
-            'file_size' =>
-                $file->getSize(),
+            'file_size' => $file->getSize(),
         ];
     }
 
     private function getUploadedMimeType(
         $file,
         string $extension
-    ): string
-    {
+    ): string {
         $mime =
             strtolower(
                 (string) $file->getClientMimeType()
@@ -1005,32 +947,23 @@ class NewsController extends Controller
 
         $mimeMap = [
 
-            'jpg' =>
-                'image/jpeg',
+            'jpg' => 'image/jpeg',
 
-            'jpeg' =>
-                'image/jpeg',
+            'jpeg' => 'image/jpeg',
 
-            'png' =>
-                'image/png',
+            'png' => 'image/png',
 
-            'webp' =>
-                'image/webp',
+            'webp' => 'image/webp',
 
-            'pdf' =>
-                'application/pdf',
+            'pdf' => 'application/pdf',
 
-            'doc' =>
-                'application/msword',
+            'doc' => 'application/msword',
 
-            'docx' =>
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 
-            'xls' =>
-                'application/vnd.ms-excel',
+            'xls' => 'application/vnd.ms-excel',
 
-            'xlsx' =>
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ];
 
         return $mimeMap[$extension]
@@ -1040,8 +973,7 @@ class NewsController extends Controller
     private function getMimeType(
         array $item,
         string $filePath
-    ): string
-    {
+    ): string {
         $storedMime =
             trim(
                 (string) (
@@ -1067,32 +999,23 @@ class NewsController extends Controller
 
         $mimeMap = [
 
-            'jpg' =>
-                'image/jpeg',
+            'jpg' => 'image/jpeg',
 
-            'jpeg' =>
-                'image/jpeg',
+            'jpeg' => 'image/jpeg',
 
-            'png' =>
-                'image/png',
+            'png' => 'image/png',
 
-            'webp' =>
-                'image/webp',
+            'webp' => 'image/webp',
 
-            'pdf' =>
-                'application/pdf',
+            'pdf' => 'application/pdf',
 
-            'doc' =>
-                'application/msword',
+            'doc' => 'application/msword',
 
-            'docx' =>
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 
-            'xls' =>
-                'application/vnd.ms-excel',
+            'xls' => 'application/vnd.ms-excel',
 
-            'xlsx' =>
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ];
 
         if (
@@ -1113,8 +1036,7 @@ class NewsController extends Controller
 
     private function getAbsoluteFilePath(
         array $item
-    ): ?string
-    {
+    ): ?string {
         $filePath =
             trim(
                 (string) (
@@ -1130,7 +1052,7 @@ class NewsController extends Controller
             Storage::disk('public');
 
         if (
-            !$disk->exists($filePath)
+            ! $disk->exists($filePath)
         ) {
             return null;
         }
@@ -1142,8 +1064,7 @@ class NewsController extends Controller
 
     private function deleteFileFromItem(
         array $item
-    ): void
-    {
+    ): void {
         $filePath =
             trim(
                 (string) (
@@ -1170,23 +1091,22 @@ class NewsController extends Controller
 
     private function appendFileUrls(
         array $item
-    ): array
-    {
+    ): array {
         if (
-            !empty($item['file_path'])
+            ! empty($item['file_path'])
         ) {
 
             $item['file_url'] =
                 url(
-                    '/api/news/' .
-                    $item['id'] .
+                    '/api/news/'.
+                    $item['id'].
                     '/file'
                 );
 
             $item['download_url'] =
                 url(
-                    '/api/news/' .
-                    $item['id'] .
+                    '/api/news/'.
+                    $item['id'].
                     '/download'
                 );
 
@@ -1202,27 +1122,20 @@ class NewsController extends Controller
 
     private function getCategoryName(
         string $category
-    ): string
-    {
+    ): string {
         $names = [
 
-            'dao_tao' =>
-                'Phòng Đào tạo',
+            'dao_tao' => 'Phòng Đào tạo',
 
-            'y_te' =>
-                'Phòng Y tế',
+            'y_te' => 'Phòng Y tế',
 
-            'vat_chat' =>
-                'Phòng Vật chất',
+            'vat_chat' => 'Phòng Vật chất',
 
-            'ke_toan' =>
-                'Phòng Kế toán',
+            'ke_toan' => 'Phòng Kế toán',
 
-            'hoat_dong_sinh_vien' =>
-                'Hoạt động sinh viên',
+            'hoat_dong_sinh_vien' => 'Hoạt động sinh viên',
 
-            'nha_truong' =>
-                'Tin nhà trường',
+            'nha_truong' => 'Tin nhà trường',
         ];
 
         return $names[$category]
@@ -1231,8 +1144,7 @@ class NewsController extends Controller
 
     private function safeHeaderFileName(
         string $fileName
-    ): string
-    {
+    ): string {
         return str_replace(
             [
                 '"',
@@ -1242,5 +1154,18 @@ class NewsController extends Controller
             '',
             $fileName
         );
+    }
+
+    private function setAuthenticatedOwner(Request $request): void
+    {
+        $user = $request->attributes->get('account_user');
+        abort_unless(is_array($user), 401);
+        $request->merge([
+            'owner_id' => $user['id'], 'owner_name' => $user['full_name'],
+            'owner_role' => in_array($user['role'], ['staff', 'department_head'], true) ? 'department' : $user['role'],
+        ]);
+        if ($user['role'] !== 'admin') {
+            $request->merge(['is_pinned' => false]);
+        }
     }
 }

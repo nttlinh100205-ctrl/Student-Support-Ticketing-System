@@ -16,6 +16,7 @@
 </head>
 
 <body>
+<nav style="padding:12px"><a href="/">Cổng hỗ trợ sinh viên</a></nav>
 
 <div class="dashboard">
 

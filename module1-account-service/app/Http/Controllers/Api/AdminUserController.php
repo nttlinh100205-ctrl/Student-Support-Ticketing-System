@@ -38,7 +38,6 @@ class AdminUserController extends Controller
         ]);
     }
 
-
     /**
      * Xem chi tiết một tài khoản.
      */
@@ -68,7 +67,6 @@ class AdminUserController extends Controller
         ]);
     }
 
-
     /**
      * Thay đổi quyền tài khoản.
      *
@@ -94,21 +92,18 @@ class AdminUserController extends Controller
             'department_id' => [
                 'nullable',
                 'integer',
-                'exists:support_departments,id',
+                'min:1',
             ],
         ]);
-
 
         /**
          * Không cho ADMIN tự đổi quyền của chính mình.
          */
         if ($request->user()->id === $user->id) {
             return response()->json([
-                'message' =>
-                    'Khong the tu thay doi quyen cua chinh minh.',
+                'message' => 'Khong the tu thay doi quyen cua chinh minh.',
             ], 403);
         }
-
 
         /**
          * STAFF và DEPARTMENT_HEAD
@@ -123,8 +118,7 @@ class AdminUserController extends Controller
             && empty($validated['department_id'])
         ) {
             return response()->json([
-                'message' =>
-                    'STAFF va DEPARTMENT_HEAD phai thuoc mot phong ban.',
+                'message' => 'STAFF va DEPARTMENT_HEAD phai thuoc mot phong ban.',
                 'errors' => [
                     'department_id' => [
                         'Vui long chon phong ban.',
@@ -132,7 +126,6 @@ class AdminUserController extends Controller
                 ],
             ], 422);
         }
-
 
         /**
          * STUDENT và ADMIN không thuộc phòng ban hỗ trợ.
@@ -145,17 +138,14 @@ class AdminUserController extends Controller
             ? $validated['department_id']
             : null;
 
-
         $user->update([
             'role' => $validated['role'],
             'department_id' => $departmentId,
         ]);
 
-
         $user->load([
             'department:id,name,code',
         ]);
-
 
         return response()->json([
             'message' => 'Thay doi quyen tai khoan thanh cong',
@@ -178,7 +168,6 @@ class AdminUserController extends Controller
         ]);
     }
 
-
     /**
      * Khóa hoặc mở khóa tài khoản.
      */
@@ -197,27 +186,25 @@ class AdminUserController extends Controller
             ],
         ]);
 
-
         /**
          * Không cho ADMIN tự khóa chính mình.
          */
         if ($request->user()->id === $user->id) {
             return response()->json([
-                'message' =>
-                    'Khong the tu khoa tai khoan cua chinh minh.',
+                'message' => 'Khong the tu khoa tai khoan cua chinh minh.',
             ], 403);
         }
-
 
         $user->update([
             'status' => $validated['status'],
         ]);
-
+        if ($validated['status'] === 'LOCKED') {
+            $user->tokens()->delete();
+        }
 
         $user->load([
             'department:id,name,code',
         ]);
-
 
         return response()->json([
             'message' => $validated['status'] === 'LOCKED'

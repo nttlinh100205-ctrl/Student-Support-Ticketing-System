@@ -17,7 +17,10 @@ class DepartmentService
      */
     public function paginate(array $filters): LengthAwarePaginator
     {
-        $query = SupportDepartment::query()->withCount(['staff', 'heads']);
+        $query = SupportDepartment::query();
+        if (config('account.fake')) {
+            $query->withCount(['staff', 'heads']);
+        }
 
         $search = trim($filters['search'] ?? '');
 
@@ -36,6 +39,7 @@ class DepartmentService
         return $query->orderBy('name')
             ->orderBy('id')
             ->paginate(10)
+            ->through(fn ($department) => $this->withStaffCounts($department))
             ->withQueryString();
     }
 
@@ -61,6 +65,14 @@ class DepartmentService
      */
     public function withStaffCounts(SupportDepartment $department): SupportDepartment
     {
+        if (! config('account.fake')) {
+            $users = collect(app(AccountDirectory::class)->all())->where('department_id', $department->id);
+            $department->staff_count = $users->where('role', 'staff')->count();
+            $department->heads_count = $users->where('role', 'department_head')->count();
+
+            return $department;
+        }
+
         return $department->loadCount(['staff', 'heads']);
     }
 
@@ -69,6 +81,9 @@ class DepartmentService
      */
     public function paginateStaff(SupportDepartment $department, array $filters): LengthAwarePaginator
     {
+        if (! config('account.fake')) {
+            return app(AccountDirectory::class)->paginate($filters, $department->id);
+        }
         $query = $department->users()
             ->select(['id', 'name', 'email', 'role', 'status', 'department_id'])
             ->whereIn('role', UserRole::staffValues());
@@ -113,7 +128,7 @@ class DepartmentService
 
     private function deleteBlockedReason(SupportDepartment $department): ?string
     {
-        if ($department->users()->exists()) {
+        if (config('account.fake') ? $department->users()->exists() : collect(app(AccountDirectory::class)->all())->contains('department_id', $department->id)) {
             return 'Không thể xóa phòng ban vì vẫn có tài khoản thuộc phòng ban này.';
         }
 

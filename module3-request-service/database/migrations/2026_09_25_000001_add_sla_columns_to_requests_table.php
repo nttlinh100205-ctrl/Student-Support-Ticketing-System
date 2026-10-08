@@ -17,10 +17,10 @@ return new class extends Migration
     {
         Schema::table('requests', function (Blueprint $table) {
             $table->timestamp('sla_deadline_at')->nullable()->after('closed_at')
-                  ->comment('Mốc deadline SLA, tính từ created_at + thời hạn theo priority');
+                ->comment('Mốc deadline SLA, tính từ created_at + thời hạn theo priority');
 
             $table->string('sla_flag', 20)->default('on_time')->after('sla_deadline_at')
-                  ->comment('on_time | warning | breached');
+                ->comment('on_time | warning | breached');
 
             // Index cho cron quét: WHERE sla_flag != breached AND sla_deadline_at <= ...
             $table->index(['sla_flag', 'sla_deadline_at'], 'requests_sla_check_index');

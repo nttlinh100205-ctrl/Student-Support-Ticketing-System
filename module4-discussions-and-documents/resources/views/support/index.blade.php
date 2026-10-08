@@ -319,6 +319,7 @@
 </head>
 
 <body>
+@include('partials.account')
 
 <div class="topbar">
 
@@ -372,15 +373,12 @@
             </label>
 
             <select
-                id="currentRole"
+                id="currentRole" disabled
                 class="form-select"
                 onchange="changeRole()">
 
-                <option value="admin">Admin</option>
-                <option value="department">Phòng ban</option>
-                <option value="student">Sinh viên</option>
-
-            </select>
+                <option value="{{ in_array(request()->attributes->get('account_user')['role'], ['staff', 'department_head']) ? 'department' : request()->attributes->get('account_user')['role'] }}">{{ request()->attributes->get('account_user')['full_name'] }}</option>
+</select>
 
             <div
                 id="departmentBox"
@@ -388,7 +386,7 @@
                 style="display:none;">
 
                 <label class="form-label fw-bold">
-                    Phòng ban
+                    Nhóm tin đang xem
                 </label>
 
                 <select
@@ -756,54 +754,6 @@
 
 <script>
 
-const USERS = {
-
-    admin: {
-        id: 999,
-        name: 'Quản trị viên',
-        role: 'admin'
-    },
-
-    departments: {
-
-        dao_tao: {
-            id: 201,
-            name: 'Nguyễn Văn Minh',
-            role: 'department',
-            department: 'dao_tao'
-        },
-
-        y_te: {
-            id: 202,
-            name: 'Lê Thị Hoa',
-            role: 'department',
-            department: 'y_te'
-        },
-
-        vat_chat: {
-            id: 203,
-            name: 'Phạm Văn Nam',
-            role: 'department',
-            department: 'vat_chat'
-        },
-
-        ke_toan: {
-            id: 204,
-            name: 'Đỗ Thị Lan',
-            role: 'department',
-            department: 'ke_toan'
-        }
-
-    },
-
-    student: {
-        id: 1,
-        name: 'Nguyễn Văn An',
-        role: 'student'
-    }
-
-};
-
 const ALLOWED_FILE_EXTENSIONS = [
     'jpg',
     'jpeg',
@@ -824,23 +774,9 @@ let editingId = null;
 
 let newsCache = [];
 
-function getCurrentUser()
-{
-    const role =
-        document.getElementById('currentRole').value;
-
-    if (role === 'admin') {
-        return USERS.admin;
-    }
-
-    if (role === 'student') {
-        return USERS.student;
-    }
-
-    const department =
-        document.getElementById('currentDepartment').value;
-
-    return USERS.departments[department];
+function getCurrentUser() {
+    return {...window.AccountUser, name: window.AccountUser.full_name, department: document.getElementById('currentDepartment').value,
+        role: ['staff', 'department_head'].includes(window.AccountUser.role) ? 'department' : window.AccountUser.role};
 }
 
 function changeRole()

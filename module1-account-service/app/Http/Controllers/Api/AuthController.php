@@ -64,6 +64,7 @@ class AuthController extends Controller
                 'phone' => $user->phone,
                 'role' => $user->role,
                 'status' => $user->status,
+                'department_id' => $user->department_id,
             ],
             'token' => $token,
         ], 201);
@@ -91,8 +92,8 @@ class AuthController extends Controller
         )->first();
 
         if (
-            !$user ||
-            !Hash::check(
+            ! $user ||
+            ! Hash::check(
                 $validated['password'],
                 $user->password
             )
@@ -124,6 +125,7 @@ class AuthController extends Controller
                 'phone' => $user->phone,
                 'role' => $user->role,
                 'status' => $user->status,
+                'department_id' => $user->department_id,
             ],
             'token' => $token,
         ]);
@@ -148,6 +150,7 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
+        abort_unless($request->user()->status === 'ACTIVE', 403, 'Tài khoản đang bị khóa.');
         $user = $request->user();
 
         return response()->json([
@@ -158,6 +161,7 @@ class AuthController extends Controller
                 'phone' => $user->phone,
                 'role' => $user->role,
                 'status' => $user->status,
+                'department_id' => $user->department_id,
             ],
         ]);
     }

@@ -700,6 +700,7 @@
     </style>
 </head>
 <body>
+@include('partials.account')
 
     <!-- Header Navigation -->
     <header>
@@ -714,11 +715,7 @@
         <div class="header-actions">
             <div class="account-chip">
                 <div class="avatar-circle" id="userAvatar">AD</div>
-                <select id="roleSelector" onchange="switchRole()">
-                    <option value="admin" data-id="1" data-dept="" data-name="Nguyễn Văn Quản">Ban Giám Hiệu / Quản trị viên</option>
-                    <option value="department_head" data-id="5" data-dept="3" data-name="Lê Thị Hương">Trưởng phòng CTSV</option>
-                    <option value="staff" data-id="101" data-dept="1" data-name="Phạm Văn Đức">Cán bộ Tiếp nhận Đào tạo</option>
-                </select>
+                <select id="roleSelector" onchange="switchRole()"><option value="{{ request()->attributes->get('account_user')['role'] }}" data-name="{{ request()->attributes->get('account_user')['full_name'] }}">{{ request()->attributes->get('account_user')['full_name'] }}</option></select>
             </div>
         </div>
     </header>
@@ -1097,23 +1094,7 @@
         let slaDonutChartInstance = null;
         let starsBarChartInstance = null;
 
-        function getAuthHeaders() {
-            const selector = document.getElementById('roleSelector');
-            const opt = selector.options[selector.selectedIndex];
-            const role = opt.value;
-            const userId = opt.getAttribute('data-id') || 1;
-            const deptId = opt.getAttribute('data-dept') || '';
-
-            const headers = {
-                'X-User-Id': userId,
-                'X-User-Role': role,
-                'Accept': 'application/json'
-            };
-            if (deptId) {
-                headers['X-Department-Id'] = deptId;
-            }
-            return headers;
-        }
+        function getAuthHeaders() { return window.AccountHeaders(); }
 
         function switchRole() {
             const selector = document.getElementById('roleSelector');
@@ -1238,7 +1219,7 @@
                 : 'N/A';
 
             // Active workload
-            const inProgress = (data.by_status?.in_progress || 0) + (data.by_status?.received || 0);
+            const inProgress = (data.by_status?.in_progress || 0) + (data.by_status?.received || 0) + (data.by_status?.waiting_info || 0);
             const newRequests = data.by_status?.new || 0;
             const activeTotal = inProgress + newRequests;
             document.getElementById('kpiActiveWorkload').innerText = activeTotal;
@@ -1318,12 +1299,14 @@
         // Biểu đồ tròn trạng thái (Doughnut chart)
         function renderStatusDonutChart(statusData) {
             const ctx = document.getElementById('statusDonutChart').getContext('2d');
-            const labels = ['Mới', 'Đã tiếp nhận', 'Đang xử lý', 'Đã giải quyết', 'Đã hủy'];
+            const labels = ['Mới', 'Đã tiếp nhận', 'Đang xử lý', 'Chờ bổ sung', 'Đã giải quyết', 'Đã đóng', 'Đã hủy'];
             const values = [
                 statusData.new || 0,
                 statusData.received || 0,
                 statusData.in_progress || 0,
+                statusData.waiting_info || 0,
                 statusData.resolved || 0,
+                statusData.closed || 0,
                 statusData.cancelled || 0
             ];
 
@@ -1335,7 +1318,7 @@
                     labels: labels,
                     datasets: [{
                         data: values,
-                        backgroundColor: ['#f59e0b', '#3b82f6', '#6366f1', '#10b981', '#ef4444'],
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#6366f1', '#a855f7', '#10b981', '#64748b', '#ef4444'],
                         borderWidth: 3,
                         borderColor: '#ffffff'
                     }]

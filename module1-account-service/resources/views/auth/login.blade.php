@@ -83,6 +83,7 @@
 
 
 <script>
+if (new URLSearchParams(location.search).has('logged_out')) { localStorage.removeItem('access_token'); localStorage.removeItem('current_user'); }
 
 document
     .getElementById('loginForm')
@@ -161,17 +162,8 @@ document
 
             setTimeout(function() {
 
-                if (data.user.role === 'ADMIN') {
-
-                    window.location.href =
-                        '/admin/users';
-
-                } else {
-
-                    window.location.href =
-                        '/profile';
-
-                }
+                const params = new URLSearchParams(location.search);
+                window.location.href = params.has('service') ? '/sso/authorize?' + params.toString() : '/';
 
             }, 500);
 

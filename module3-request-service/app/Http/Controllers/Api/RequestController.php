@@ -15,21 +15,18 @@ use App\Services\RequestWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
-
 class RequestController extends Controller
 {
     public function __construct(
         protected RequestWorkflowService $workflow,
         protected AuthContext $auth,
-    ) {
-    }
+    ) {}
 
-  
     public function index(Request $request)
     {
-        
+
         $query = SupportRequest::query()
-            ->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")
+            ->orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 WHEN 'low' THEN 4 ELSE 5 END")
             ->latest();
 
         $role = $this->auth->role();
@@ -73,7 +70,15 @@ class RequestController extends Controller
             });
         }
 
-        return ApiResponse::success(SupportRequestResource::collection($query->paginate(15)));
+        $paginator = $query->paginate(15);
+
+        return response()->json([
+            'success' => true,
+            'data' => SupportRequestResource::collection($paginator->items())->resolve($request),
+            'message' => null,
+            'meta' => ['current_page' => $paginator->currentPage(), 'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(), 'total' => $paginator->total()],
+        ]);
     }
 
     /** GET /api/requests/{supportRequest} */
@@ -88,7 +93,6 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($supportRequest));
     }
 
-   
     public function store(StoreRequestRequest $request)
     {
         if ($this->auth->role() !== 'student') {
@@ -116,7 +120,6 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($created), status: 201);
     }
 
-    
     public function update(UpdateRequestRequest $request, SupportRequest $supportRequest)
     {
         $isOwner = $this->auth->role() === 'student' && $supportRequest->student_id === $this->auth->userId();
@@ -138,7 +141,6 @@ class RequestController extends Controller
         return ApiResponse::success(new SupportRequestResource($updated));
     }
 
-  
     public function updateStatus(UpdateStatusRequest $request, SupportRequest $supportRequest)
     {
         $role = $this->auth->role();

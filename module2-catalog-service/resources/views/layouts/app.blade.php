@@ -66,38 +66,16 @@
          * mỗi request API gửi kèm X-User-Id / X-User-Role.
          * Khi Module 1 có JWT thật, chỉ cần sửa headers() để gửi token.
          */
-        window.DemoAuth = (() => {
-            const storageKey = 'module2_demo_user';
-            const users = [
-                { id: 1, role: 'admin', full_name: 'Quản trị viên' },
-                { id: 2, role: 'student', full_name: 'Sinh viên A' },
-            ];
-
-            function user() {
-                let id = null;
-                try { id = Number(localStorage.getItem(storageKey)); } catch (e) {}
-                return users.find(item => item.id === id) || users[0];
-            }
-
-            function select(id) {
-                try { localStorage.setItem(storageKey, String(id)); } catch (e) {}
-                window.location.reload();
-            }
-
-            function headers() {
-                const current = user();
-                return {
-                    'X-User-Id': String(current.id),
-                    'X-User-Role': current.role,
-                };
-            }
-
-            return { users, user, select, headers };
-        })();
+        window.DemoAuth = {
+            users: [],
+            user: () => window.AccountUser || {},
+            headers: () => window.AccountHeaders(),
+        };
     </script>
 </head>
 
 <body class="bg-slate-100/80 text-slate-800 antialiased min-h-screen">
+@include('partials.account')
 
 <div class="min-h-screen flex">
     {{-- SIDEBAR --}}

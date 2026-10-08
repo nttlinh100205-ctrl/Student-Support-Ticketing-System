@@ -3,9 +3,8 @@
 namespace App\Services\Clients;
 
 use App\Contracts\OrgServiceClientInterface;
+use App\Services\ServiceClient;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class OrgServiceClient implements OrgServiceClientInterface
 {
@@ -18,23 +17,11 @@ class OrgServiceClient implements OrgServiceClientInterface
      */
     public function getDepartments(): array
     {
-        $mock = config('services.org_service.mock', true);
+        $mock = config('services.org_service.mock', false);
         $baseUrl = config('services.org_service.url', 'http://localhost:8002');
 
         if (! $mock) {
-            try {
-                $response = Http::timeout(5)
-                    ->withHeaders($this->forwardHeaders())
-                    ->get("{$baseUrl}/api/departments");
-
-                if ($response->successful()) {
-                    $json = $response->json();
-
-                    return $json['data'] ?? [];
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Không thể kết nối tới Org Service (departments): '.$e->getMessage());
-            }
+            return app(ServiceClient::class)->all($baseUrl, '/api/catalog/departments');
         }
 
         $path = storage_path('app/mock_departments.json');
@@ -64,23 +51,11 @@ class OrgServiceClient implements OrgServiceClientInterface
      */
     public function getSupportTypes(): array
     {
-        $mock = config('services.org_service.mock', true);
+        $mock = config('services.org_service.mock', false);
         $baseUrl = config('services.org_service.url', 'http://localhost:8002');
 
         if (! $mock) {
-            try {
-                $response = Http::timeout(5)
-                    ->withHeaders($this->forwardHeaders())
-                    ->get("{$baseUrl}/api/support-types");
-
-                if ($response->successful()) {
-                    $json = $response->json();
-
-                    return $json['data'] ?? [];
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Không thể kết nối tới Org Service (support-types): '.$e->getMessage());
-            }
+            return app(ServiceClient::class)->all($baseUrl, '/api/catalog/support-types');
         }
 
         $path = storage_path('app/mock_support_types.json');
@@ -110,23 +85,11 @@ class OrgServiceClient implements OrgServiceClientInterface
      */
     public function getStaffMembers(): array
     {
-        $mock = config('services.org_service.mock', true);
+        $mock = config('services.org_service.mock', false);
         $baseUrl = config('services.org_service.url', 'http://localhost:8002');
 
         if (! $mock) {
-            try {
-                $response = Http::timeout(5)
-                    ->withHeaders($this->forwardHeaders())
-                    ->get("{$baseUrl}/api/staff");
-
-                if ($response->successful()) {
-                    $json = $response->json();
-
-                    return $json['data'] ?? [];
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Không thể kết nối tới Org Service (staff): '.$e->getMessage());
-            }
+            return app(ServiceClient::class)->all(config('account.url'), '/api/v1/directory/staff');
         }
 
         $path = storage_path('app/mock_staff.json');
@@ -147,29 +110,5 @@ class OrgServiceClient implements OrgServiceClientInterface
         $staff = $this->getStaffMembers();
 
         return collect($staff)->firstWhere('id', $staffId);
-    }
-
-    /**
-     * Chuyển tiếp các header xác thực.
-     *
-     * @return array<string, string>
-     */
-    private function forwardHeaders(): array
-    {
-        $headers = [];
-
-        if ($auth = $this->request->header('Authorization')) {
-            $headers['Authorization'] = $auth;
-        }
-
-        if ($userId = $this->request->header('X-User-Id')) {
-            $headers['X-User-Id'] = $userId;
-        }
-
-        if ($role = $this->request->header('X-User-Role')) {
-            $headers['X-User-Role'] = $role;
-        }
-
-        return $headers;
     }
 }

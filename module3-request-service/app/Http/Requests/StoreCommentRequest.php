@@ -21,9 +21,9 @@ class StoreCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'body'          => ['required', 'string', 'max:5000'],
-            'is_internal'   => ['sometimes', 'boolean'],
-            'attachments'   => ['sometimes', 'array', 'max:5'],
+            'body' => ['required', 'string', 'max:5000'],
+            'is_internal' => ['sometimes', 'boolean'],
+            'attachments' => ['sometimes', 'array', 'max:5'],
             'attachments.*' => ['file', 'max:10240'], // 10 MB
         ];
     }
@@ -31,10 +31,10 @@ class StoreCommentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'body.required'      => 'Nội dung bình luận không được để trống.',
-            'body.max'           => 'Nội dung bình luận tối đa 5000 ký tự.',
-            'attachments.max'    => 'Chỉ được đính kèm tối đa 5 file.',
-            'attachments.*.max'  => 'Mỗi file đính kèm không quá 10 MB.',
+            'body.required' => 'Nội dung bình luận không được để trống.',
+            'body.max' => 'Nội dung bình luận tối đa 5000 ký tự.',
+            'attachments.max' => 'Chỉ được đính kèm tối đa 5 file.',
+            'attachments.*.max' => 'Mỗi file đính kèm không quá 10 MB.',
             'attachments.*.file' => 'File đính kèm không hợp lệ.',
         ];
     }

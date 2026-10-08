@@ -7,9 +7,7 @@ use Illuminate\Http\Request;
 
 class FakeHeaderAuthContext implements AuthContext
 {
-    public function __construct(protected Request $request)
-    {
-    }
+    public function __construct(protected Request $request) {}
 
     public function userId(): int
     {

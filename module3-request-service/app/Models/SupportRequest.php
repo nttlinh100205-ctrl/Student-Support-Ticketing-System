@@ -46,15 +46,15 @@ class SupportRequest extends Model
     ];
 
     protected $casts = [
-        'status'          => RequestStatus::class,
-        'priority'        => RequestPriority::class,
-        'sla_flag'        => SlaFlag::class,
-        'assigned_at'     => 'datetime',
-        'resolved_at'     => 'datetime',
-        'closed_at'       => 'datetime',
+        'status' => RequestStatus::class,
+        'priority' => RequestPriority::class,
+        'sla_flag' => SlaFlag::class,
+        'assigned_at' => 'datetime',
+        'resolved_at' => 'datetime',
+        'closed_at' => 'datetime',
         'sla_deadline_at' => 'datetime',
-        'rating'          => 'integer',
-        'rated_at'        => 'datetime',
+        'rating' => 'integer',
+        'rated_at' => 'datetime',
     ];
 
     public function statusHistories()
@@ -119,5 +119,22 @@ class SupportRequest extends Model
         }
 
         return round(now()->diffInMinutes($this->sla_deadline_at, false) / 60, 1);
+    }
+
+    /**
+     * Tên cán bộ phụ trách hiển thị thay vì chỉ hiển thị ID.
+     */
+    public function getAssignedStaffNameAttribute(): ?string
+    {
+        if (! $this->assigned_to) {
+            return null;
+        }
+
+        $staff = config("master_data.staff.{$this->assigned_to}");
+        if ($staff) {
+            return is_array($staff) ? ($staff['full_name'] ?? "Cán bộ #{$this->assigned_to}") : (string) $staff;
+        }
+
+        return "Cán bộ #{$this->assigned_to}";
     }
 }

@@ -6,6 +6,7 @@ use App\Contracts\AuthContext;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SupportRequestResource;
 use App\Http\Responses\ApiResponse;
+use App\Models\SlaNotification;
 use App\Models\SupportRequest;
 use App\Services\SlaService;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class SlaController extends Controller
         $limit = min((int) $request->query('limit', 20), 100);
 
         if ($role === 'admin') {
-            $notifications = \App\Models\SlaNotification::orderByDesc('sent_at')
+            $notifications = SlaNotification::orderByDesc('sent_at')
                 ->limit($limit)
                 ->get();
         } else {
@@ -75,7 +76,7 @@ class SlaController extends Controller
             $query->where('sla_flag', $request->query('flag'));
         }
 
-        $tickets = $query->orderByRaw("FIELD(sla_flag, 'breached', 'warning')")
+        $tickets = $query->orderByRaw("CASE sla_flag WHEN 'breached' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END")
             ->orderBy('sla_deadline_at', 'asc')
             ->paginate(15);
 

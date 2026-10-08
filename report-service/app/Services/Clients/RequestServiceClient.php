@@ -3,9 +3,8 @@
 namespace App\Services\Clients;
 
 use App\Contracts\RequestServiceClientInterface;
+use App\Services\ServiceClient;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class RequestServiceClient implements RequestServiceClientInterface
 {
@@ -19,23 +18,19 @@ class RequestServiceClient implements RequestServiceClientInterface
      */
     public function getRequests(array $filters = []): array
     {
-        $mock = config('services.request_service.mock', true);
+        $mock = config('services.request_service.mock', false);
         $baseUrl = config('services.request_service.url', 'http://localhost:8003');
 
         if (! $mock) {
-            try {
-                $response = Http::timeout(5)
-                    ->withHeaders($this->forwardHeaders())
-                    ->get("{$baseUrl}/api/requests", $filters);
-
-                if ($response->successful()) {
-                    $json = $response->json();
-
-                    return $json['data'] ?? [];
+            $query = $filters;
+            foreach (['from_date' => 'from', 'to_date' => 'to', 'staff_id' => 'assigned_to'] as $source => $target) {
+                if (isset($query[$source])) {
+                    $query[$target] = $query[$source];
+                    unset($query[$source]);
                 }
-            } catch (\Throwable $e) {
-                Log::warning('Không thể kết nối tới Request Service: '.$e->getMessage());
             }
+
+            return array_map(fn ($item) => $this->normalize($item), app(ServiceClient::class)->all($baseUrl, '/api/requests', $query));
         }
 
         return $this->getMockRequests($filters);
@@ -48,23 +43,11 @@ class RequestServiceClient implements RequestServiceClientInterface
      */
     public function getRequestById(int $id): ?array
     {
-        $mock = config('services.request_service.mock', true);
+        $mock = config('services.request_service.mock', false);
         $baseUrl = config('services.request_service.url', 'http://localhost:8003');
 
         if (! $mock) {
-            try {
-                $response = Http::timeout(5)
-                    ->withHeaders($this->forwardHeaders())
-                    ->get("{$baseUrl}/api/requests/{$id}");
-
-                if ($response->successful()) {
-                    $json = $response->json();
-
-                    return $json['data'] ?? null;
-                }
-            } catch (\Throwable $e) {
-                Log::warning("Không thể lấy chi tiết request {$id}: ".$e->getMessage());
-            }
+            return $this->normalize(app(ServiceClient::class)->get($baseUrl, "/api/requests/{$id}")['data']);
         }
 
         $all = $this->getMockRequests();
@@ -92,31 +75,8 @@ class RequestServiceClient implements RequestServiceClientInterface
         return $requests;
     }
 
-    /**
-     * Chuyển tiếp các header xác thực tới service khác.
-     *
-     * @return array<string, string>
-     */
-    private function forwardHeaders(): array
+    private function normalize(array $item): array
     {
-        $headers = [];
-
-        if ($auth = $this->request->header('Authorization')) {
-            $headers['Authorization'] = $auth;
-        }
-
-        if ($userId = $this->request->header('X-User-Id')) {
-            $headers['X-User-Id'] = $userId;
-        }
-
-        if ($role = $this->request->header('X-User-Role')) {
-            $headers['X-User-Role'] = $role;
-        }
-
-        if ($deptId = $this->request->header('X-Department-Id')) {
-            $headers['X-Department-Id'] = $deptId;
-        }
-
-        return $headers;
+        return array_merge($item, ['due_at' => $item['sla_deadline_at'] ?? null, 'staff_id' => $item['assigned_to'] ?? null, 'staff_name' => $item['assigned_staff_name'] ?? null]);
     }
 }

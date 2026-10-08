@@ -3,14 +3,19 @@
 use App\Http\Controllers\Api\ReportController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('dashboard');
-});
+require __DIR__.'/account.php';
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-});
+Route::middleware('account.auth')->group(function () {
+    Route::get('/', function () {
+        return view('dashboard');
+    });
 
-Route::middleware('can-view-reports')->group(function () {
-    Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf']);
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    });
+
+    Route::middleware('can-view-reports')->group(function () {
+        Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf']);
+    });
+
 });
