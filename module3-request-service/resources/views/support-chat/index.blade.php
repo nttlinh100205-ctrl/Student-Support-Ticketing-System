@@ -17,14 +17,16 @@
             <div class="chat-transcript" aria-label="Lịch sử trao đổi">
                 @if($messages && $messages->hasPages())<div class="chat-history-pages">{{ $messages->links() }}</div>@endif
                 @forelse($messages ? $messages->getCollection()->reverse() : [] as $message)
-                    <article class="chat-bubble {{ $message->from_admin ? 'from-admin' : 'from-user' }}"><strong>{{ $message->from_admin ? 'Admin · '.$message->sender_name : $message->sender_name }}</strong><p>{{ $message->content }}</p><time>{{ \Carbon\Carbon::parse($message->created_at)->timezone('Asia/Ho_Chi_Minh')->format('H:i d/m/Y') }}</time></article>
+                    <article class="chat-bubble {{ $message->from_admin ? 'from-admin' : 'from-user' }}"><strong>{{ $message->from_admin ? 'Admin · '.$message->sender_name : $message->sender_name }}</strong><p>{{ $message->content }}</p>@if($message->image_path)<img src="{{ route('support-chat.image', $message->id) }}" alt="{{ $message->image_name }}" style="max-width:100%;max-height:300px;border-radius:10px">@endif<time>{{ \Carbon\Carbon::parse($message->created_at)->timezone('Asia/Ho_Chi_Minh')->format('H:i d/m/Y') }}</time></article>
                 @empty<div class="chat-empty"><h3>Bắt đầu cuộc trò chuyện</h3><p>Mô tả vấn đề bạn gặp phải để admin hỗ trợ. Không gửi mật khẩu hoặc API key.</p></div>@endforelse
             </div>
             @if(!$isAdmin || $thread)
-            <form class="chat-reply" method="POST" action="{{ route('support-chat.store') }}">@csrf
+            <form class="chat-reply" method="POST" enctype="multipart/form-data" action="{{ route('support-chat.store') }}">@csrf
                 @if($thread)<input type="hidden" name="thread_id" value="{{ $thread->id }}">@endif
                 <label for="admin-chat-content">{{ $isAdmin ? 'Nội dung phản hồi' : 'Tin nhắn của bạn' }}</label>
-                <textarea id="admin-chat-content" name="content" required maxlength="4000" rows="3" placeholder="Nhập nội dung cần trao đổi…">{{ old('content') }}</textarea>
+                <textarea id="admin-chat-content" name="content" maxlength="4000" rows="3" placeholder="Nhập nội dung cần trao đổi…">{{ old('content') }}</textarea>
+                <label for="admin-chat-image">Ảnh đính kèm</label><input id="admin-chat-image" name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+                @error('image')<p class="chat-error">{{ $message }}</p>@enderror
                 @error('content')<p class="chat-error">{{ $message }}</p>@enderror
                 <div><small>Tối đa 4.000 ký tự · Tin nhắn được lưu trong hệ thống</small><button type="submit">{{ $isAdmin ? 'Gửi phản hồi' : 'Gửi đến admin' }} →</button></div>
             </form>

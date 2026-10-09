@@ -64,7 +64,7 @@ class CommentService
 
             // Upload & tạo bản ghi attachment trên disk local/private
             foreach ($files as $file) {
-                $path = $file->store(
+                $path = app(ImageStorage::class)->store($file,
                     "private/comments/{$ticket->id}/{$comment->id}",
                     'local'
                 );
@@ -129,7 +129,7 @@ class CommentService
         DB::transaction(function () use ($comment) {
             // Xóa file vật lý trên storage local/private
             foreach ($comment->attachments as $attachment) {
-                Storage::disk('local')->delete($attachment->path);
+                app(ImageStorage::class)->delete($attachment->path);
             }
 
             // DB cascade sẽ xóa attachments record
@@ -160,7 +160,7 @@ class CommentService
             ]);
         }
 
-        $path = $file->store("private/comments/{$supportRequest->id}/{$comment->id}", 'local');
+        $path = app(ImageStorage::class)->store($file, "private/comments/{$supportRequest->id}/{$comment->id}", 'local');
 
         return $comment->attachments()->create([
             'original_name' => $file->getClientOriginalName(),
@@ -174,6 +174,10 @@ class CommentService
     {
         if ($attachment->comment_id !== $comment->id) {
             abort(404);
+        }
+
+        if (app(ImageStorage::class)->isCloud($attachment->path)) {
+            return app(ImageStorage::class)->response($attachment->path, $attachment->original_name);
         }
 
         return Storage::disk('local')->response(

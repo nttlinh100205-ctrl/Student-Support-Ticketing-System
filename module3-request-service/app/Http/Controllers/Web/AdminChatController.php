@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Contracts\AuthContext;
 use App\Http\Controllers\Controller;
+use App\Services\ImageStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -39,7 +40,12 @@ class AdminChatController extends Controller
                 'is_admin' => $isAdmin, 'thread' => $thread,
                 'threads' => $threads?->items() ?? [],
                 'inbox_page' => $threads?->currentPage(), 'inbox_last_page' => $threads?->lastPage(),
-                'messages' => $rows,
+                'messages' => $rows->map(function ($row) {
+                    $row->image_url = $row->image_path ? url('/api/support-chat/images/'.$row->id) : null;
+                    unset($row->image_path);
+
+                    return $row;
+                }),
                 'older_before' => ! $request->integer('after') && $rows->count() === 40 ? $rows->first()->id : null,
             ]])->header('Cache-Control', 'no-store');
         }
@@ -51,7 +57,7 @@ class AdminChatController extends Controller
     public function store(Request $request, AuthContext $auth)
     {
         $request->merge(['content' => trim((string) $request->input('content'))]);
-        $data = $request->validate(['content' => 'required|string|max:4000', 'thread_id' => 'nullable|integer|min:1']);
+        $data = $request->validate(['content' => 'required_without:image|nullable|string|max:4000', 'thread_id' => 'nullable|integer|min:1', 'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120']);
         $isAdmin = $auth->role() === 'admin';
         abort_if($isAdmin && empty($data['thread_id']), 422, 'Chọn cuộc trò chuyện cần trả lời.');
         $id = DB::transaction(function () use ($data, $isAdmin, $auth) {
@@ -72,7 +78,9 @@ class AdminChatController extends Controller
             DB::table('admin_chat_messages')->insert([
                 'thread_id' => $thread->id, 'sender_id' => $auth->userId(),
                 'sender_name' => $auth->fullName() ?: ($isAdmin ? 'Quản trị viên' : 'Người dùng'),
-                'from_admin' => $isAdmin, 'content' => $data['content'], 'created_at' => now(),
+                'from_admin' => $isAdmin, 'content' => $data['content'] ?? '', 'created_at' => now(),
+                'image_path' => isset($data['image']) ? app(ImageStorage::class)->store($data['image'], 'admin-chat/'.$thread->id) : null,
+                'image_name' => isset($data['image']) ? $data['image']->getClientOriginalName() : null,
             ]);
             DB::table('admin_chat_threads')->where('id', $thread->id)->update(['needs_reply' => ! $isAdmin, 'updated_at' => now()]);
 
@@ -84,5 +92,15 @@ class AdminChatController extends Controller
         }
 
         return redirect()->route('support-chat.index', ['thread' => $id])->with('success', 'Tin nhắn đã được gửi.');
+    }
+
+    public function image(int $message, AuthContext $auth)
+    {
+        $row = DB::table('admin_chat_messages')->join('admin_chat_threads', 'admin_chat_threads.id', '=', 'admin_chat_messages.thread_id')
+            ->where('admin_chat_messages.id', $message)->select('admin_chat_messages.*', 'admin_chat_threads.user_id')->first();
+        abort_unless($row && $row->image_path, 404);
+        abort_unless($auth->role() === 'admin' || (int) $row->user_id === $auth->userId(), 403);
+
+        return app(ImageStorage::class)->response($row->image_path, $row->image_name);
     }
 }

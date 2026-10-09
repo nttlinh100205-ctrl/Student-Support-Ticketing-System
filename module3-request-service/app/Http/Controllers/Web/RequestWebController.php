@@ -10,6 +10,7 @@ use App\Models\CommentAttachment;
 use App\Models\SupportRequest;
 use App\Models\TicketComment;
 use App\Services\CommentService;
+use App\Services\ImageStorage;
 use App\Services\RequestInbox;
 use App\Services\RequestWorkflowService;
 use Illuminate\Http\Request;
@@ -552,6 +553,9 @@ class RequestWebController extends Controller
             abort(404);
         }
 
+        if (app(ImageStorage::class)->isCloud($commentAttachment->path)) {
+            return app(ImageStorage::class)->response($commentAttachment->path, $commentAttachment->original_name);
+        }
         $disk = Storage::disk('local');
         abort_unless($disk->exists($commentAttachment->path), 404);
 

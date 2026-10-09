@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Storage;
 require __DIR__.'/account.php';
 
 Route::middleware('account.auth')->group(function () {
+    Route::get('/requests/{supportRequest}/images/{attachment}', [RequestFormController::class, 'attachment'])->name('requests.images');
     Route::get('/support-chat', [AdminChatController::class, 'index'])->name('support-chat.index');
+    Route::get('/support-chat/images/{message}', [AdminChatController::class, 'image'])->whereNumber('message')->name('support-chat.image');
     Route::post('/support-chat', [AdminChatController::class, 'store'])->middleware('throttle:20,1')->name('support-chat.store');
 });
 

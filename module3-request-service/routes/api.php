@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/ai/chat', AiChatController::class)->middleware('account.auth');
 Route::middleware('account.auth')->group(function () {
     Route::get('/support-chat', [AdminChatController::class, 'index']);
+    Route::get('/support-chat/images/{message}', [AdminChatController::class, 'image'])->whereNumber('message');
     Route::post('/support-chat', [AdminChatController::class, 'store'])->middleware('throttle:20,1');
 });
 
