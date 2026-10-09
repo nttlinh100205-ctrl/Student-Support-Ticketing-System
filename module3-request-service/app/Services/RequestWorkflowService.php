@@ -72,7 +72,7 @@ class RequestWorkflowService
                 $upload = $field['upload'];
                 unset($field['upload']);
                 if ($upload instanceof UploadedFile) {
-                    $field['path'] = $upload->store('request-forms/'.$request->id, 'local');
+                    $field['path'] = app(ImageStorage::class)->store($upload, 'request-forms/'.$request->id, 'local');
                 }
 
                 return $field;
@@ -95,7 +95,7 @@ class RequestWorkflowService
                 continue;
             }
 
-            $path = $file->store('request-attachments/'.$request->id, 'public');
+            $path = app(ImageStorage::class)->store($file, 'request-attachments/'.$request->id, 'public');
 
             RequestAttachment::create([
                 'request_id' => $request->id,

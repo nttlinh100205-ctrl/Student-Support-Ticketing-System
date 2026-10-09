@@ -38,7 +38,7 @@ class AccountAuthentication
         }
         $request->attributes->set('account_user', $user);
         $request->attributes->set('account_token', $token);
-        if (! $request->is('api/catalog-usage', 'api/ai/*', 'api/support-chat')) {
+        if (! $request->is('api/catalog-usage', 'api/ai/*', 'api/support-chat', 'api/support-chat/*')) {
             app(CatalogData::class)->load();
         }
 
