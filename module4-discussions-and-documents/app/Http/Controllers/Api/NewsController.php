@@ -100,6 +100,8 @@ class NewsController extends Controller
                 'message' => null,
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'errors' => $e->errors()], 422);
         } catch (Throwable $e) {
 
             return response()->json([
@@ -300,6 +302,8 @@ class NewsController extends Controller
                 'message' => 'Đăng tin thành công.',
             ], 201);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'errors' => $e->errors()], 422);
         } catch (Throwable $e) {
 
             return response()->json([
@@ -514,10 +518,6 @@ class NewsController extends Controller
 
             if ($request->hasFile('file')) {
 
-                $this->deleteFileFromItem(
-                    $oldItem
-                );
-
                 $fileData =
                     $this->saveUploadedFile(
                         $request->file('file')
@@ -534,6 +534,10 @@ class NewsController extends Controller
 
             $this->writeNews($news);
 
+            if ($request->hasFile('file')) {
+                $this->deleteFileFromItem($oldItem);
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $this->appendFileUrls(
@@ -542,6 +546,8 @@ class NewsController extends Controller
                 'message' => 'Cập nhật tin thành công.',
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'errors' => $e->errors()], 422);
         } catch (Throwable $e) {
 
             return response()->json([
@@ -627,6 +633,8 @@ class NewsController extends Controller
                 'message' => 'Xóa tin thành công.',
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'errors' => $e->errors()], 422);
         } catch (Throwable $e) {
 
             return response()->json([
@@ -659,6 +667,9 @@ class NewsController extends Controller
             }
 
             $item = $news[$index];
+            if (app(\App\Services\ImageStorage::class)->isCloud($item['file_path'] ?? '')) {
+                return app(\App\Services\ImageStorage::class)->response($item['file_path'], $item['file_name'] ?? 'image', 'public', false);
+            }
 
             $filePath =
                 $this->getAbsoluteFilePath(
@@ -698,6 +709,8 @@ class NewsController extends Controller
                 ]
             );
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'errors' => $e->errors()], 422);
         } catch (Throwable $e) {
 
             return response()->json([
@@ -729,6 +742,9 @@ class NewsController extends Controller
             }
 
             $item = $news[$index];
+            if (app(\App\Services\ImageStorage::class)->isCloud($item['file_path'] ?? '')) {
+                return app(\App\Services\ImageStorage::class)->response($item['file_path'], $item['file_name'] ?? 'image', 'public', true);
+            }
 
             $filePath =
                 $this->getAbsoluteFilePath(
@@ -755,6 +771,8 @@ class NewsController extends Controller
                 $fileName
             );
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage(), 'errors' => $e->errors()], 422);
         } catch (Throwable $e) {
 
             return response()->json([
@@ -865,6 +883,9 @@ class NewsController extends Controller
     private function saveUploadedFile(
         $file
     ): array {
+        if (str_starts_with((string) $file->getMimeType(), 'image/')) {
+            return ['file_path' => app(\App\Services\ImageStorage::class)->store($file, 'news', 'public'), 'file_name' => $file->getClientOriginalName(), 'file_type' => $file->getMimeType(), 'file_size' => $file->getSize()];
+        }
         $disk =
             Storage::disk('public');
 
@@ -1076,6 +1097,10 @@ class NewsController extends Controller
             return;
         }
 
+        if (app(\App\Services\ImageStorage::class)->isCloud($filePath)) {
+            app(\App\Services\ImageStorage::class)->delete($filePath, 'public');
+            return;
+        }
         $disk =
             Storage::disk('public');
 
