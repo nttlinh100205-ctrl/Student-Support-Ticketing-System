@@ -12,6 +12,7 @@
         ], ''],
         ['requests', 'Yêu cầu hỗ trợ', [
             [$requestsBase.'/requests', 'Danh sách yêu cầu', ''],
+            [$requestsBase.'/support-chat', 'Hộp thư hỗ trợ / Admin', ''],
             [$requestsBase.'/kanban', 'Bảng công việc', 'admin department_head staff'],
             [$requestsBase.'/team', 'Cán bộ & phân công', 'admin department_head'],
             [$requestsBase.'/ratings', 'Đánh giá của sinh viên', 'admin department_head staff'],
