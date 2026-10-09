@@ -8,7 +8,7 @@
     @if($isAdmin)
         <aside class="chat-inbox"><h2>Cuộc trò chuyện</h2>
             @forelse($threads as $item)
-                <a href="{{ route('support-chat.index', ['thread' => $item->id]) }}" class="inbox-item {{ $thread?->id === $item->id ? 'selected' : '' }}"><strong>{{ $item->user_name }}</strong><small>#{{ $item->user_id }} · {{ $item->needs_reply ? 'Chờ trả lời' : 'Đã phản hồi' }}</small><span>{{ \Carbon\Carbon::parse($item->updated_at)->timezone('Asia/Ho_Chi_Minh')->format('H:i d/m/Y') }}</span></a>
+                <a href="{{ route('support-chat.index', ['thread' => $item->id]) }}" class="inbox-item {{ $thread?->id === $item->id ? 'selected' : '' }}"><strong>{{ $item->user_name }}</strong><small>{{ $item->needs_reply ? 'Chờ trả lời' : 'Đã phản hồi' }}</small><span>{{ \Carbon\Carbon::parse($item->updated_at)->timezone('Asia/Ho_Chi_Minh')->format('H:i d/m/Y') }}</span></a>
             @empty<p>Chưa có tin nhắn cần hỗ trợ.</p>@endforelse
             {{ $threads->links() }}
         </aside>
