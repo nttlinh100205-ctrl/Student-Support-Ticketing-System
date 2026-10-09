@@ -75,6 +75,7 @@
     <form id="request-stepper" method="POST" action="{{ route('requests.store') }}" enctype="multipart/form-data"
           class="bg-white rounded-2xl border border-slate-200 shadow-subtle p-6 sm:p-8 space-y-6">
         @csrf
+                <input type="hidden" name="_idempotency_key" value="{{ old('_idempotency_key', (string) \Illuminate\Support\Str::uuid()) }}">
 
         <nav class="uni-stepper" aria-label="Các bước gửi yêu cầu" hidden><button type="button" data-go-step="0">1. Loại hỗ trợ</button><button type="button" data-go-step="1">2. Nội dung</button><button type="button" data-go-step="2">3. Minh chứng</button><button type="button" data-go-step="3">4. Xác nhận</button></nav>
         <section class="uni-step-panel" data-step="0" aria-label="Chọn loại hỗ trợ">

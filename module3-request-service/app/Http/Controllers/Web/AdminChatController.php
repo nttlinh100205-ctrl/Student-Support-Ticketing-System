@@ -87,6 +87,7 @@ class AdminChatController extends Controller
             return $thread->id;
         });
 
+        $request->attributes->set('operation_completed', true);
         if ($request->is('api/*')) {
             return response()->json(['data' => ['thread_id' => $id]], 201);
         }

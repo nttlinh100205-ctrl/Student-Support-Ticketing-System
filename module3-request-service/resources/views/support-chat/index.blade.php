@@ -22,6 +22,7 @@
             </div>
             @if(!$isAdmin || $thread)
             <form class="chat-reply" method="POST" enctype="multipart/form-data" action="{{ route('support-chat.store') }}">@csrf
+                <input type="hidden" name="_idempotency_key" value="{{ old('_idempotency_key', (string) \Illuminate\Support\Str::uuid()) }}">
                 @if($thread)<input type="hidden" name="thread_id" value="{{ $thread->id }}">@endif
                 <label for="admin-chat-content">{{ $isAdmin ? 'Nội dung phản hồi' : 'Tin nhắn của bạn' }}</label>
                 <textarea id="admin-chat-content" name="content" maxlength="4000" rows="3" placeholder="Nhập nội dung cần trao đổi…">{{ old('content') }}</textarea>
