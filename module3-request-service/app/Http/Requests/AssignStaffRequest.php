@@ -16,6 +16,9 @@ class AssignStaffRequest extends FormRequest
         return [
             // assigned_to là soft reference tới id user (staff) ở Module 1
             'assigned_to' => 'required|integer',
+            'sla_deadline_at' => 'nullable|date|after:now',
+            'priority' => 'nullable|in:low,normal,high,urgent',
+            'note' => 'nullable|string|max:1000',
         ];
     }
 
