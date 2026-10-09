@@ -135,9 +135,9 @@
                 <p class="font-bold text-slate-900 truncate">
                     @if(isset($allUsers[$request->student_id]))
                         {{ $allUsers[$request->student_id]['full_name'] }}
-                        <span class="text-xs text-slate-500 font-mono font-normal">(#{{ $request->student_id }})</span>
+
                     @else
-                        Mã SV #{{ $request->student_id }}
+                        Chưa có tên sinh viên
                     @endif
                 </p>
             </div>
@@ -146,14 +146,14 @@
                 <div class="font-bold text-slate-900 truncate">
                     @if($request->assigned_to)
                         @php
-                            $stName = $staffNames[$request->assigned_to] ?? ($request->assigned_staff_name ?? ('Cán bộ #' . $request->assigned_to));
+                            $stName = $staffNames[$request->assigned_to] ?? $allUsers[$request->assigned_to]['full_name'] ?? ($request->assigned_staff_name ?? 'Chưa có tên cán bộ');
                         @endphp
-                        <div class="inline-flex items-center gap-1.5" title="Mã cán bộ: #{{ $request->assigned_to }}">
+                        <div class="inline-flex items-center gap-1.5">
                             <span class="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-[10px] font-extrabold inline-flex items-center justify-center shrink-0 border border-primary-200">
                                 {{ mb_substr($stName, 0, 1) }}
                             </span>
                             <span class="truncate">{{ $stName }}</span>
-                            <span class="text-xs text-slate-400 font-mono font-normal">(#{{ $request->assigned_to }})</span>
+
                         </div>
                     @else
                         <span class="text-slate-400 italic font-normal">Chưa phân công</span>
@@ -440,7 +440,7 @@
                                     <option value="">-- Chọn cán bộ phụ trách --</option>
                                     @foreach($demoUsers as $staff)
                                         @if($staff['role'] === 'staff' && in_array($staff['id'], config("master_data.staff_by_department.{$request->department_id}", []), true))
-                                            <option value="{{ $staff['id'] }}" @selected($request->assigned_to === $staff['id'])>{{ $staff['full_name'] }} (CB #{{ $staff['id'] }})</option>
+                                            <option value="{{ $staff['id'] }}" @selected($request->assigned_to === $staff['id'])>{{ $staff['full_name'] }}</option>
                                         @endif
                                     @endforeach
                                 </select>
@@ -551,15 +551,15 @@
                                             'staff' => 'Cán bộ',
                                             'department_head' => 'Trưởng phòng',
                                             'admin' => 'Quản trị viên',
-                                            default => 'User #'.$h->changed_by,
+                                            default => 'Người dùng',
                                         } }})</span>
                                     @else
-                                        User #{{ $h->changed_by }}
+                                        Người dùng
                                     @endif
                                 </span>
                             </p>
                             @if($h->note)
-                                <p class="text-xs text-slate-800 mt-2 bg-slate-50 rounded-xl p-3 border border-slate-200 leading-relaxed">{{ $h->note }}</p>
+                                <p class="text-xs text-slate-800 mt-2 bg-slate-50 rounded-xl p-3 border border-slate-200 leading-relaxed">{{ preg_replace_callback('/((?:cán bộ|Cán bộ)(?: xử lý)?\s*)#(\d+)/u', fn ($match) => $match[1].($allUsers[(int) $match[2]]['full_name'] ?? $staffNames[(int) $match[2]] ?? 'phụ trách'), $h->note) }}</p>
                             @endif
                         </li>
                     @endforeach
@@ -697,7 +697,7 @@
 
                                 {{-- Header --}}
                                 <div class="flex items-center gap-2 mb-2 flex-wrap">
-                                    <span class="text-sm font-bold text-slate-900">{{ $comment->user_name ?? 'User #'.$comment->user_id }}</span>
+                                    <span class="text-sm font-bold text-slate-900">{{ $comment->user_name ?? 'Người dùng' }}</span>
                                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border {{ $roleColors[$comment->user_role] ?? 'bg-slate-100 text-slate-600 border-slate-200' }}">
                                         {{ $roleBadge[$comment->user_role] ?? $comment->user_role }}
                                     </span>

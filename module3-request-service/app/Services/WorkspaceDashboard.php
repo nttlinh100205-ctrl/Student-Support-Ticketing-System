@@ -63,7 +63,7 @@ class WorkspaceDashboard
             if ($user['role'] === 'department_head' && (int) ($person['department_id'] ?? 0) !== (int) $user['department_id']) {
                 continue;
             }
-            $rows[] = ['id' => $id, 'name' => $person['full_name'] ?? $person['name'] ?? 'Cán bộ #'.$id, 'department_id' => $person['department_id'] ?? null, 'active' => (int) ($active[$id] ?? 0), 'rating' => isset($ratings[$id]) ? round($ratings[$id], 1) : null];
+            $rows[] = ['id' => $id, 'name' => $person['full_name'] ?? $person['name'] ?? 'Chưa có tên cán bộ', 'department_id' => $person['department_id'] ?? null, 'active' => (int) ($active[$id] ?? 0), 'rating' => isset($ratings[$id]) ? round($ratings[$id], 1) : null];
         }
 
         return $rows;

@@ -315,7 +315,7 @@
                             <option value="">Tất cả cán bộ</option>
                             @foreach(($staffNames ?? []) as $sId => $sName)
                                 <option value="{{ $sId }}" @selected((string)($assignedToFilter ?? '') === (string)$sId)>
-                                    {{ $sName }} (#{{ $sId }})
+                                    {{ $sName }}
                                 </option>
                             @endforeach
                         </select>
@@ -392,7 +392,7 @@
                         $st = $req->status instanceof \App\Enums\RequestStatus ? $req->status->value : $req->status;
                         $pr = $req->priority instanceof \App\Enums\RequestPriority ? $req->priority->value : $req->priority;
                         $sla = $req->sla_flag instanceof \App\Enums\SlaFlag ? $req->sla_flag->value : $req->sla_flag;
-                        $stName = $staffNames[$req->assigned_to] ?? ($req->assigned_staff_name ?? ('Cán bộ #' . $req->assigned_to));
+                        $stName = $staffNames[$req->assigned_to] ?? $allUsers[$req->assigned_to]['full_name'] ?? ($req->assigned_staff_name ?? 'Chưa có tên cán bộ');
                     @endphp
                     <tr class="transition-colors hover:bg-slate-50/80 {{ $sla === 'breached' ? 'bg-rose-50/30' : ($pr === 'urgent' ? 'bg-amber-50/20' : '') }}">
                         {{-- Mã hồ sơ --}}
@@ -421,13 +421,13 @@
                         {{-- Cán bộ phụ trách (Hiển thị TÊN đầy đủ) --}}
                         <td data-label="Cán bộ phụ trách" class="px-5 py-4 whitespace-nowrap text-xs">
                             @if($req->assigned_to)
-                                <div class="inline-flex items-center gap-2" title="Mã cán bộ: #{{ $req->assigned_to }}">
+                                <div class="inline-flex items-center gap-2">
                                     <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-[10px] font-bold shrink-0">
                                         {{ mb_substr($stName, 0, 1) }}
                                     </span>
                                     <div>
                                         <span class="font-semibold text-slate-800 block truncate max-w-[130px]">{{ $stName }}</span>
-                                        <span class="text-[10px] text-slate-400 font-mono block">#{{ $req->assigned_to }}</span>
+
                                     </div>
                                 </div>
                             @else

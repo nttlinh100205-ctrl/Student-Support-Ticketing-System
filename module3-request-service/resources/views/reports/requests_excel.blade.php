@@ -154,20 +154,20 @@
                 TRƯỜNG ĐẠI HỌC CHUẨN QUỐC GIA<br>
                 <span class="header-sub">HỆ THỐNG MỘT CỬA HỖ TRỢ SINH VIÊN (MODULE 3)</span>
             </td>
-            <td colspan="10" class="header-motto">
+            <td colspan="9" class="header-motto">
                 CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>
                 <span style="font-weight: normal; font-size: 9.5pt;">Độc lập - Tự do - Hạnh phúc</span><br>
                 <span style="font-size: 8.5pt; color: #64748B; font-weight: normal;">────────────</span>
             </td>
         </tr>
-        <tr><td colspan="16"></td></tr>
+        <tr><td colspan="15"></td></tr>
         <tr>
-            <td colspan="16" class="report-title">
+            <td colspan="15" class="report-title">
                 BÁO CÁO TỔNG QUAN TIẾP NHẬN YÊU CẦU & ĐÁNH GIÁ CHẤT LƯỢNG HỌC VỤ
             </td>
         </tr>
         <tr>
-            <td colspan="16" class="report-subtitle">
+            <td colspan="15" class="report-subtitle">
                 Thời gian xuất: {{ now()->format('d/m/Y H:i:s') }} | Người lập: {{ $user['full_name'] }} ({{ $user['role'] === 'admin' ? 'Quản trị viên Hệ thống' : 'Trưởng phòng Quản lý' }}) | Phạm vi: Toàn trường
             </td>
         </tr>
@@ -336,7 +336,7 @@
     <table class="table-data">
         <thead>
             <tr>
-                <th colspan="16" class="section-header">
+                <th colspan="15" class="section-header">
                     IV. DANH SÁCH CHI TIẾT CÁC YÊU CẦU HỖ TRỢ (TỔNG SỐ: {{ $requests->count() }} HỒ SƠ)
                 </th>
             </tr>
@@ -344,7 +344,6 @@
                 <th style="width: 4%;">STT</th>
                 <th style="width: 10%;">Mã yêu cầu</th>
                 <th style="width: 18%;">Tiêu đề yêu cầu</th>
-                <th style="width: 7%;">Mã SV</th>
                 <th style="width: 11%;">Họ tên sinh viên</th>
                 <th style="width: 12%;">Phòng ban tiếp nhận</th>
                 <th style="width: 11%;">Loại hỗ trợ</th>
@@ -380,14 +379,13 @@
                     $statusVal = $req->status instanceof \App\Enums\RequestStatus ? $req->status->value : $req->status;
                     $priorityVal = $req->priority instanceof \App\Enums\RequestPriority ? $req->priority->value : $req->priority;
                     $slaVal = $req->sla_flag instanceof \App\Enums\SlaFlag ? $req->sla_flag->value : $req->sla_flag;
-                    $studentName = $allUsers[$req->student_id]['full_name'] ?? ('SV #'.$req->student_id);
-                    $staffName = $req->assigned_to ? ($staffNames[$req->assigned_to] ?? ('Cán bộ #'.$req->assigned_to)) : 'Chưa phân công';
+                    $studentName = $allUsers[$req->student_id]['full_name'] ?? 'Chưa có tên sinh viên';
+                    $staffName = $req->assigned_to ? ($staffNames[$req->assigned_to] ?? $allUsers[$req->assigned_to]['full_name'] ?? 'Chưa có tên cán bộ') : 'Chưa phân công';
                 @endphp
                 <tr class="{{ $stt % 2 === 0 ? 'bg-light' : '' }}">
                     <td class="text-center">{{ $stt++ }}</td>
                     <td class="text-mono font-bold text-center" style="color: #1E40AF;">{{ $req->code }}</td>
                     <td><strong>{{ $req->title }}</strong></td>
-                    <td class="text-mono text-center">#{{ $req->student_id }}</td>
                     <td>{{ $studentName }}</td>
                     <td>{{ $departments[$req->department_id] ?? ('#'.$req->department_id) }}</td>
                     <td>{{ $supportTypes[$req->support_type_id]['name'] ?? ('#'.$req->support_type_id) }}</td>
@@ -418,7 +416,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="16" class="text-center" style="padding: 20px; color: #94A3B8; font-style: italic;">
+                    <td colspan="15" class="text-center" style="padding: 20px; color: #94A3B8; font-style: italic;">
                         Không có yêu cầu hỗ trợ nào phù hợp với điều kiện tìm kiếm.
                     </td>
                 </tr>
@@ -435,7 +433,7 @@
                 <br><br><br><br>
                 <strong>{{ $user['full_name'] }}</strong>
             </td>
-            <td colspan="4"></td>
+            <td colspan="3"></td>
             <td colspan="6" style="text-align: center; vertical-align: top;">
                 <em>Hà Nội, ngày {{ now()->format('d') }} tháng {{ now()->format('m') }} năm {{ now()->format('Y') }}</em><br>
                 <strong>BAN GIÁM HIỆU / LÃNH ĐẠO ĐƠN VỊ DUYỆT</strong><br>

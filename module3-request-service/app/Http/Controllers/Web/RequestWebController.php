@@ -13,6 +13,7 @@ use App\Services\CommentService;
 use App\Services\ImageStorage;
 use App\Services\RequestInbox;
 use App\Services\RequestWorkflowService;
+use App\Services\ServiceClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -77,7 +78,7 @@ class RequestWebController extends Controller
             'departments' => $this->departments(),
             'demoUsers' => $this->demoUsers(),
             'staffNames' => $this->staffNames(),
-            'allUsers' => $this->allUsers(),
+            'allUsers' => $this->allUsers($requests->pluck('student_id')->merge($requests->pluck('assigned_to'))->all()),
             'slaStats' => $slaStats,
             'queueLabels' => $this->inbox->labels($user),
             'queueCounts' => $this->inbox->counts($user),
@@ -98,7 +99,7 @@ class RequestWebController extends Controller
         $departments = $this->departments();
         $supportTypes = $this->supportTypes();
         $staffNames = $this->staffNames();
-        $allUsers = $this->allUsers();
+        $allUsers = $this->allUsers($requests->pluck('student_id')->merge($requests->pluck('assigned_to'))->all());
 
         $format = $request->query('format', 'excel');
 
@@ -121,7 +122,6 @@ class RequestWebController extends Controller
                 fputcsv($handle, [
                     'Mã yêu cầu',
                     'Tiêu đề',
-                    'Mã SV',
                     'Họ tên sinh viên',
                     'Phòng ban',
                     'Loại hỗ trợ',
@@ -156,13 +156,12 @@ class RequestWebController extends Controller
                     $priorityVal = $req->priority instanceof RequestPriority ? $req->priority->value : $req->priority;
                     $slaVal = $req->sla_flag instanceof SlaFlag ? $req->sla_flag->value : $req->sla_flag;
 
-                    $studentName = $allUsers[$req->student_id]['full_name'] ?? ('SV #'.$req->student_id);
-                    $staffName = $req->assigned_to ? ($staffNames[$req->assigned_to] ?? ('Cán bộ #'.$req->assigned_to)) : 'Chưa phân công';
+                    $studentName = $allUsers[$req->student_id]['full_name'] ?? 'Chưa có tên sinh viên';
+                    $staffName = $req->assigned_to ? ($staffNames[$req->assigned_to] ?? $allUsers[$req->assigned_to]['full_name'] ?? 'Chưa có tên cán bộ') : 'Chưa phân công';
 
                     fputcsv($handle, [
                         $req->code,
                         $req->title,
-                        $req->student_id,
                         $studentName,
                         $departments[$req->department_id] ?? ('Phòng #'.$req->department_id),
                         $supportTypes[$req->support_type_id]['name'] ?? ('Loại #'.$req->support_type_id),
@@ -476,7 +475,7 @@ class RequestWebController extends Controller
             'transitions' => RequestWorkflowService::TRANSITIONS,
             'demoUsers' => $this->demoUsers(),
             'staffNames' => $this->staffNames(),
-            'allUsers' => $this->allUsers(),
+            'allUsers' => $this->allUsers([$supportRequest->student_id, $supportRequest->assigned_to, ...$histories->pluck('changed_by')->all()]),
             'replyTemplates' => config('master_data.reply_templates', []),
         ]);
     }
@@ -903,7 +902,7 @@ class RequestWebController extends Controller
         $staff = config('master_data.staff', []);
         $names = [];
         foreach ($staff as $id => $item) {
-            $names[(int) $id] = is_array($item) ? ($item['full_name'] ?? "Cán bộ #{$id}") : (string) $item;
+            $names[(int) $id] = is_array($item) ? ($item['full_name'] ?? 'Chưa có tên cán bộ') : (string) $item;
         }
 
         foreach ($this->demoUsers() as $u) {
@@ -915,7 +914,7 @@ class RequestWebController extends Controller
         return $names;
     }
 
-    public function allUsers(): array
+    public function allUsers(array $ids = []): array
     {
         $users = config('master_data.users', []);
         $map = [];
@@ -925,6 +924,16 @@ class RequestWebController extends Controller
         foreach ($this->demoUsers() as $u) {
             if (! isset($map[$u['id']])) {
                 $map[$u['id']] = $u;
+            }
+        }
+
+        if (! config('account.fake')) {
+            $missing = array_values(array_filter(array_unique($ids), fn ($id) => $id && ! isset($map[$id])));
+            foreach (array_chunk($missing, 100) as $batch) {
+                $rows = app(ServiceClient::class)->get(config('account.url'), '/api/v1/directory/names', ['ids' => $batch])['data'] ?? [];
+                foreach ($rows as $person) {
+                    $map[(int) $person['id']] = ['id' => (int) $person['id'], 'full_name' => $person['name'], 'role' => strtolower($person['role'])];
+                }
             }
         }
 

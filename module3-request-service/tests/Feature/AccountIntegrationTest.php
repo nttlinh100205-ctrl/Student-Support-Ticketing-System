@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Contracts\AuthContext;
+use App\Models\SupportRequest;
 use App\Services\Auth\AccountAuthContext;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,15 @@ use Tests\TestCase;
 
 class AccountIntegrationTest extends TestCase
 {
+    public function test_staff_detail_displays_student_name_from_account_service_without_numeric_labels(): void
+    {
+        $this->fakeAccount();
+        Http::fake(['http://accounts.test/api/v1/directory/names*' => Http::response(['data' => [['id' => 99, 'name' => 'Nguyễn Minh Anh', 'role' => 'STUDENT']]])]);
+        $ticket = SupportRequest::factory()->create(['student_id' => 99, 'assigned_to' => 42, 'department_id' => 7]);
+        $this->withToken('token')->get('/requests/'.$ticket->id)->assertOk()->assertSee('Nguyễn Minh Anh')->assertSee('Cán bộ thật')->assertDontSee('Mã SV #99')->assertDontSee('(#42)');
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/directory/names'));
+    }
+
     public function test_repeated_reads_cache_catalog_but_revalidate_identity(): void
     {
         $this->fakeAccount();
