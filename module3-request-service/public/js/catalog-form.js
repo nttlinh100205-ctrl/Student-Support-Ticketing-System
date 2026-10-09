@@ -5,12 +5,17 @@
     const old = JSON.parse(document.querySelector('#catalog-form-old').textContent);
     const errors = JSON.parse(document.querySelector('#catalog-form-errors').textContent);
     let sequence = 0;
+    function state(value) {
+        select.dataset.formState = value;
+        select.dispatchEvent(new CustomEvent('catalog-form-state', {bubbles: true}));
+    }
     async function load() {
         const current = ++sequence;
         host.replaceChildren();
-        if (!select.value) {status.textContent = 'Chọn loại hỗ trợ để tải biểu mẫu.'; return;}
+        if (!select.value) {select.setCustomValidity('');state('idle');status.textContent = 'Chọn loại hỗ trợ để tải biểu mẫu.'; return;}
         select.setCustomValidity('Đang tải biểu mẫu. Vui lòng chờ.');
         status.textContent = 'Đang tải biểu mẫu…';
+        state('loading');
         try {
             const response = await fetch('/request-forms/' + encodeURIComponent(select.value), {headers: {Accept: 'application/json'}, signal: AbortSignal.timeout(25000)});
             if (!response.ok) throw new Error();
@@ -38,15 +43,17 @@
                 host.append(wrap);
             }
             select.setCustomValidity('');
+            state('ready');
             status.textContent = data.fields.length ? 'Các mục có dấu * là bắt buộc. Tài liệu tối đa 10 MB/tệp.' : 'Loại hỗ trợ này không yêu cầu thông tin bổ sung.';
         } catch (error) {
             if (current !== sequence) return;
-            select.setCustomValidity('Chưa tải được biểu mẫu. Vui lòng thử lại.');
+            select.setCustomValidity('Chưa tải được biểu mẫu. Bấm Thử lại ngay bên dưới loại hỗ trợ.');
+            state('error');
             status.textContent = 'Chưa tải được biểu mẫu. ';
             const retry = document.createElement('button');retry.type = 'button';retry.className = 'uni-button secondary';retry.textContent = 'Thử lại';retry.onclick = load;status.append(retry);
         }
     }
     select.addEventListener('change', load);
-    document.querySelector('#department_id').addEventListener('change', () => {++sequence;host.replaceChildren();select.setCustomValidity('');status.textContent = 'Chọn loại hỗ trợ để tải biểu mẫu.';});
+    document.querySelector('#department_id').addEventListener('change', () => {++sequence;host.replaceChildren();select.setCustomValidity('');state('idle');status.textContent = 'Chọn loại hỗ trợ để tải biểu mẫu.';});
     load();
 })();
