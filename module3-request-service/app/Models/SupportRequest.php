@@ -44,9 +44,11 @@ class SupportRequest extends Model
         'rating_comment',
         'rating_attitude', 'rating_speed', 'rating_quality',
         'rated_at',
+        'form_data',
     ];
 
     protected $casts = [
+        'form_data' => 'array',
         'status' => RequestStatus::class,
         'priority' => RequestPriority::class,
         'sla_flag' => SlaFlag::class,

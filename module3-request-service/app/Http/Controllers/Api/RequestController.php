@@ -201,6 +201,7 @@ class RequestController extends Controller
                 $supportRequest,
                 (int) $request->validated('assigned_to'),
                 $this->auth->userId(),
+                $request->safe()->only(['sla_deadline_at', 'priority', 'note']),
             );
         } catch (ValidationException $e) {
             return ApiResponse::error($e->getMessage(), 409);

@@ -34,7 +34,9 @@ class RequestWorkflowService
      */
     public function create(array $data, int $studentId, array $files = []): SupportRequest
     {
-        return DB::transaction(function () use ($data, $studentId, $files) {
+        $formData = app(RequestFormData::class)->validate((int) $data['support_type_id'], $data['form_values'] ?? [], $data['form_files'] ?? []);
+
+        return DB::transaction(function () use ($data, $studentId, $files, $formData) {
             $payload = collect($data)->only([
                 'department_id',
                 'support_type_id',
@@ -65,6 +67,17 @@ class RequestWorkflowService
             $this->logHistory($request, null, RequestStatus::New->value, $studentId, $historyNote);
 
             $this->storeAttachments($request, $files);
+
+            $request->form_data = array_map(function ($field) use ($request) {
+                $upload = $field['upload'];
+                unset($field['upload']);
+                if ($upload instanceof UploadedFile) {
+                    $field['path'] = $upload->store('request-forms/'.$request->id, 'local');
+                }
+
+                return $field;
+            }, $formData);
+            $request->save();
 
             return $request->load('attachments');
         });
