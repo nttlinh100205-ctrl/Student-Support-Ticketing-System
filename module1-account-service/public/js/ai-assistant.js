@@ -10,7 +10,7 @@
     const icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-3 3V11.5A7.5 7.5 0 0 1 9.5 4H12"/><path d="m18 2 1.2 3.8L23 7l-3.8 1.2L18 12l-1.2-3.8L13 7l3.8-1.2L18 2Z"/><path d="M7 12h7m-7 3h4"/></svg>';
     root.innerHTML = `
         <link rel="stylesheet" href="${new URL('../css/ai-assistant.css', source).href}">
-        <button class="launcher" type="button" aria-label="Mở trợ lý AI UniSupport" aria-expanded="false" aria-controls="assistant-panel">${icon}<span>Trợ lý AI</span><span class="launcher-dot"></span></button>
+        <button class="launcher" type="button" aria-label="Mở trợ lý AI UniSupport" aria-expanded="false" aria-controls="assistant-panel">${icon}<span>Tư vấn AI</span><span class="launcher-dot"></span></button>
         <section id="assistant-panel" class="panel" role="dialog" aria-label="Trợ lý AI UniSupport" hidden>
             <header><span class="avatar">${icon}</span><div class="identity"><strong>UniSupport AI</strong><span>Người bạn đồng hành học tập</span></div><button class="close icon-button" type="button" aria-label="Đóng trợ lý"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
             <div class="toolbar"><span class="connection"><i></i>Trợ lý hướng dẫn · Groq</span><button class="reset" type="button">Bắt đầu lại</button></div>
@@ -24,6 +24,14 @@
         </section>`;
     const $ = selector => root.querySelector(selector);
     const panel = $('.panel'), launcher = $('.launcher'), input = $('textarea');
+    if (endpoint) {
+        const adminLink = document.createElement('a');adminLink.className = 'contact-admin';
+        adminLink.href = new URL('/support-chat', endpoint).href;
+        adminLink.textContent = window.AccountUser?.role === 'admin' ? 'Hộp thư admin' : 'Liên hệ admin';
+        adminLink.setAttribute('aria-label', 'Mở hộp thư trao đổi với admin');
+        root.append(adminLink);
+        new ResizeObserver(() => host.style.setProperty('--launcher-width', launcher.offsetWidth + 'px')).observe(launcher);
+    }
     function toggle(open) {panel.hidden = !open;launcher.setAttribute('aria-expanded', String(open));if(open)input.focus();else launcher.focus();}
     launcher.onclick = () => toggle(panel.hidden);
     $('.close').onclick = () => toggle(false);
