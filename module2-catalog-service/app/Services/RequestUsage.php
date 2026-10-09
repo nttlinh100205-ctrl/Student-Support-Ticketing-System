@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Kiểm tra phòng ban / loại hỗ trợ đã được yêu cầu (Module 3) sử dụng chưa.
  *
- * Bảng requests thuộc Module 3. Khi hai service dùng chung database thì
- * kiểm tra được; nếu chạy riêng (không có bảng) thì bỏ qua.
+ * Chạy tích hợp gọi API Module 3; test dùng dữ liệu cục bộ tường minh.
  */
 class RequestUsage
 {
@@ -25,6 +24,9 @@ class RequestUsage
 
     private static function exists(string $column, int $id): bool
     {
+        if (! config('account.fake')) {
+            return (bool) app(ServiceClient::class)->get(config('account.request_url'), '/api/catalog-usage', [$column => $id])['data']['used'];
+        }
         if (! Schema::hasTable('requests')) {
             return false;
         }

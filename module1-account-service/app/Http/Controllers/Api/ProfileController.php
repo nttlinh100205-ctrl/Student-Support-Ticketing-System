@@ -24,6 +24,7 @@ class ProfileController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
+                'student_code' => $user->student_code, 'class_name' => $user->class_name, 'faculty' => $user->faculty,
                 'role' => $user->role,
                 'status' => $user->status,
             ],
@@ -46,12 +47,16 @@ class ProfileController extends Controller
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
             'phone' => ['nullable', 'string', 'max:20'],
+            'student_code' => ['nullable', 'string', 'max:30', Rule::unique('users', 'student_code')->ignore($user->id)],
+            'class_name' => 'nullable|string|max:100', 'faculty' => 'nullable|string|max:150',
         ]);
 
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
+            'student_code' => $validated['student_code'] ?? $user->student_code,
+            'class_name' => $validated['class_name'] ?? $user->class_name, 'faculty' => $validated['faculty'] ?? $user->faculty,
         ]);
 
         return response()->json([
@@ -61,6 +66,7 @@ class ProfileController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
+                'student_code' => $user->student_code, 'class_name' => $user->class_name, 'faculty' => $user->faculty,
                 'role' => $user->role,
                 'status' => $user->status,
             ],
@@ -79,7 +85,7 @@ class ProfileController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        if (!Hash::check($validated['current_password'], $user->password)) {
+        if (! Hash::check($validated['current_password'], $user->password)) {
             return response()->json([
                 'message' => 'Mat khau hien tai khong dung.',
             ], 422);

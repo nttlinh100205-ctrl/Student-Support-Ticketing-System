@@ -88,10 +88,10 @@
     async function api(url, options = {}) {
         const response = await fetch(url, {
             ...options,
-            headers: { Accept: 'application/json', ...DemoAuth.headers(), ...(options.headers || {}) }
+            headers: { Accept: 'application/json', ...CatalogAuth.headers(), ...(options.headers || {}) }
         });
         const data = await response.json().catch(() => null);
-        if (response.status === 401) throw new Error('Chưa xác thực. Hãy chọn vai trò ở thanh bên.');
+        if (response.status === 401) throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         if (!response.ok) {
             const error = new Error(data?.message || `Không thể xử lý yêu cầu (${response.status}).`);
             error.errors = data?.errors || {};

@@ -1,0 +1,85 @@
+LOCAL API GATEWAY (Windows / XAMPP)
+
+ONE COMMAND FOR SERVICES AND GATEWAY (from repository root)
+  powershell -ExecutionPolicy Bypass -File .\start-system.ps1
+If reports need a separate PHP installation:
+  powershell -ExecutionPolicy Bypass -File .\start-system.ps1 -ReportPhp 'C:\php84\php.exe'
+For the current PHP 8.2 machine, run modules 1-4 and gateway:
+  powershell -ExecutionPolicy Bypass -File .\start-system.ps1 -SkipReports
+Append -Check to check prerequisites without starting any process.
+Prepare .env, Composer dependencies and databases first for each selected module.
+This launcher does not run migrations, start MySQL, or install dependencies.
+Existing listeners are reused only when their process command points inside this
+project's corresponding service folder. Unknown listeners block startup.
+Keep its terminal open and press Ctrl+C to stop the process trees it started.
+Reused services remain running and should be stopped from their original terminal.
+Do not close the terminal forcibly. Logs are in gateway/runtime/.
+Port checks verify listeners, not successful database access or full application health.
+
+From the repository root:
+  powershell -ExecutionPolicy Bypass -File .\gateway\gateway.ps1 -Action Check
+  powershell -ExecutionPolicy Bypass -File .\gateway\gateway.ps1
+
+If XAMPP is elsewhere, append -ApacheRoot 'C:\xampp\apache'.
+Keep the gateway terminal open. Ctrl+C stops this instance.
+This instance listens on 127.0.0.1:8000 and does not modify the XAMPP server
+configuration or require starting Apache through the XAMPP control panel.
+Start each Laravel service independently on ports 8001, 8002, 8003, 8004, 8005.
+Logs and PID live in gateway/runtime (ignored by Git).
+
+API examples:
+  POST http://localhost:8000/api/v1/auth/login -> module 1
+  POST http://localhost:8000/api/auth/login -> module 1 /api/v1/auth/login
+  GET  http://localhost:8000/api/catalog/departments -> module 2
+  GET  http://localhost:8000/api/requests -> module 3
+  GET  http://localhost:8000/api/news -> module 4
+  GET  http://localhost:8000/api/reports/statistics -> module 5
+Forward Authorization: Bearer <token> returned by module 1 to protected APIs.
+Authentication uses the existing Sanctum token implementation, not JWT signing.
+Methods, query strings, JSON, multipart uploads and binary downloads pass through.
+The gateway routes requests; authorization remains in each service.
+
+This is the API gateway described in API_CONTRACT.md, not a merger of Blade UIs.
+Opening http://localhost:8000/ redirects to the module 1 portal at port 8001.
+Existing Blade UIs and SSO keep their service URLs on ports 8001-8005.
+Do not change all ACCOUNT_SERVICE_URL / service URLs to port 8000: these URLs
+also construct browser SSO callbacks. Keep the existing direct service URLs.
+A frontend on port 3000 is optional; its API base URL is http://localhost:8000/api.
+Bearer-token CORS allows http://localhost:3000 and http://127.0.0.1:3000.
+Always use localhost consistently for the existing Blade login flow.
+
+DATABASES
+Module 1 requires its own database: users, password hashes, personal_access_tokens,
+sessions/cache/jobs (depending on drivers). Other services must not query it.
+One MySQL server can host five separate databases; five MySQL installations are
+unnecessary. Suggested database names:
+  support_accounts, support_catalog, support_requests, support_news, support_reports
+Configure DB_DATABASE separately in each service's .env.
+For module 1 using XAMPP MySQL, create support_accounts then configure:
+  DB_CONNECTION=mysql
+  DB_HOST=127.0.0.1
+  DB_PORT=3306
+  DB_DATABASE=support_accounts
+  DB_USERNAME=<your local MySQL user>
+  DB_PASSWORD=<your local MySQL password>
+Then, inside module1-account-service:
+  composer install
+  # Copy .env.example to .env only if .env does not already exist.
+  php artisan key:generate
+  php artisan config:clear
+  php artisan migrate
+Do not regenerate APP_KEY on an already configured service.
+Use the registration page/API to create an account; seeding is not required.
+If using the default SQLite connection instead, each service uses its own
+database/database.sqlite file. Create that file if absent, then run migrations.
+Never point multiple services at the same SQLite file or MySQL database.
+Cross-service user_id/department_id values are references, not cross-DB foreign keys.
+The current module 4 news implementation still persists news in a JSON file;
+configuring a database does not automatically migrate those news records.
+The gateway itself has no database.
+
+Current report-service locked dependencies require PHP >= 8.4.1. XAMPP PHP 8.2
+cannot run that service; use a compatible PHP runtime for port 8005.
+
+Apache reference:
+https://httpd.apache.org/docs/2.4/mod/mod_proxy.html

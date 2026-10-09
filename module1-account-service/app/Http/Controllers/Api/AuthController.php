@@ -35,6 +35,7 @@ class AuthController extends Controller
                 'min:8',
                 'confirmed',
             ],
+            'student_code' => ['nullable', 'string', 'max:30', 'unique:users,student_code'],
             'phone' => [
                 'nullable',
                 'string',
@@ -47,12 +48,13 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password' => $validated['password'],
             'phone' => $validated['phone'] ?? null,
+            'student_code' => $validated['student_code'] ?? null,
             'role' => 'STUDENT',
             'status' => 'ACTIVE',
         ]);
 
         $token = $user->createToken(
-            'student-support-client'
+            'student-support-client', ['*'], $request->boolean('remember') ? now()->addDays(30) : now()->addHours(8)
         )->plainTextToken;
 
         return response()->json([
@@ -64,6 +66,7 @@ class AuthController extends Controller
                 'phone' => $user->phone,
                 'role' => $user->role,
                 'status' => $user->status,
+                'department_id' => $user->department_id,
             ],
             'token' => $token,
         ], 201);
@@ -74,10 +77,12 @@ class AuthController extends Controller
      */
     public function login(Request $request): JsonResponse
     {
+        $request->validate(['remember' => 'sometimes|boolean']);
         $validated = $request->validate([
             'email' => [
                 'required',
-                'email',
+                'string',
+                'max:255',
             ],
             'password' => [
                 'required',
@@ -88,11 +93,11 @@ class AuthController extends Controller
         $user = User::where(
             'email',
             $validated['email']
-        )->first();
+        )->orWhere('student_code', $validated['email'])->first();
 
         if (
-            !$user ||
-            !Hash::check(
+            ! $user ||
+            ! Hash::check(
                 $validated['password'],
                 $user->password
             )
@@ -112,7 +117,7 @@ class AuthController extends Controller
 
         // Xóa token cũ của client hiện tại nếu muốn
         $token = $user->createToken(
-            'student-support-client'
+            'student-support-client', ['*'], $request->boolean('remember') ? now()->addDays(30) : now()->addHours(8)
         )->plainTextToken;
 
         return response()->json([
@@ -124,6 +129,7 @@ class AuthController extends Controller
                 'phone' => $user->phone,
                 'role' => $user->role,
                 'status' => $user->status,
+                'department_id' => $user->department_id,
             ],
             'token' => $token,
         ]);
@@ -148,6 +154,7 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
+        abort_unless($request->user()->status === 'ACTIVE', 403, 'Tài khoản đang bị khóa.');
         $user = $request->user();
 
         return response()->json([
@@ -158,6 +165,7 @@ class AuthController extends Controller
                 'phone' => $user->phone,
                 'role' => $user->role,
                 'status' => $user->status,
+                'department_id' => $user->department_id,
             ],
         ]);
     }

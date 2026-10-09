@@ -77,7 +77,7 @@ class ReportService
 
             $totalTracked++;
             $type = $supportTypes->get((int) ($r['support_type_id'] ?? 0));
-            $slaHours = (int) ($type['sla_hours'] ?? 48);
+            $slaHours = (int) ($type['sla_hours'] ?? (isset($type['sla_days']) ? $type['sla_days'] * 24 : 48));
 
             $createdAt = ! empty($r['created_at']) ? Carbon::parse($r['created_at']) : null;
             $resolvedAt = ! empty($r['resolved_at']) ? Carbon::parse($r['resolved_at']) : null;
@@ -302,7 +302,7 @@ class ReportService
             $deptId = $staff['department_id'] ?? 0;
             $deptName = $departments->get($deptId)['name'] ?? ('Phòng ban #'.$deptId);
 
-            $inProgress = $items->filter(fn ($r) => in_array($r['status'] ?? '', ['in_progress', 'received'], true))->count();
+            $inProgress = $items->filter(fn ($r) => in_array($r['status'] ?? '', ['in_progress', 'received', 'waiting_info'], true))->count();
             $resolved = $items->filter(fn ($r) => in_array($r['status'] ?? '', ['resolved', 'closed'], true))->count();
             $pending = $items->filter(fn ($r) => ($r['status'] ?? '') === 'new')->count();
             $total = $items->count();

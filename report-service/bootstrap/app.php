@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AccountAuthentication;
 use App\Http\Middleware\EnsureCanViewReports;
 use App\Http\Middleware\EnsureIsStudent;
 use Illuminate\Foundation\Application;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'account.auth' => AccountAuthentication::class,
             'can-view-reports' => EnsureCanViewReports::class,
             'is-student' => EnsureIsStudent::class,
         ]);

@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('unisupport-theme')||'light';document.documentElement.dataset.sidebar=localStorage.getItem('unisupport-sidebar')||'expanded'}catch(e){}</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống Báo cáo &amp; Thống kê Hỗ trợ Sinh viên</title>
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -20,46 +21,46 @@
             --bg-card: #ffffff;
             --bg-card-subtle: #f1f5f9;
             --bg-card-hover: #f8fafc;
-            
+
             --text-main: #0f172a;
             --text-muted: #475569;
             --text-light: #94a3b8;
-            
+
             --border: #e2e8f0;
             --border-subtle: #f1f5f9;
             --border-focus: #3b82f6;
-            
+
             --primary: #2563eb;
             --primary-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
             --primary-light: #eff6ff;
             --primary-dark: #1d4ed8;
-            
+
             --success: #059669;
             --success-light: #ecfdf5;
             --success-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
-            
+
             --warning: #d97706;
             --warning-light: #fffbeb;
             --warning-gradient: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
-            
+
             --danger: #dc2626;
             --danger-light: #fef2f2;
             --danger-gradient: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            
+
             --indigo: #4f46e5;
             --indigo-light: #eef2ff;
             --indigo-gradient: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-            
+
             --cyan: #0284c7;
             --cyan-light: #f0f9ff;
-            
+
             --gold: #f59e0b;
-            
+
             --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
             --shadow-sm: 0 2px 4px 0 rgba(15, 23, 42, 0.05);
             --shadow-md: 0 4px 12px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
             --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
-            
+
             --radius-sm: 8px;
             --radius: 14px;
             --radius-lg: 20px;
@@ -698,30 +699,12 @@
             margin-top: auto;
         }
     </style>
+<link rel="stylesheet" href="/css/suite.css">
 </head>
-<body>
+<body class="suite-ui report-ui">
+@include('partials.account')
 
-    <!-- Header Navigation -->
-    <header>
-        <div class="brand">
-            <div class="brand-logo">SV</div>
-            <div class="brand-text">
-                <span class="sub-title">Cổng Dịch vụ Một cửa · Module 5</span>
-                <h1>Trung tâm Báo cáo &amp; Phân tích Hiệu suất Hỗ trợ Sinh viên</h1>
-            </div>
-        </div>
 
-        <div class="header-actions">
-            <div class="account-chip">
-                <div class="avatar-circle" id="userAvatar">AD</div>
-                <select id="roleSelector" onchange="switchRole()">
-                    <option value="admin" data-id="1" data-dept="" data-name="Nguyễn Văn Quản">Ban Giám Hiệu / Quản trị viên</option>
-                    <option value="department_head" data-id="5" data-dept="3" data-name="Lê Thị Hương">Trưởng phòng CTSV</option>
-                    <option value="staff" data-id="101" data-dept="1" data-name="Phạm Văn Đức">Cán bộ Tiếp nhận Đào tạo</option>
-                </select>
-            </div>
-        </div>
-    </header>
 
     <div class="container">
 
@@ -1097,33 +1080,9 @@
         let slaDonutChartInstance = null;
         let starsBarChartInstance = null;
 
-        function getAuthHeaders() {
-            const selector = document.getElementById('roleSelector');
-            const opt = selector.options[selector.selectedIndex];
-            const role = opt.value;
-            const userId = opt.getAttribute('data-id') || 1;
-            const deptId = opt.getAttribute('data-dept') || '';
+        function getAuthHeaders() { return window.AccountHeaders(); }
 
-            const headers = {
-                'X-User-Id': userId,
-                'X-User-Role': role,
-                'Accept': 'application/json'
-            };
-            if (deptId) {
-                headers['X-Department-Id'] = deptId;
-            }
-            return headers;
-        }
-
-        function switchRole() {
-            const selector = document.getElementById('roleSelector');
-            const opt = selector.options[selector.selectedIndex];
-            const name = opt.getAttribute('data-name') || opt.textContent;
-            
-            const parts = name.trim().split(/\s+/);
-            const initials = parts.length === 1 ? parts[0].slice(0, 2) : (parts[0][0] + parts[parts.length - 1][0]);
-            document.getElementById('userAvatar').innerText = initials.toUpperCase();
-
+        function initializeDashboard() {
             loadDashboardData();
             loadRatingsFeed();
         }
@@ -1238,7 +1197,7 @@
                 : 'N/A';
 
             // Active workload
-            const inProgress = (data.by_status?.in_progress || 0) + (data.by_status?.received || 0);
+            const inProgress = (data.by_status?.in_progress || 0) + (data.by_status?.received || 0) + (data.by_status?.waiting_info || 0);
             const newRequests = data.by_status?.new || 0;
             const activeTotal = inProgress + newRequests;
             document.getElementById('kpiActiveWorkload').innerText = activeTotal;
@@ -1318,12 +1277,14 @@
         // Biểu đồ tròn trạng thái (Doughnut chart)
         function renderStatusDonutChart(statusData) {
             const ctx = document.getElementById('statusDonutChart').getContext('2d');
-            const labels = ['Mới', 'Đã tiếp nhận', 'Đang xử lý', 'Đã giải quyết', 'Đã hủy'];
+            const labels = ['Mới', 'Đã tiếp nhận', 'Đang xử lý', 'Chờ bổ sung', 'Đã giải quyết', 'Đã đóng', 'Đã hủy'];
             const values = [
                 statusData.new || 0,
                 statusData.received || 0,
                 statusData.in_progress || 0,
+                statusData.waiting_info || 0,
                 statusData.resolved || 0,
+                statusData.closed || 0,
                 statusData.cancelled || 0
             ];
 
@@ -1335,7 +1296,7 @@
                     labels: labels,
                     datasets: [{
                         data: values,
-                        backgroundColor: ['#f59e0b', '#3b82f6', '#6366f1', '#10b981', '#ef4444'],
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#6366f1', '#a855f7', '#10b981', '#64748b', '#ef4444'],
                         borderWidth: 3,
                         borderColor: '#ffffff'
                     }]
@@ -1497,7 +1458,7 @@
             tbody.innerHTML = rankings.map(s => {
                 const rankClass = s.rank === 1 ? 'rank-1' : (s.rank === 2 ? 'rank-2' : (s.rank === 3 ? 'rank-3' : 'rank-default'));
                 const medal = s.rank === 1 ? '🥇' : (s.rank === 2 ? '🥈' : (s.rank === 3 ? '🥉' : s.rank));
-                
+
                 const tierBadge = s.tier === 'Xuất sắc' ? 'badge-pill success' :
                                  (s.tier === 'Tốt' ? 'badge-pill info' :
                                  (s.tier === 'Đạt' ? 'badge-pill warning' : 'badge-pill danger'));
@@ -1659,7 +1620,7 @@
 
         // Init
         window.addEventListener('DOMContentLoaded', () => {
-            switchRole();
+            initializeDashboard();
         });
     </script>
 </body>

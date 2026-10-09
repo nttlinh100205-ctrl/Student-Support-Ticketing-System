@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RequestController;
+use App\Http\Controllers\Api\SingleSignOnController;
+use App\Http\Controllers\Api\StaffDirectoryController;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -23,9 +25,7 @@ use Illuminate\Support\Facades\Route;
  * GET  /api/v1/profile
  * PUT  /api/v1/profile
  * PUT  /api/v1/profile/password
- *
  */
-
 
 /**
  * ============================================================
@@ -37,15 +37,14 @@ Route::prefix('v1/auth')->group(function () {
 
     Route::post('/register', [
         AuthController::class,
-        'register'
+        'register',
     ]);
 
     Route::post('/login', [
         AuthController::class,
-        'login'
+        'login',
     ]);
 });
-
 
 /**
  * ============================================================
@@ -59,15 +58,14 @@ Route::middleware('auth:sanctum')
 
         Route::post('/logout', [
             AuthController::class,
-            'logout'
+            'logout',
         ]);
 
         Route::get('/me', [
             AuthController::class,
-            'me'
+            'me',
         ]);
     });
-
 
 /**
  * ============================================================
@@ -81,20 +79,19 @@ Route::middleware('auth:sanctum')
 
         Route::get('/', [
             ProfileController::class,
-            'show'
+            'show',
         ]);
 
         Route::put('/', [
             ProfileController::class,
-            'update'
+            'update',
         ]);
 
         Route::put('/password', [
             ProfileController::class,
-            'updatePassword'
+            'updatePassword',
         ]);
     });
-
 
 /**
  * ============================================================
@@ -104,7 +101,6 @@ Route::middleware('auth:sanctum')
  * Bắt buộc:
  * 1. Có Sanctum token
  * 2. Role = ADMIN
- *
  */
 Route::middleware(['auth:sanctum', 'role:ADMIN'])
     ->prefix('v1/admin')
@@ -115,7 +111,7 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
          */
         Route::get('/test', function () {
             return response()->json([
-                'message' => 'Ban la ADMIN va co quyen truy cap.'
+                'message' => 'Ban la ADMIN va co quyen truy cap.',
             ]);
         });
 
@@ -124,7 +120,7 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
          */
         Route::get('/users', [
             AdminUserController::class,
-            'index'
+            'index',
         ]);
 
         /**
@@ -132,7 +128,7 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
          */
         Route::get('/users/{user}', [
             AdminUserController::class,
-            'show'
+            'show',
         ]);
 
         /**
@@ -140,7 +136,7 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
          */
         Route::put('/users/{user}/role', [
             AdminUserController::class,
-            'updateRole'
+            'updateRole',
         ]);
 
         /**
@@ -148,10 +144,9 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
          */
         Route::put('/users/{user}/status', [
             AdminUserController::class,
-            'updateStatus'
+            'updateStatus',
         ]);
     });
-
 
 /**
  * ============================================================
@@ -175,7 +170,6 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])
  * - staff
  * - department_head
  * - admin
- *
  */
 Route::middleware('auth:sanctum')
     ->prefix('requests')
@@ -198,7 +192,7 @@ Route::middleware('auth:sanctum')
          */
         Route::get('/', [
             RequestController::class,
-            'index'
+            'index',
         ]);
 
         /**
@@ -208,7 +202,7 @@ Route::middleware('auth:sanctum')
          */
         Route::post('/', [
             RequestController::class,
-            'store'
+            'store',
         ]);
 
         /**
@@ -221,7 +215,7 @@ Route::middleware('auth:sanctum')
          */
         Route::get('/{supportRequest}', [
             RequestController::class,
-            'show'
+            'show',
         ]);
 
         /**
@@ -232,7 +226,7 @@ Route::middleware('auth:sanctum')
          */
         Route::put('/{supportRequest}/status', [
             RequestController::class,
-            'updateStatus'
+            'updateStatus',
         ]);
 
         /**
@@ -242,7 +236,7 @@ Route::middleware('auth:sanctum')
          */
         Route::put('/{supportRequest}/assign', [
             RequestController::class,
-            'assign'
+            'assign',
         ]);
 
         /**
@@ -256,7 +250,7 @@ Route::middleware('auth:sanctum')
          */
         Route::put('/{supportRequest}/cancel', [
             RequestController::class,
-            'cancel'
+            'cancel',
         ]);
 
         /**
@@ -266,6 +260,16 @@ Route::middleware('auth:sanctum')
          */
         Route::get('/{supportRequest}/history', [
             RequestController::class,
-            'history'
+            'history',
         ]);
     });
+Route::post('/v1/auth/sso/ticket', [SingleSignOnController::class, 'ticket'])->middleware(['auth:sanctum', 'throttle:30,1']);
+Route::post('/v1/auth/sso/exchange', [SingleSignOnController::class, 'exchange'])->middleware('throttle:30,1');
+
+Route::get('/v1/directory/staff', StaffDirectoryController::class)->middleware('auth:sanctum');
+
+Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('v1/admin')->group(function () {
+    Route::post('/users', [AdminUserController::class, 'store']);
+    Route::put('/users/{user}', [AdminUserController::class, 'update']);
+    Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
+});

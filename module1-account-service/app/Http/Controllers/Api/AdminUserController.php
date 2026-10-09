@@ -29,6 +29,9 @@ class AdminUserController extends Controller
                 'department_id',
                 'created_at',
             ])
+            ->when($request->filled('q'), fn ($query) => $query->where(fn ($q) => $q->where('name', 'like', '%'.$request->string('q').'%')->orWhere('email', 'like', '%'.$request->string('q').'%')))
+            ->when($request->filled('role'), fn ($q) => $q->where('role', $request->string('role')))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->orderBy('id')
             ->paginate(10);
 
@@ -37,7 +40,6 @@ class AdminUserController extends Controller
             'data' => $users,
         ]);
     }
-
 
     /**
      * Xem chi tiết một tài khoản.
@@ -68,7 +70,6 @@ class AdminUserController extends Controller
         ]);
     }
 
-
     /**
      * Thay đổi quyền tài khoản.
      *
@@ -94,21 +95,18 @@ class AdminUserController extends Controller
             'department_id' => [
                 'nullable',
                 'integer',
-                'exists:support_departments,id',
+                'min:1',
             ],
         ]);
-
 
         /**
          * Không cho ADMIN tự đổi quyền của chính mình.
          */
         if ($request->user()->id === $user->id) {
             return response()->json([
-                'message' =>
-                    'Khong the tu thay doi quyen cua chinh minh.',
+                'message' => 'Khong the tu thay doi quyen cua chinh minh.',
             ], 403);
         }
-
 
         /**
          * STAFF và DEPARTMENT_HEAD
@@ -123,8 +121,7 @@ class AdminUserController extends Controller
             && empty($validated['department_id'])
         ) {
             return response()->json([
-                'message' =>
-                    'STAFF va DEPARTMENT_HEAD phai thuoc mot phong ban.',
+                'message' => 'STAFF va DEPARTMENT_HEAD phai thuoc mot phong ban.',
                 'errors' => [
                     'department_id' => [
                         'Vui long chon phong ban.',
@@ -132,7 +129,6 @@ class AdminUserController extends Controller
                 ],
             ], 422);
         }
-
 
         /**
          * STUDENT và ADMIN không thuộc phòng ban hỗ trợ.
@@ -145,17 +141,14 @@ class AdminUserController extends Controller
             ? $validated['department_id']
             : null;
 
-
         $user->update([
             'role' => $validated['role'],
             'department_id' => $departmentId,
         ]);
 
-
         $user->load([
             'department:id,name,code',
         ]);
-
 
         return response()->json([
             'message' => 'Thay doi quyen tai khoan thanh cong',
@@ -178,7 +171,6 @@ class AdminUserController extends Controller
         ]);
     }
 
-
     /**
      * Khóa hoặc mở khóa tài khoản.
      */
@@ -197,27 +189,25 @@ class AdminUserController extends Controller
             ],
         ]);
 
-
         /**
          * Không cho ADMIN tự khóa chính mình.
          */
         if ($request->user()->id === $user->id) {
             return response()->json([
-                'message' =>
-                    'Khong the tu khoa tai khoan cua chinh minh.',
+                'message' => 'Khong the tu khoa tai khoan cua chinh minh.',
             ], 403);
         }
-
 
         $user->update([
             'status' => $validated['status'],
         ]);
-
+        if ($validated['status'] === 'LOCKED') {
+            $user->tokens()->delete();
+        }
 
         $user->load([
             'department:id,name,code',
         ]);
-
 
         return response()->json([
             'message' => $validated['status'] === 'LOCKED'
@@ -240,5 +230,53 @@ class AdminUserController extends Controller
                 ] : null,
             ],
         ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $data = $this->formData($request);
+        $user = User::create($data);
+
+        return response()->json(['message' => 'Đã tạo tài khoản.', 'user' => $user], 201);
+    }
+
+    public function update(Request $request, User $user): JsonResponse
+    {
+        abort_if($request->user()->id === $user->id, 403, 'Hãy cập nhật tài khoản của bạn trong trang hồ sơ.');
+        $data = $this->formData($request, $user);
+        if (empty($data['password'])) {
+            unset($data['password']);
+        }
+        $user->update($data);
+        $user->tokens()->delete();
+
+        return response()->json(['message' => 'Đã cập nhật tài khoản. Người dùng cần đăng nhập lại.', 'user' => $user]);
+    }
+
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        abort_if($request->user()->id === $user->id, 403, 'Không thể xóa tài khoản đang đăng nhập.');
+        $user->tokens()->delete();
+        $user->delete();
+
+        return response()->json(['message' => 'Đã xóa tài khoản khỏi danh sách hoạt động.']);
+    }
+
+    private function formData(Request $request, ?User $user = null): array
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user?->id)],
+            'password' => [$user ? 'nullable' : 'required', 'string', 'min:8'],
+            'role' => 'required|in:ADMIN,DEPARTMENT_HEAD,STAFF,STUDENT',
+            'status' => 'required|in:ACTIVE,LOCKED',
+            'department_id' => 'nullable|required_if:role,STAFF,DEPARTMENT_HEAD|integer|min:1',
+            'phone' => 'nullable|string|max:20',
+        ]);
+        if (! in_array($data['role'], ['STAFF', 'DEPARTMENT_HEAD'], true)) {
+            $data['department_id'] = null;
+        }
+
+        return $data;
     }
 }

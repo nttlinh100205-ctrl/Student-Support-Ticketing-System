@@ -37,12 +37,12 @@ return [
 
     'request_service' => [
         'url' => env('REQUEST_SERVICE_URL', 'http://localhost:8003'),
-        'mock' => env('MOCK_REQUEST_SERVICE', true),
+        'mock' => env('MOCK_REQUEST_SERVICE', false),
     ],
 
     'org_service' => [
         'url' => env('ORG_SERVICE_URL', 'http://localhost:8002'),
-        'mock' => env('MOCK_ORG_SERVICE', true),
+        'mock' => env('MOCK_ORG_SERVICE', false),
     ],
 
     'auth_service' => [
