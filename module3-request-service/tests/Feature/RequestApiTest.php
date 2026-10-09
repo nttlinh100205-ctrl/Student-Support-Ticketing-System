@@ -11,6 +11,31 @@ use Tests\TestCase;
 
 class RequestApiTest extends TestCase
 {
+    public function test_assignment_api_saves_deadline_priority_and_note(): void
+    {
+        config(['master_data.staff_by_department.1' => [21]]);
+        $ticket = SupportRequest::factory()->create(['department_id' => 1, 'status' => 'new', 'priority' => 'normal']);
+        $deadline = now()->addDays(2)->startOfMinute();
+        $this->withHeaders(['X-User-Id' => 31, 'X-User-Role' => 'department_head', 'X-Department-Id' => 1])
+            ->putJson("/api/requests/{$ticket->id}/assign", [
+                'assigned_to' => 21, 'priority' => 'high',
+                'sla_deadline_at' => $deadline->toDateTimeString(), 'note' => 'Xử lý trước hạn đăng ký.',
+            ])->assertOk()->assertJsonPath('data.priority', 'high')->assertJsonPath('data.assigned_to', 21);
+        $this->assertTrue($ticket->fresh()->sla_deadline_at->equalTo($deadline));
+        $this->assertStringContainsString('Xử lý trước hạn đăng ký.', $ticket->statusHistories()->latest('id')->first()->note);
+    }
+
+    public function test_assignment_api_rejects_invalid_optional_fields_without_mutation(): void
+    {
+        $ticket = SupportRequest::factory()->create(['department_id' => 1, 'status' => 'new', 'assigned_to' => null]);
+        $this->withHeaders(['X-User-Id' => 31, 'X-User-Role' => 'department_head', 'X-Department-Id' => 1])
+            ->putJson("/api/requests/{$ticket->id}/assign", [
+                'assigned_to' => 21, 'priority' => 'invalid',
+                'sla_deadline_at' => now()->subDay()->toDateTimeString(), 'note' => str_repeat('x', 1001),
+            ])->assertUnprocessable()->assertJsonValidationErrors(['priority', 'sla_deadline_at', 'note']);
+        $this->assertNull($ticket->fresh()->assigned_to);
+    }
+
     #[DataProvider('dashboardRoles')]
     public function test_dashboard_summary_respects_role_scope_and_ignores_list_filter(string $role, int $id, int $total): void
     {
