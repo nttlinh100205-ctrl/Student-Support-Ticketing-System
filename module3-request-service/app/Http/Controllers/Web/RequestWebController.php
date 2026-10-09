@@ -433,6 +433,7 @@ class RequestWebController extends Controller
 
         unset($data['attachments']);
         $created = $this->workflow->create($data, $user['id'], $files);
+        $request->attributes->set('operation_completed', true);
 
         return redirect()->route('requests.show', $created)
             ->with('success', 'Đã tạo yêu cầu thành công: '.$created->code);

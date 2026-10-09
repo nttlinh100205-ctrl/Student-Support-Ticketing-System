@@ -29,7 +29,7 @@
     const humanTab = document.createElement('button');humanTab.type='button';humanTab.className='contact-admin';humanTab.textContent='Liên hệ nhân viên';$('.support-channels').append(humanTab);
     const humanEndpoint=endpoint ? new URL('/api/support-chat',endpoint).href : '';
     let mode='ai',threadId=null,lastId=0,olderBefore=null,inboxPage=1,isAdmin=false,loadingHuman=false,version=0;
-    const seen=new Set(),drafts={ai:'',human:''};let pendingImage=null,previewUrl=null;const imageUrls=new Set();
+    const seen=new Set(),drafts={ai:'',human:''};let pendingImage=null,previewUrl=null,pendingAttempt=null;const imageUrls=new Set();
     function token(){try{return window.AccountHeaders?.().Authorization||('Bearer '+(localStorage.getItem('access_token')||''));}catch(e){return '';}}
     async function api(url,body){
         const authorization=token();if(!authorization.replace(/^Bearer\s*/i,'').trim())throw new Error('Vui lòng đăng nhập để trò chuyện.');
@@ -85,7 +85,10 @@
         let userMessage,loading;
         try{
             if(mode==='human'){
-                const payload=new FormData();payload.append('content',content);if(threadId)payload.append('thread_id',threadId);if(pendingImage)payload.append('image',pendingImage);const data=await api(humanEndpoint,payload);clearImage();version++;threadId=data.thread_id;input.value='';drafts.human='';await loadHuman();scrollDown();
+                const imageHash=pendingImage?Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await pendingImage.arrayBuffer())),byte=>byte.toString(16).padStart(2,'0')).join(''):'';
+                const fingerprint=JSON.stringify([token(),isAdmin?threadId:null,content,pendingImage?.name||'',imageHash]);
+                if(!pendingAttempt||pendingAttempt.fingerprint!==fingerprint)pendingAttempt={fingerprint,key:crypto.randomUUID()};
+                const payload=new FormData();payload.append('content',content);payload.append('_idempotency_key',pendingAttempt.key);if(isAdmin&&threadId)payload.append('thread_id',threadId);if(pendingImage)payload.append('image',pendingImage);const data=await api(humanEndpoint,payload);pendingAttempt=null;clearImage();version++;threadId=data.thread_id;input.value='';drafts.human='';await loadHuman();scrollDown();
             }else{
                 $('.welcome').hidden=true;$('.suggestions').hidden=true;userMessage=message('user',content);loading=message('assistant','Đang soạn câu trả lời…');loading.classList.add('loading');
                 const messages=[...history,{role:'user',content}].slice(-10),data=await api(endpoint,{messages});if(typeof data?.reply!=='string')throw new Error('Phản hồi không hợp lệ.');

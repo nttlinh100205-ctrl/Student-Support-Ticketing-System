@@ -14,7 +14,7 @@ Route::post('/ai/chat', AiChatController::class)->middleware('account.auth');
 Route::middleware('account.auth')->group(function () {
     Route::get('/support-chat', [AdminChatController::class, 'index']);
     Route::get('/support-chat/images/{message}', [AdminChatController::class, 'image'])->whereNumber('message');
-    Route::post('/support-chat', [AdminChatController::class, 'store'])->middleware('throttle:20,1');
+    Route::post('/support-chat', [AdminChatController::class, 'store'])->middleware(['throttle:20,1', 'idempotent']);
 });
 
 /**
@@ -22,7 +22,7 @@ Route::middleware('account.auth')->group(function () {
  */
 Route::middleware('auth.fake')->prefix('requests')->group(function () {
     Route::get('/', [RequestController::class, 'index']);
-    Route::post('/', [RequestController::class, 'store']);
+    Route::post('/', [RequestController::class, 'store'])->middleware('idempotent');
     Route::get('/{supportRequest}', [RequestController::class, 'show']);
     Route::put('/{supportRequest}', [RequestController::class, 'update']);
     Route::put('/{supportRequest}/status', [RequestController::class, 'updateStatus']);
