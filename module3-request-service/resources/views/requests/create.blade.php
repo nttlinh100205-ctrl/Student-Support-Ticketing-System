@@ -124,7 +124,7 @@
             </div>
         </div>
 
-        <x-field-error name="support_type_id"/></section><section class="uni-step-panel" data-step="1" aria-label="Nội dung yêu cầu">
+        <x-field-error name="support_type_id"/><p id="catalog-form-status" role="status" aria-live="polite" class="request-help">Chọn loại hỗ trợ để tải biểu mẫu.</p></section><section class="uni-step-panel" data-step="1" aria-label="Nội dung yêu cầu">
         <div id="support-guidance" class="request-help" hidden></div>
         <button type="button" id="use-content-template" class="request-secondary" hidden>Điền mẫu nội dung</button>
         {{-- Title --}}
@@ -152,7 +152,7 @@
         <x-field-error name="content"/>
         <section id="catalog-form" aria-live="polite">
             <h3 class="text-lg font-bold">Thông tin theo loại hỗ trợ</h3>
-            <p id="catalog-form-status">Chọn loại hỗ trợ để tải biểu mẫu.</p>
+
             <div id="catalog-form-fields"></div>
         </section>
         <script id="catalog-form-old" type="application/json">@json(old('form_values', []))</script>

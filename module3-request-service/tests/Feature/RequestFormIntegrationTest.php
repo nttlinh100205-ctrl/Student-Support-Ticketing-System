@@ -37,6 +37,14 @@ class RequestFormIntegrationTest extends TestCase
         ]);
     }
 
+    public function test_loading_form_only_calls_identity_and_requested_definition(): void
+    {
+        $this->upstream();
+        $this->withToken('student')->getJson('/request-forms/1')->assertOk()->assertJsonPath('data.fields.0.field_key', 'class');
+        Http::assertSentCount(2);
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/directory/staff') || str_contains($request->url(), '/departments'));
+    }
+
     private function payload(): array
     {
         return ['department_id' => 1, 'support_type_id' => 1, 'title' => 'Xin xác nhận sinh viên', 'content' => 'Em cần giấy xác nhận sinh viên để hoàn thành hồ sơ.', 'form_values' => ['class' => 'DH12']];
