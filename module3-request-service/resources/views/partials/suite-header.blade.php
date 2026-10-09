@@ -32,3 +32,7 @@
     @include('partials.suite-sidebar')
     <script src="/js/navigation.js" defer></script>
 @endif
+
+@if(!request()->is('login', 'register', 'sso/*', '*password*'))
+<script src="/js/ai-assistant.js" data-endpoint="{{ rtrim(config('ui.requests'), '/') }}/api/ai/chat" defer></script>
+@endif
