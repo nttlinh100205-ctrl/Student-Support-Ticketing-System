@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Web\AdminChatController;
 use App\Http\Controllers\Web\RequestFormController;
 use App\Http\Controllers\Web\RequestWebController;
 use App\Http\Controllers\Web\WorkspaceController;
@@ -8,6 +9,11 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 require __DIR__.'/account.php';
+
+Route::middleware('account.auth')->group(function () {
+    Route::get('/support-chat', [AdminChatController::class, 'index'])->name('support-chat.index');
+    Route::post('/support-chat', [AdminChatController::class, 'store'])->middleware('throttle:20,1')->name('support-chat.store');
+});
 
 Route::middleware('account.auth')->group(function () {
     Route::get('/request-forms/{type}', [RequestFormController::class, 'show'])->whereNumber('type');
