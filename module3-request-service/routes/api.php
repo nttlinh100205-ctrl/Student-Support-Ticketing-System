@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AiChatController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\CatalogUsageController;
 use App\Http\Controllers\Api\CommentController;
@@ -7,6 +8,8 @@ use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\SlaController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/ai/chat', AiChatController::class)->middleware('account.auth');
 
 /**
  * Alias cũ auth.fake dùng AccountAuthentication mặc định; mock chỉ bật qua cấu hình.
