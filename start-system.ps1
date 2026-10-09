@@ -36,9 +36,9 @@ foreach ($service in $services) {
         $problems += "$($service.Name): cannot determine PHP version."
         continue
     }
-    $minimum = if ($service.Name -eq 'reports') { 80401 } else { 80200 }
+    $minimum = 80200
     if ([int]$versionOutput -lt $minimum) {
-        $problems += "$($service.Name): PHP too old. Reports need PHP >= 8.4.1; use -ReportPhp PATH or -SkipReports."
+        $problems += "$($service.Name): PHP too old. All services require PHP >= 8.2."
     }
 }
 $reusedPorts = @{}

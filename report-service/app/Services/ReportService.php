@@ -31,6 +31,13 @@ class ReportService
         $departments = collect($this->orgClient->getDepartments())->keyBy('id');
         $supportTypes = collect($this->orgClient->getSupportTypes())->keyBy('id');
         $staffMembers = collect($this->orgClient->getStaffMembers())->keyBy('id');
+        if (! empty($filters['department_id'])) {
+            $departments = $departments->where('id', (int) $filters['department_id']);
+            $staffMembers = $staffMembers->where('department_id', (int) $filters['department_id']);
+        }
+        if (! empty($filters['staff_id'])) {
+            $staffMembers = $staffMembers->where('id', (int) $filters['staff_id']);
+        }
         $ratingsSummary = $this->ratingService->getRatingSummary($filters);
 
         $slaMetrics = $this->calculateSlaMetrics($requests, $supportTypes);
@@ -71,7 +78,7 @@ class ReportService
 
         foreach ($requests as $r) {
             $status = $r['status'] ?? 'new';
-            if ($status === 'cancelled') {
+            if (in_array($status, ['cancelled', 'rejected'], true)) {
                 continue;
             }
 
@@ -109,6 +116,7 @@ class ReportService
                     'created_at' => $createdAt ? $createdAt->format('d/m/Y H:i') : '',
                     'due_at' => $dueAt ? $dueAt->format('d/m/Y H:i') : '',
                     'hours_taken' => $hoursTaken,
+                    'overdue_hours' => $dueAt ? max(0, round($dueAt->diffInMinutes($resolvedAt ?? $now) / 60, 1)) : 0,
                 ];
             } else {
                 $onTimeCount++;
@@ -153,7 +161,7 @@ class ReportService
 
             // SLA calculation
             $onTime = $items->filter(function ($r) {
-                if (($r['status'] ?? '') === 'cancelled') {
+                if (in_array($r['status'] ?? '', ['cancelled', 'rejected'], true)) {
                     return false;
                 }
                 $createdAt = ! empty($r['created_at']) ? Carbon::parse($r['created_at']) : null;
@@ -169,7 +177,7 @@ class ReportService
                 return true;
             })->count();
 
-            $nonCancelled = $items->filter(fn ($r) => ($r['status'] ?? '') !== 'cancelled')->count();
+            $nonCancelled = $items->filter(fn ($r) => ! in_array($r['status'] ?? '', ['cancelled', 'rejected'], true))->count();
             $slaRate = $nonCancelled > 0 ? round(($onTime / $nonCancelled) * 100, 1) : 100.0;
 
             // Avg hours
@@ -180,10 +188,12 @@ class ReportService
 
             // CSAT
             $ratingData = $deptRatings->get($deptId);
-            $csat = $ratingData ? (float) $ratingData['average_rating'] : 4.5;
+            $csat = $ratingData ? (float) $ratingData['average_rating'] : null;
 
             // Performance score (0 - 100): 40% completion, 35% SLA, 25% CSAT
-            $score = round(($completionRate * 0.40) + ($slaRate * 0.35) + (($csat / 5) * 100 * 0.25), 1);
+            $score = $csat === null
+                ? round((($completionRate * 0.40) + ($slaRate * 0.35)) / 0.75, 1)
+                : round(($completionRate * 0.40) + ($slaRate * 0.35) + (($csat / 5) * 100 * 0.25), 1);
 
             return [
                 'department_id' => (int) $deptId,
@@ -231,7 +241,7 @@ class ReportService
 
             // SLA
             $onTime = $items->filter(function ($r) {
-                if (($r['status'] ?? '') === 'cancelled') {
+                if (in_array($r['status'] ?? '', ['cancelled', 'rejected'], true)) {
                     return false;
                 }
                 $createdAt = ! empty($r['created_at']) ? Carbon::parse($r['created_at']) : null;
@@ -247,16 +257,20 @@ class ReportService
                 return true;
             })->count();
 
-            $nonCancelled = $items->filter(fn ($r) => ($r['status'] ?? '') !== 'cancelled')->count();
+            $nonCancelled = $items->filter(fn ($r) => ! in_array($r['status'] ?? '', ['cancelled', 'rejected'], true))->count();
             $slaRate = $nonCancelled > 0 ? round(($onTime / $nonCancelled) * 100, 1) : 100.0;
 
             // CSAT
             $ratingData = $staffRatings->get($staffId);
-            $csat = $ratingData ? (float) $ratingData['average_rating'] : 4.6;
+            $csat = $ratingData ? (float) $ratingData['average_rating'] : null;
 
-            $score = round(($completionRate * 0.40) + ($slaRate * 0.35) + (($csat / 5) * 100 * 0.25), 1);
+            $score = $csat === null
+                ? round((($completionRate * 0.40) + ($slaRate * 0.35)) / 0.75, 1)
+                : round(($completionRate * 0.40) + ($slaRate * 0.35) + (($csat / 5) * 100 * 0.25), 1);
 
+            $score = $totalAssigned > 0 ? $score : null;
             $tier = match (true) {
+                $totalAssigned === 0 => 'Chưa có dữ liệu',
                 $score >= 88 => 'Xuất sắc',
                 $score >= 75 => 'Tốt',
                 $score >= 60 => 'Đạt',
@@ -389,23 +403,26 @@ class ReportService
                     $slaStatusText = 'Quá hạn';
                 }
 
-                fputcsv($handle, [
-                    $r['code'] ?? ('YC-'.$r['id']),
-                    $r['id'],
-                    $r['title'] ?? '',
-                    $r['student_code'] ?? ($r['student_id'] ?? ''),
-                    $r['student_name'] ?? '',
-                    $deptName,
-                    $staffName,
-                    $typeName,
-                    $statusLabel,
-                    $r['priority'] ?? 'normal',
-                    $createdAt ? $createdAt->format('d/m/Y H:i') : '',
-                    $dueAt ? $dueAt->format('d/m/Y H:i') : '',
-                    $resolvedAt ? $resolvedAt->format('d/m/Y H:i') : '',
-                    $hours !== null ? $hours : 'Chưa xong',
-                    $slaStatusText,
-                ]);
+                fputcsv($handle, array_map(
+                    fn ($value) => is_string($value) && preg_match('/^\s*[=+@-]/u', $value) ? "'".$value : $value,
+                    [
+                        $r['code'] ?? ('YC-'.$r['id']),
+                        $r['id'],
+                        $r['title'] ?? '',
+                        $r['student_code'] ?? ($r['student_id'] ?? ''),
+                        $r['student_name'] ?? '',
+                        $deptName,
+                        $staffName,
+                        $typeName,
+                        $statusLabel,
+                        $r['priority'] ?? 'normal',
+                        $createdAt ? $createdAt->format('d/m/Y H:i') : '',
+                        $dueAt ? $dueAt->format('d/m/Y H:i') : '',
+                        $resolvedAt ? $resolvedAt->format('d/m/Y H:i') : '',
+                        $hours !== null ? $hours : 'Chưa xong',
+                        $slaStatusText,
+                    ]
+                ));
             }
 
             fclose($handle);

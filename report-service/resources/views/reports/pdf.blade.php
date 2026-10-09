@@ -207,7 +207,7 @@
                     <span class="badge {{ $dept['sla_rate'] >= 85 ? 'badge-success' : 'badge-warning' }}">{{ $dept['sla_rate'] }}%</span>
                 </td>
                 <td style="text-align: center;">{{ $dept['avg_hours'] ? $dept['avg_hours'].'h' : '—' }}</td>
-                <td style="text-align: center; color: #a9781f;">{{ $dept['csat'] }} ⭐</td>
+                <td style="text-align: center; color: #a9781f;">{{ $dept['csat'] !== null ? $dept['csat'].' / 5' : 'Chưa có' }}</td>
                 <td style="text-align: center; font-weight: bold; color: #37517a;">{{ $dept['performance_score'] }}</td>
             </tr>
             @endforeach
@@ -240,7 +240,7 @@
                 <td style="text-align: center;">{{ $staff['resolved_count'] }}</td>
                 <td style="text-align: center; font-weight: bold;">{{ $staff['total_assigned'] }}</td>
                 <td style="text-align: center;">{{ $staff['sla_rate'] }}%</td>
-                <td style="text-align: center; color: #a9781f;">{{ $staff['csat'] }} ⭐</td>
+                <td style="text-align: center; color: #a9781f;">{{ $staff['csat'] !== null ? $staff['csat'].' / 5' : 'Chưa có' }}</td>
                 <td style="text-align: center;">
                     <span class="badge {{ $staff['tier'] === 'Xuất sắc' ? 'badge-success' : ($staff['tier'] === 'Tốt' ? 'badge-info' : 'badge-warning') }}">
                         {{ $staff['tier'] }}

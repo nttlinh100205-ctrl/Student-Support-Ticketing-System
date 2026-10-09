@@ -14,6 +14,7 @@ class QueryRatingRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'staff_id' => 'nullable|integer|min:1',
             'department_id' => 'nullable|integer',
             'support_type_id' => 'nullable|integer',
             'rating' => 'nullable|integer|min:1|max:5',

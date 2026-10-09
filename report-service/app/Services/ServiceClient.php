@@ -12,8 +12,13 @@ class ServiceClient
         $request = request();
         $token = $request->attributes->get('account_token') ?: $request->bearerToken();
         abort_unless($token, 401, 'Thiếu phiên đăng nhập liên dịch vụ.');
+        $cacheKey = 'report.http.'.hash('sha256', json_encode([$baseUrl, $path, $query, $token]));
+        if ($method === 'GET' && $request->attributes->has($cacheKey)) {
+            return $request->attributes->get($cacheKey);
+        }
         try {
-            $response = Http::acceptJson()->withToken($token)->connectTimeout(3)->timeout(8)
+            $response = Http::withOptions(parse_url($baseUrl, PHP_URL_HOST) === 'localhost' ? ['force_ip_resolve' => 'v4'] : [])
+                ->acceptJson()->withToken($token)->connectTimeout(3)->timeout(20)
                 ->send($method, rtrim($baseUrl, '/').$path, $method === 'GET' ? ['query' => $query] : ['json' => $query]);
         } catch (ConnectionException $e) {
             abort(503, 'Không thể kết nối dịch vụ dữ liệu.');
@@ -22,6 +27,10 @@ class ServiceClient
             abort($response->status(), 'Không thể truy cập dữ liệu được yêu cầu.');
         }
         abort_unless($response->successful() && is_array($response->json()), 503, 'Dịch vụ dữ liệu không khả dụng.');
+
+        if ($method === 'GET') {
+            $request->attributes->set($cacheKey, $response->json());
+        }
 
         return $response->json();
     }
