@@ -10,6 +10,50 @@ use Tests\TestCase;
 
 class AccountIntegrationTest extends TestCase
 {
+    public function test_repeated_reads_cache_catalog_but_revalidate_identity(): void
+    {
+        $this->fakeAccount();
+        $this->withToken('token')->getJson('/api/integration-identity')->assertOk();
+        $this->getJson('/api/integration-identity')->assertOk();
+        Http::assertSentCount(5); // 2 kiểm tra tài khoản + 3 danh mục.
+        $this->travel(31)->seconds();
+        $this->getJson('/api/integration-identity')->assertOk();
+        Http::assertSentCount(9);
+    }
+
+    public function test_writes_refresh_catalog_and_invalidate_cached_read(): void
+    {
+        $this->fakeAccount();
+        Route::middleware('account.auth')->post('/api/integration-write', fn () => ['ok' => true]);
+        $this->withToken('token')->getJson('/api/integration-identity')->assertOk();
+        $this->postJson('/api/integration-write')->assertOk();
+        Http::assertSentCount(8);
+        $this->getJson('/api/integration-identity')->assertOk();
+        Http::assertSentCount(12);
+    }
+
+    public function test_catalog_cache_is_isolated_between_tokens(): void
+    {
+        $this->fakeAccount();
+        $this->withToken('first')->getJson('/api/integration-identity')->assertOk();
+        $this->withToken('second')->getJson('/api/integration-identity')->assertOk();
+        Http::assertSentCount(8);
+    }
+
+    public function test_cached_catalog_does_not_allow_a_revoked_session(): void
+    {
+        Http::fake([
+            'http://accounts.test/api/v1/auth/me' => Http::sequence()
+                ->push(['user' => ['id' => 42, 'name' => 'Sinh viên', 'role' => 'STUDENT', 'status' => 'ACTIVE']])
+                ->push([], 401),
+            'http://accounts.test/api/v1/directory/staff*' => Http::response(['data' => []]),
+            'http://catalog.test/*' => Http::response(['data' => []]),
+        ]);
+        $this->withToken('token')->getJson('/api/integration-identity')->assertOk();
+        $this->getJson('/api/integration-identity')->assertUnauthorized();
+        Http::assertSentCount(5);
+    }
+
     public function test_login_preserves_the_selected_request_queue_and_filters(): void
     {
         $this->get('/requests?queue=unassigned&sort=deadline')
