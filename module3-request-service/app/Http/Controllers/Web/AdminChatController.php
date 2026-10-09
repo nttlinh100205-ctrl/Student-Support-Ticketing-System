@@ -20,6 +20,29 @@ class AdminChatController extends Controller
         }
         $thread = $selected ? $query->where('id', $selected)->first() : ($isAdmin ? $threads->first() : $query->first());
         abort_if($selected && ! $thread, 404);
+        if ($request->is('api/*')) {
+            $request->validate(['after' => 'nullable|integer|min:0', 'before' => 'nullable|integer|min:1']);
+            $rows = collect();
+            if ($thread) {
+                $query = DB::table('admin_chat_messages')->where('thread_id', $thread->id);
+                if ($request->integer('after')) {
+                    $rows = $query->where('id', '>', $request->integer('after'))->orderBy('id')->limit(100)->get();
+                } else {
+                    if ($request->integer('before')) {
+                        $query->where('id', '<', $request->integer('before'));
+                    }
+                    $rows = $query->orderByDesc('id')->limit(40)->get()->reverse()->values();
+                }
+            }
+
+            return response()->json(['data' => [
+                'is_admin' => $isAdmin, 'thread' => $thread,
+                'threads' => $threads?->items() ?? [],
+                'inbox_page' => $threads?->currentPage(), 'inbox_last_page' => $threads?->lastPage(),
+                'messages' => $rows,
+                'older_before' => ! $request->integer('after') && $rows->count() === 40 ? $rows->first()->id : null,
+            ]])->header('Cache-Control', 'no-store');
+        }
         $messages = $thread ? DB::table('admin_chat_messages')->where('thread_id', $thread->id)->orderByDesc('id')->paginate(40)->withQueryString() : null;
 
         return view('support-chat.index', compact('threads', 'thread', 'messages', 'isAdmin'));
@@ -55,6 +78,10 @@ class AdminChatController extends Controller
 
             return $thread->id;
         });
+
+        if ($request->is('api/*')) {
+            return response()->json(['data' => ['thread_id' => $id]], 201);
+        }
 
         return redirect()->route('support-chat.index', ['thread' => $id])->with('success', 'Tin nhắn đã được gửi.');
     }

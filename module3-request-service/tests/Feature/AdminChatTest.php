@@ -7,6 +7,31 @@ use Tests\TestCase;
 
 class AdminChatTest extends TestCase
 {
+    public function test_widget_can_send_receive_and_poll_admin_reply(): void
+    {
+        $sent = $this->identify(12)->postJson('/api/support-chat', ['content' => 'Tin nhắn từ chatbox'])->assertCreated();
+        $id = $sent->json('data.thread_id');
+        $first = $this->getJson('/api/support-chat')->assertOk()->assertJsonPath('data.messages.0.content', 'Tin nhắn từ chatbox');
+        $cursor = $first->json('data.messages.0.id');
+        $this->identify(1, 'admin')->getJson('/api/support-chat')->assertOk()->assertJsonPath('data.threads.0.id', $id);
+        $this->postJson('/api/support-chat', ['thread_id' => $id, 'content' => 'Phản hồi ngay trong khung chat'])->assertCreated();
+        $this->identify(12)->getJson('/api/support-chat?after='.$cursor)->assertOk()->assertJsonCount(1, 'data.messages')->assertJsonPath('data.messages.0.content', 'Phản hồi ngay trong khung chat');
+        $this->identify(13)->getJson('/api/support-chat?thread='.$id)->assertNotFound();
+        $this->postJson('/api/support-chat', ['thread_id' => $id, 'content' => 'Không được gửi'])->assertForbidden();
+    }
+
+    public function test_widget_can_load_older_messages_without_exposing_other_threads(): void
+    {
+        $sent = $this->identify(12)->postJson('/api/support-chat', ['content' => 'Tin đầu tiên']);
+        $id = $sent->json('data.thread_id');
+        for ($i = 0; $i < 45; $i++) {
+            DB::table('admin_chat_messages')->insert(['thread_id' => $id, 'sender_id' => 12, 'sender_name' => 'User 12', 'from_admin' => false, 'content' => 'Tin '.$i, 'created_at' => now()]);
+        }
+        $latest = $this->getJson('/api/support-chat')->assertOk()->assertJsonCount(40, 'data.messages');
+        $this->getJson('/api/support-chat?before='.$latest->json('data.older_before'))->assertOk()->assertJsonCount(6, 'data.messages')->assertJsonPath('data.messages.0.content', 'Tin đầu tiên');
+        $this->identify(13)->getJson('/api/support-chat')->assertOk()->assertJsonCount(0, 'data.messages')->assertJsonCount(0, 'data.threads');
+    }
+
     private function identify(int $id, string $role = 'student'): static
     {
         return $this->withHeaders(['X-User-Id' => $id, 'X-User-Role' => $role, 'X-User-FullName' => 'User '.$id]);
