@@ -1,19 +1,28 @@
 <?php
 
+use App\Http\Controllers\Api\AiChatController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\CatalogUsageController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\SlaController;
+use App\Http\Controllers\Web\AdminChatController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/ai/chat', AiChatController::class)->middleware('account.auth');
+Route::middleware('account.auth')->group(function () {
+    Route::get('/support-chat', [AdminChatController::class, 'index']);
+    Route::get('/support-chat/images/{message}', [AdminChatController::class, 'image'])->whereNumber('message');
+    Route::post('/support-chat', [AdminChatController::class, 'store'])->middleware(['throttle:20,1', 'idempotent']);
+});
 
 /**
  * Alias cũ auth.fake dùng AccountAuthentication mặc định; mock chỉ bật qua cấu hình.
  */
 Route::middleware('auth.fake')->prefix('requests')->group(function () {
     Route::get('/', [RequestController::class, 'index']);
-    Route::post('/', [RequestController::class, 'store']);
+    Route::post('/', [RequestController::class, 'store'])->middleware('idempotent');
     Route::get('/{supportRequest}', [RequestController::class, 'show']);
     Route::put('/{supportRequest}', [RequestController::class, 'update']);
     Route::put('/{supportRequest}/status', [RequestController::class, 'updateStatus']);

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Web\AdminChatController;
 use App\Http\Controllers\Web\RequestFormController;
 use App\Http\Controllers\Web\RequestWebController;
 use App\Http\Controllers\Web\WorkspaceController;
@@ -8,6 +9,13 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 require __DIR__.'/account.php';
+
+Route::middleware('account.auth')->group(function () {
+    Route::get('/requests/{supportRequest}/images/{attachment}', [RequestFormController::class, 'attachment'])->name('requests.images');
+    Route::get('/support-chat', [AdminChatController::class, 'index'])->name('support-chat.index');
+    Route::get('/support-chat/images/{message}', [AdminChatController::class, 'image'])->whereNumber('message')->name('support-chat.image');
+    Route::post('/support-chat', [AdminChatController::class, 'store'])->middleware(['throttle:20,1', 'idempotent'])->name('support-chat.store');
+});
 
 Route::middleware('account.auth')->group(function () {
     Route::get('/request-forms/{type}', [RequestFormController::class, 'show'])->whereNumber('type');
@@ -40,7 +48,7 @@ Route::middleware('account.auth')->group(function () {
     Route::get('/requests', [RequestWebController::class, 'index'])->name('requests.index');
     Route::get('/requests/export', [RequestWebController::class, 'export'])->name('requests.export');
     Route::get('/requests/create', [RequestWebController::class, 'create'])->name('requests.create');
-    Route::post('/requests', [RequestWebController::class, 'store'])->name('requests.store');
+    Route::post('/requests', [RequestWebController::class, 'store'])->middleware('idempotent')->name('requests.store');
     Route::get('/requests/{supportRequest}/copy', [RequestWebController::class, 'copy'])->name('requests.copy');
     Route::get('/requests/{supportRequest}', [RequestWebController::class, 'show'])->name('requests.show');
     Route::post('/requests/{supportRequest}/rating', [RequestWebController::class, 'rate'])->name('requests.rating.store');

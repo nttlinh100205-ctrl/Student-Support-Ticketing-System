@@ -122,6 +122,7 @@ class RequestController extends Controller
         }
 
         $created = $this->workflow->create($data, $this->auth->userId(), $files);
+        request()->attributes->set('operation_completed', true);
 
         return ApiResponse::success(new SupportRequestResource($created), status: 201);
     }

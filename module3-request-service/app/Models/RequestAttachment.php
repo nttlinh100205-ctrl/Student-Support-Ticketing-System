@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ImageStorage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
@@ -22,6 +23,10 @@ class RequestAttachment extends Model
 
     public function url(): string
     {
+        if (app(ImageStorage::class)->isCloud($this->path)) {
+            return route('requests.images', ['supportRequest' => $this->request_id, 'attachment' => $this->id]);
+        }
+
         return Storage::disk('public')->url($this->path);
     }
 
