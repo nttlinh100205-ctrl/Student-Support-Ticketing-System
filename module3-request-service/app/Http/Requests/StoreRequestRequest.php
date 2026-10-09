@@ -19,6 +19,9 @@ class StoreRequestRequest extends FormRequest
         $isFacilities = (int) $this->input('department_id') === (int) config('master_data.facilities_department_id', self::FACILITIES_DEPT_ID);
 
         return [
+            'form_values' => 'nullable|array|max:100',
+            'form_files' => 'nullable|array|max:20',
+            'form_files.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp,gif|max:10240',
             'department_id' => 'required|integer',
             'support_type_id' => 'required|integer',
             'title' => 'required|string|min:10|max:255',
