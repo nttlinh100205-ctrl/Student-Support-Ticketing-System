@@ -273,3 +273,5 @@ Route::middleware(['auth:sanctum', 'role:ADMIN'])->prefix('v1/admin')->group(fun
     Route::put('/users/{user}', [AdminUserController::class, 'update']);
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
 });
+
+Route::get('/v1/directory/names', [StaffDirectoryController::class, 'names'])->middleware('auth:sanctum');
