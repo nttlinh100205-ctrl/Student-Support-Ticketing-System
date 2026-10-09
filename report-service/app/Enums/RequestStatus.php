@@ -11,6 +11,7 @@ enum RequestStatus: string
     case RESOLVED = 'resolved';
     case CLOSED = 'closed';
     case CANCELLED = 'cancelled';
+    case REJECTED = 'rejected';
 
     public function label(): string
     {
@@ -22,6 +23,7 @@ enum RequestStatus: string
             self::RESOLVED => 'Đã giải quyết',
             self::CLOSED => 'Đã đóng',
             self::CANCELLED => 'Đã hủy',
+            self::REJECTED => 'Từ chối',
         };
     }
 }

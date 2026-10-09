@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 // API Báo cáo & Thống kê (Dành cho cán bộ, trưởng phòng ban, admin)
 Route::middleware('account.auth')->group(function () {
     Route::middleware('can-view-reports')->group(function () {
+        Route::get('/reports/filters', [ReportController::class, 'filters']);
         Route::get('/reports/statistics', [ReportController::class, 'statistics']);
         Route::get('/reports/export', [ReportController::class, 'export']);
         Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf']);

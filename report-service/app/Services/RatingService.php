@@ -26,6 +26,9 @@ class RatingService
         if (! config('services.request_service.mock')) {
             $item = app(ServiceClient::class)->get(config('services.request_service.url'), '/api/requests/'.$data['request_id'].'/rating', [
                 'rating' => $data['rating'], 'comment' => $data['comment'] ?? null,
+                'rating_attitude' => $data['rating_attitude'] ?? null,
+                'rating_speed' => $data['rating_speed'] ?? null,
+                'rating_quality' => $data['rating_quality'] ?? null,
             ], 'POST')['data'];
 
             return $this->fromTicket($item);

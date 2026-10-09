@@ -14,6 +14,9 @@ class StoreRatingRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'rating_attitude' => 'nullable|integer|between:1,5',
+            'rating_speed' => 'nullable|integer|between:1,5',
+            'rating_quality' => 'nullable|integer|between:1,5',
             'request_id' => 'required|integer',
             'rating' => 'required|integer|min:1|max:5',
             'comment' => 'nullable|string|max:1000',

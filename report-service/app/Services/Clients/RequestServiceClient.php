@@ -77,6 +77,11 @@ class RequestServiceClient implements RequestServiceClientInterface
 
     private function normalize(array $item): array
     {
-        return array_merge($item, ['due_at' => $item['sla_deadline_at'] ?? null, 'staff_id' => $item['assigned_to'] ?? null, 'staff_name' => $item['assigned_staff_name'] ?? null]);
+        return array_merge($item, [
+            'due_at' => $item['sla_deadline_at'] ?? null,
+            'staff_id' => $item['assigned_to'] ?? null,
+            'staff_name' => $item['assigned_staff_name'] ?? 'Chưa phân công',
+            'student_name' => $item['student_name'] ?? ('Sinh viên #'.($item['student_id'] ?? '')),
+        ]);
     }
 }
