@@ -286,6 +286,22 @@
                     <h3 class="text-base font-bold text-slate-900 uppercase tracking-wide">Nội dung chi tiết yêu cầu</h3>
                 </div>
                 <p class="text-slate-800 whitespace-pre-wrap leading-relaxed font-sans text-sm sm:text-base">{{ $request->content }}</p>
+                @if($request->form_data)
+                    <section class="uni-form-details" aria-label="Thông tin biểu mẫu">
+                        <h3>Thông tin biểu mẫu đã gửi</h3>
+                        <dl>
+                            @foreach($request->form_data as $field)
+                                <div><dt>{{ $field['label'] }}</dt><dd>
+                                    @if(!empty($field['path']))
+                                        <a href="{{ route('requests.form-file', ['supportRequest' => $request, 'field' => $field['key']]) }}">Tải {{ $field['value'] }}</a>
+                                    @else
+                                        {{ $field['value'] ?? '—' }}
+                                    @endif
+                                </dd></div>
+                            @endforeach
+                        </dl>
+                    </section>
+                @endif
 
                 @if($request->cancelled_reason)
                     <div class="mt-5 p-4 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-800">

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Web\RequestFormController;
 use App\Http\Controllers\Web\RequestWebController;
 use App\Http\Controllers\Web\WorkspaceController;
 use App\Http\Middleware\WorkspaceRole;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 require __DIR__.'/account.php';
 
 Route::middleware('account.auth')->group(function () {
+    Route::get('/request-forms/{type}', [RequestFormController::class, 'show'])->whereNumber('type');
+    Route::get('/requests/{supportRequest}/form-files/{field}', [RequestFormController::class, 'download'])->name('requests.form-file');
     Route::get('/', fn () => redirect()->route('requests.index'));
 
     /*

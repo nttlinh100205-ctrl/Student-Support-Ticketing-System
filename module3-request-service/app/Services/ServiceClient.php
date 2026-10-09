@@ -4,10 +4,11 @@ namespace App\Services;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 
 class ServiceClient
 {
-    public function get(string $baseUrl, string $path, array $query = []): array
+    public function get(string $baseUrl, string $path, array $query = [], string $method = 'GET'): array
     {
         $request = request();
         $token = $request->attributes->get('account_token') ?: $request->bearerToken();
@@ -15,9 +16,14 @@ class ServiceClient
         try {
             $response = Http::withOptions(parse_url($baseUrl, PHP_URL_HOST) === 'localhost' ? ['force_ip_resolve' => 'v4'] : [])
                 ->acceptJson()->withToken($token)->connectTimeout(3)->timeout(8)
-                ->get(rtrim($baseUrl, '/').$path, $query);
+                ->send($method, rtrim($baseUrl, '/').$path, $method === 'GET' ? ['query' => $query] : ['json' => $query]);
         } catch (ConnectionException $e) {
             abort(503, 'Không thể kết nối dịch vụ dữ liệu.');
+        }
+        if ($response->status() === 422 && is_array($response->json('errors'))) {
+            throw ValidationException::withMessages(collect($response->json('errors'))->mapWithKeys(
+                fn ($messages, $key) => [preg_replace('/^values\./', 'form_values.', $key) => $messages]
+            )->all());
         }
         if (in_array($response->status(), [401, 403, 404, 422], true)) {
             abort($response->status(), 'Không thể truy cập dữ liệu được yêu cầu.');

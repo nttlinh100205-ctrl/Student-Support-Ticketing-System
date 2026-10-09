@@ -148,7 +148,16 @@
                       class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition shadow-sm resize-none leading-relaxed placeholder:text-slate-400">{{ old('content', $copyRequest?->content) }}</textarea>
         </div>
 
-        <x-field-error name="content"/>{{-- Priority --}}
+        <x-field-error name="content"/>
+        <section id="catalog-form" aria-live="polite">
+            <h3 class="text-lg font-bold">Thông tin theo loại hỗ trợ</h3>
+            <p id="catalog-form-status">Chọn loại hỗ trợ để tải biểu mẫu.</p>
+            <div id="catalog-form-fields"></div>
+        </section>
+        <script id="catalog-form-old" type="application/json">@json(old('form_values', []))</script>
+        <script id="catalog-form-errors" type="application/json">@json($errors->getMessages())</script>
+        <script src="/js/catalog-form.js" defer></script>
+        {{-- Priority --}}
         <div>
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Mức độ ưu tiên</label>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">

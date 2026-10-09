@@ -82,3 +82,19 @@ html[data-theme=dark] .uni-news-heading p,html[data-theme=dark] .uni-news-meta{c
 .suite-ui .metric>span{font-size:16px}.suite-ui .metric small{font-size:14px}
 @media(min-width:901px){html[data-sidebar=collapsed] .system-overview>span{width:36px;height:36px}.system-sidebar .system-overview{font-size:16px}}
 @media(max-width:700px){.suite-ui .welcome h1{font-size:26px}.uni-stat>div{font-size:14px}.uni-stat small{font-size:12px}}
+
+/* Các điều chỉnh dùng chung cho cả năm service. */
+body.suite-ui{font-family:Inter,"Be Vietnam Pro","Segoe UI",sans-serif;line-height:1.6}
+.suite-ui h1,.suite-ui h2,.suite-ui h3{letter-spacing:-.025em}
+.suite-ui button,.suite-ui input,.suite-ui select,.suite-ui textarea{font-family:inherit}
+.suite-ui :is(a,button,input,select,textarea):focus-visible{outline:3px solid #93c5fd;outline-offset:3px}
+.uni-button{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:650}
+.uni-button:disabled{opacity:.6;cursor:wait}.system-submenu a{min-height:42px;align-content:center}
+.uni-form-field{display:grid;gap:8px;margin:18px 0}.uni-form-field label{font-size:15px;font-weight:650;color:#334155}
+.uni-form-field :is(input,select,textarea){width:100%;min-height:46px;border:1px solid #cbd5e1;border-radius:10px;padding:11px 13px;background:#fff;color:#0f172a;font-size:16px;line-height:1.5}
+.uni-form-field textarea{min-height:110px}.uni-form-field input[type=file]{background:#f8fafc}
+#catalog-form{padding:22px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;margin:22px 0}#catalog-form-status{font-size:14px;color:#64748b;margin:8px 0}
+.uni-form-details{border-top:1px solid #e2e8f0;margin-top:24px;padding-top:20px}.uni-form-details h3{font-size:17px;font-weight:700;margin-bottom:16px}.uni-form-details dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.uni-form-details dt{font-size:13px;color:#64748b;margin-bottom:4px}.uni-form-details dd{font-size:15px;overflow-wrap:anywhere}.uni-form-details a{color:#2563eb;text-decoration:underline;text-underline-offset:3px}
+html[data-theme=dark] .uni-form-field label{color:#cbd5e1}html[data-theme=dark] .uni-form-field :is(input,select,textarea){background:#14243a;color:#e2e8f0;border-color:#475569}html[data-theme=dark] #catalog-form{background:#152840;border-color:#334155}
+@media(max-width:600px){.uni-form-details dl{grid-template-columns:1fr}#catalog-form{padding:16px}.suite-ui .uni-button{white-space:normal;text-align:center}}
+@media(prefers-reduced-motion:reduce){.suite-ui *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

@@ -393,6 +393,9 @@ class RequestWebController extends Controller
         $data = $request->validate([
             'department_id' => 'required|integer',
             'support_type_id' => 'required|integer',
+            'form_values' => 'nullable|array|max:100',
+            'form_files' => 'nullable|array|max:20',
+            'form_files.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp,gif|max:10240',
             'title' => 'required|string|min:10|max:255',
             'content' => 'required|string|min:20',
             'priority' => 'nullable|in:low,normal,high,urgent',
